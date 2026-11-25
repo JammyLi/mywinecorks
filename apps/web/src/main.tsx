@@ -9,6 +9,16 @@ import { Enroll, Login, Setup } from './pages/Auth.tsx';
 import { ComingSoon, Overview } from './pages/Overview.tsx';
 import { RoleEditor, Roles, Security, SettingsIndex, SettingsLayout, Users } from './pages/Settings.tsx';
 import { Audit } from './pages/Audit.tsx';
+import { Search } from './pages/Search.tsx';
+import { BottleDetailPage, CaseDetailPage, WineDetailPage, WineFormPage } from './pages/Wine.tsx';
+import {
+  MerchantsSettings,
+  MovePage,
+  PricesPage,
+  StockoutPage,
+  StoragePage,
+  TypesSettings,
+} from './pages/Ops.tsx';
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { me, loading } = useSession();
@@ -36,12 +46,24 @@ function App() {
       >
         <Route index element={<Overview />} />
         <Route path="audit" element={<Audit />} />
+        <Route path="search" element={<Search />} />
+        <Route path="wines/new" element={<WineFormPage />} />
+        <Route path="wines/:no" element={<WineDetailPage />} />
+        <Route path="wines/:no/edit" element={<WineFormPage />} />
+        <Route path="cases/:no" element={<CaseDetailPage />} />
+        <Route path="bottles/:no" element={<BottleDetailPage />} />
+        <Route path="storage" element={<StoragePage />} />
+        <Route path="move" element={<MovePage />} />
+        <Route path="stockout" element={<StockoutPage />} />
+        <Route path="prices" element={<PricesPage />} />
         <Route path="settings" element={<SettingsLayout />}>
           <Route index element={<SettingsIndex />} />
           <Route path="users" element={<Users />} />
           <Route path="roles" element={<Roles />} />
           <Route path="roles/:id" element={<RoleEditor />} />
           <Route path="security" element={<Security />} />
+          <Route path="types" element={<TypesSettings />} />
+          <Route path="merchants" element={<MerchantsSettings />} />
         </Route>
         <Route path="more" element={<More />} />
         <Route path="*" element={<ComingSoon />} />

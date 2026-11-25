@@ -6,10 +6,12 @@ import { useSession, useTheme } from './session.tsx';
 import { Icon } from './icons.tsx';
 
 /** Navigation mirrors MyWines; items appear only when the role can view them. */
-const NAV: { to: string; icon: string; key: string; module?: Module; end?: boolean }[] = [
+const NAV: { to: string; icon: string; key: string; module?: Module; action?: string; end?: boolean }[] = [
   { to: '/', icon: 'dash', key: 'nav.overview', end: true },
   { to: '/search', icon: 'search', key: 'nav.search', module: 'inventory' },
   { to: '/storage', icon: 'storage', key: 'nav.storage', module: 'locations' },
+  { to: '/move', icon: 'move', key: 'nav.move', module: 'inventory', action: 'edit' },
+  { to: '/stockout', icon: 'out', key: 'nav.stockout', module: 'inventory', action: 'edit' },
   { to: '/lists', icon: 'lists', key: 'nav.lists', module: 'inventory' },
   { to: '/orders', icon: 'order', key: 'nav.orders', module: 'orders' },
   { to: '/prices', icon: 'price', key: 'nav.prices', module: 'prices' },
@@ -25,7 +27,7 @@ export function Layout() {
   const nav = useNavigate();
   const loc = useLocation();
   if (!me) return null;
-  const items = NAV.filter((i) => !i.module || can(i.module, 'view'));
+  const items = NAV.filter((i) => !i.module || can(i.module, i.action ?? 'view'));
   const changeLang = (l: 'zh-TW' | 'en') => {
     setLang(l);
     api('/me', { method: 'PATCH', body: { lang: l } }).catch(() => {});
@@ -35,9 +37,16 @@ export function Layout() {
     setMe(null);
     nav('/login', { replace: true });
   };
-  const moreActive = ['/storage', '/orders', '/prices', '/customers', '/audit', '/settings'].some((p) =>
-    loc.pathname.startsWith(p),
-  );
+  const moreActive = [
+    '/storage',
+    '/orders',
+    '/prices',
+    '/customers',
+    '/audit',
+    '/settings',
+    '/move',
+    '/stockout',
+  ].some((p) => loc.pathname.startsWith(p));
   return (
     <div className="shell">
       <nav className="nav" aria-label="Main">
@@ -129,7 +138,7 @@ export function More() {
     setLang(l);
     api('/me', { method: 'PATCH', body: { lang: l } }).catch(() => {});
   };
-  const items = NAV.filter((i) => i.to !== '/' && (!i.module || can(i.module, 'view')));
+  const items = NAV.filter((i) => i.to !== '/' && (!i.module || can(i.module, i.action ?? 'view')));
   return (
     <div className="page">
       <h1>{t('nav.more')}</h1>

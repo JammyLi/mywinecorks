@@ -451,6 +451,7 @@ export const en = {
   'merchants.lots': 'Purchases',
   'nav.stockout': 'Stock-out',
   'nav.move': 'Move',
+  'src.manual': 'Entered by hand',
 };
 
 export type Dict = typeof en;

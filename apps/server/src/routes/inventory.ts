@@ -139,6 +139,7 @@ export function mountInventory(api: Api) {
       .all();
     const out = {
       currency: settings(db).currency,
+      staleDays: settings(db).staleDays,
       bottles: totals.bottles,
       wines: totals.wines,
       cases: totals.cases,

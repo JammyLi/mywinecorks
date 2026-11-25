@@ -441,4 +441,5 @@ export const zhTW: Dict = {
   'merchants.lots': '採購次數',
   'nav.stockout': '出庫',
   'nav.move': '移動',
+  'src.manual': '手動輸入',
 };

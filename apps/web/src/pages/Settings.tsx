@@ -16,11 +16,13 @@ import { TotpSetup } from './Auth.tsx';
 
 export function SettingsLayout() {
   const { t } = useI18n();
-  const { can } = useSession();
+  const { can, sees } = useSession();
   const tabs = [
     can('users', 'view') && { to: 'users', label: t('settings.users') },
     can('roles', 'view') && { to: 'roles', label: t('settings.roles') },
     { to: 'security', label: t('settings.security') },
+    can('settings', 'view') && { to: 'types', label: t('settings.types') },
+    can('settings', 'view') && sees('seeMerchants') && { to: 'merchants', label: t('settings.merchants') },
   ].filter(Boolean) as { to: string; label: string }[];
   return (
     <div className="page">

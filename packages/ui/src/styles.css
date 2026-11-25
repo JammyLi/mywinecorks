@@ -100,6 +100,17 @@ h1 {
   font-weight: 600;
   margin: 0;
   letter-spacing: 0.2px;
+  font-variant-numeric: lining-nums;
+}
+a.btn {
+  color: inherit;
+  text-decoration: none;
+}
+a.btn.primary {
+  color: #fff;
+}
+.grid > * {
+  min-width: 0;
 }
 h2 {
   font-size: 16px;
@@ -656,5 +667,178 @@ table.t {
   }
   .auth .art .word {
     font-size: 40px;
+  }
+}
+
+/* ---------- Inventory (M1) ---------- */
+.kpi .v {
+  font-size: 26px;
+  font-weight: 600;
+  margin-top: 6px;
+  font-variant-numeric: lining-nums tabular-nums;
+  font-family: var(--font-brand);
+}
+.kpi .l {
+  color: var(--ink-3);
+  font-size: 13px;
+}
+.g4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.layout-search {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.filters {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: sticky;
+  top: 76px;
+  max-height: calc(100vh - 96px);
+  overflow: auto;
+}
+.fgroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.fgroup > b {
+  font-size: 13px;
+  color: var(--ink-2);
+  margin-bottom: 2px;
+}
+.check .n {
+  margin-left: auto;
+  color: var(--ink-3);
+  font-size: 12px;
+}
+.sub {
+  color: var(--ink-3);
+  font-size: 12px;
+  margin-top: 2px;
+}
+.pager {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+}
+.mcards {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+}
+.wcard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 12px 14px;
+  color: inherit;
+}
+.wcard:hover {
+  text-decoration: none;
+  border-color: var(--accent);
+}
+.dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px 18px;
+  margin: 0;
+}
+.dl dt {
+  color: var(--ink-3);
+  font-size: 13px;
+}
+.dl dd {
+  margin: 0;
+}
+.tree-locker {
+  border-top: 1px solid var(--line);
+  padding: 10px 0;
+}
+.tree-rack {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 6px 0 0;
+}
+.wine-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.wine-title .winery {
+  color: var(--ink-3);
+  font-size: 14px;
+  letter-spacing: 0.3px;
+}
+.bar {
+  height: 8px;
+  background: var(--accent-soft);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.bar > i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+.problems {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+@media (max-width: 1100px) {
+  .g4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 900px) {
+  .layout-search {
+    grid-template-columns: 1fr;
+  }
+  .filters {
+    position: static;
+    max-height: none;
+  }
+  .filters.closed {
+    display: none;
+  }
+  .mcards {
+    display: flex;
+  }
+  .tbl-desk {
+    display: none;
+  }
+  .dl {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+  .dl dd {
+    margin-bottom: 8px;
+  }
+  .table-wrap > table.t:not(.loglist) {
+    min-width: 560px;
+  }
+  .loglist td {
+    display: block;
+    border: 0;
+    padding: 2px 0;
+  }
+  .loglist tr {
+    display: block;
+    border-bottom: 1px solid var(--line);
+    padding: 8px 0;
+  }
+  .loglist tbody tr:nth-child(even) td {
+    background: none;
+  }
+  .page-head .row {
+    width: 100%;
   }
 }
