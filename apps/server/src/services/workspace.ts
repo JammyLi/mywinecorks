@@ -13,6 +13,8 @@ export interface NewWorkspace {
   lang: 'zh-TW' | 'en';
   ownerEmail: string;
   ownerName?: string;
+  currency?: string;
+  timezone?: string;
 }
 
 /** Create a client workspace: database, role templates, company settings and an invited Owner. */
@@ -26,6 +28,8 @@ export function createWorkspace(registry: Registry, w: NewWorkspace) {
     const set = db.prepare('INSERT INTO settings (key, value) VALUES (?, ?)');
     set.run('company', JSON.stringify({ name: w.name, nameEn: w.name }));
     set.run('defaultLang', w.lang);
+    set.run('currency', w.currency ?? (w.lang === 'en' ? 'USD' : 'TWD'));
+    set.run('timezone', w.timezone ?? (w.lang === 'en' ? 'America/Los_Angeles' : 'Asia/Taipei'));
     ownerId = Number(
       db
         .prepare('INSERT INTO users (email, name, role_id, lang, created_at) VALUES (?, ?, ?, ?, ?)')

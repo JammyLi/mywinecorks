@@ -19,6 +19,7 @@ export function makeServer(mode: Mode = 'selfhost', extra: Record<string, string
     lang: 'en',
     ownerEmail: 'owner@example.com',
     ownerName: 'Olivia',
+    currency: 'TWD',
   });
   const cleanup = () => {
     registry.close();

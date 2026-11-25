@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { Api, perm } from '../http.ts';
+import { perms, redact } from '../services/inventory.ts';
 
 export function mountAudit(api: Api) {
   api.get('/audit', perm('audit', 'view'), (req) => {
@@ -24,6 +25,10 @@ export function mountAudit(api: Api) {
         `SELECT * FROM audit_log ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY id DESC LIMIT ?`,
       )
       .all(...args, q.limit) as Record<string, unknown>[];
-    return rows.map((r) => ({ ...r, changes: r.changes ? JSON.parse(String(r.changes)) : null }));
+    // Cost and merchant details inside changes are hidden from roles that may not see them.
+    return redact(
+      rows.map((r) => ({ ...r, changes: r.changes ? JSON.parse(String(r.changes)) : null })),
+      perms(req),
+    );
   });
 }

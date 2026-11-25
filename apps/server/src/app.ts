@@ -6,6 +6,8 @@ import { mountAuth } from './routes/auth.ts';
 import { mountUsers } from './routes/users.ts';
 import { mountAudit } from './routes/audit.ts';
 import { mountMeta } from './routes/meta.ts';
+import { mountLocations } from './routes/locations.ts';
+import { mountInventory } from './routes/inventory.ts';
 
 export function createApp(cfg: Config, registry = new Registry(cfg.dataDir)) {
   const app = express();
@@ -25,6 +27,8 @@ export function createApp(cfg: Config, registry = new Registry(cfg.dataDir)) {
   mountAuth(api);
   mountUsers(api);
   mountAudit(api);
+  mountLocations(api);
+  mountInventory(api);
 
   app.use('/api', sessionMiddleware(cfg, registry), api.router);
   app.use('/api', () => {
