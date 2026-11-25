@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.2.0 — M2 MyWines migration (2026-11-25)
+- `scripts/migrate-mywines.sh`: moves a MyWines 0.1.x database into an empty workspace. Dry run by
+  default (full import, checks, report, then rolled back); `--commit` to save.
+- Keeps wine, bottle and case numbers and the cellar/locker/rack ids, so MyWines labels
+  (B-…, CASE:…, LOCKER:id, RACK:id, MW: prefix) keep scanning. New numbers continue after MyWines'.
+- Brings over storage (with rent), merchants (case-only duplicates merged), wine types, wines, lots
+  (cost), bottles (status, stock-out reason and time, label printed), market prices, lists, photos,
+  stocktakes, label sizes and the full change log (shown with its original MyWines action).
+- MyWines local times converted to UTC. MyWines users become staff with a chosen role and set a new
+  password via a one-time link; an existing email (the Owner) is linked instead.
+- MyWines is only read: its files are copied and the copy opened read-only. Customers/orders are
+  counted and kept (copy of the database in the workspace) for M4.
+- Checked against the real MyWines database: 1,026 bottles, 129 wines, 171 cases, 27 lockers,
+  128 prices and 305 change-log entries; 50 random bottles match exactly.
+
 ## 0.1.0 — M1 Inventory (2026-11-25)
 - Storage (cellars › lockers › racks), wines, purchase lots, bottles and cases with MyWines numbering.
 - Receive stock, search with filters, wine / case / bottle pages, move, stock-out, market prices.

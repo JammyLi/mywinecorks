@@ -293,4 +293,12 @@ CREATE TABLE stocktakes (
 );
 `,
   },
+  {
+    id: 5,
+    name: 'm2_mywines_migration',
+    sql: `
+-- Change-log entries brought over from MyWines keep their original action text here (SPEC §14).
+ALTER TABLE audit_log ADD COLUMN legacy_action TEXT;
+`,
+  },
 ];

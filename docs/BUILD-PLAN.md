@@ -65,7 +65,7 @@ mywinecorks/
 │  ├─ shared/          types, permission catalogue, validation, money/date utils
 │  ├─ ui/              design system: brand tokens (§16), components, zh-TW/en i18n
 │  ├─ license/         key format, sign (HQ only) / verify (everywhere)
-│  └─ migrate-mywines/ MyWines → MyWineCorks importer
+│  └─ (MyWines importer lives in apps/server/src/services/mywines.ts)
 ├─ installer/          Windows (NSIS), Docker
 ├─ docs/               SPEC.md, BUILD-PLAN.md, decisions
 └─ .github/workflows/
@@ -93,7 +93,7 @@ assistance; scale with team).
 |---|---|---|---|---|
 | **M0** ✅ | Foundations | Monorepo, CI, design system + brand, zh-TW/en, tenant model, auth + 2-step, **custom roles/permissions**, audit log, settings shell | Owner signs in, creates roles and users; permission checks enforced in API with tests | M |
 | **M1** ✅ | Inventory core | Cellars/lockers/racks/cases, wines, lots, bottles, prices & history, search & filters, moves, stock-out, stocktake, labels, Excel import/export | All MyWines inventory tests pass against the new server | L |
-| **M2** | **MyWines migration** | Importer with dry-run report; keeps bottle/case/wine numbers | Brother's real database imports cleanly; spot-check 50 bottles; labels scan correctly | S |
+| **M2** ✅ | **MyWines migration** | Importer with dry-run report; keeps bottle/case/wine numbers | Brother's real database imports cleanly; spot-check 50 bottles; labels scan correctly | S |
 | **M3** | Mobile + offline | PWA, scanner, offline lookup/move/stock-out/stocktake/pick, sync + conflicts | Field test in a real cellar with no signal | M |
 | **M4** | Orders | Draft → confirm/reserve → pick list → scan-to-ship; payment status; PDFs; reports (value, profit) | MyWines order tests pass; full order done on phone | M |
 | **M5** | Licensing + HQ basic | Licence package, check-in API, limits, grace + strict lock, server binding; HQ: clients, subscriptions (manual), licences, installations, releases, support access, HQ staff (first Super Admin jammy.li@getfocus.com) | Issue key in HQ → self-host install activates → expiry locks → renewal unlocks | M |

@@ -9,7 +9,8 @@
     "create-tenant": "tsx --env-file-if-exists=.env src/cli/create-tenant.ts",
     "test": "vitest run",
     "typecheck": "tsc -p .",
-    "reset-password": "tsx --env-file-if-exists=.env src/cli/reset-password.ts"
+    "reset-password": "tsx --env-file-if-exists=.env src/cli/reset-password.ts",
+    "migrate-mywines": "tsx --env-file-if-exists=.env src/cli/migrate-mywines.ts"
   },
   "dependencies": {
     "@mwc/shared": "workspace:*",

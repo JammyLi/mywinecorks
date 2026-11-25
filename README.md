@@ -29,6 +29,21 @@ settings automatically and tells you if another program is using a port.
 locked out: `./scripts/reset-password.sh you@example.com` prints a reset link. To email reset links
 from the sign-in page instead, set `SMTP_URL` in `apps/server/.env`.
 
+**Moving from MyWines:** the move needs an empty workspace (same currency as MyWines, TWD).
+To start over, stop the app, rename `apps/server/data` to keep it as a backup, and run `./start.sh`
+again to create a fresh workspace. Then:
+
+```bash
+./scripts/migrate-mywines.sh --user jammy=you@example.com:owner --user larry=larry@example.com:employee
+```
+
+That is a dry run: it imports everything, checks it, prints a report and saves nothing. When it looks
+right, stop MyWines and run the same command with `--commit`. Bottle, case and wine numbers and the
+locker/rack ids stay the same, so labels already printed by MyWines keep scanning. Each MyWines user you
+list gets a link to set a new password (an email that already exists, like the Owner, is linked
+instead). MyWines' files are copied first and only the copy is read. Customers and orders come over
+with the orders release (M4); a copy of the MyWines database is kept in the workspace for that.
+
 Manual steps, if you prefer: `pnpm install`, copy `apps/server/.env.example` to `.env`,
 `pnpm --filter @mwc/server create-tenant --slug my-cellar --name "我的酒窖" --owner you@example.com`, `pnpm dev`.
 Set `MODE=cloud` in `apps/server/.env` to try cloud mode (workspace field on sign-in,

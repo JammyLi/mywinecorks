@@ -445,6 +445,7 @@ One-click import of a MyWines database (`mywines.db` + `photos/`):
 | 13 | Pricing dimensions: bottle count, order transactions, Inventory-only vs Inventory + Client Portal | 2026-11-25 |
 | 14 | Online payment, checkout and final pricing moved to Release 2; Release 1 billing is manual | 2026-11-25 |
 | 15 | Owner keeps "Export my data" while locked | 2026-11-25 |
+| 16 | MyWines migration (M2) moves inventory, storage, prices, lists, photos, stocktakes, users and the change log now; customers, addresses and orders follow with M4 from a copy of the MyWines database kept in the workspace. Migration only into an empty workspace; ids kept so LOCKER:/RACK: labels still scan | 2026-11-25 |
 
 ## 19. Open questions
 1. Market-price data: stay with manual + price helper, or budget for a licensed feed?

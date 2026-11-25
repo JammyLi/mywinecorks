@@ -11,6 +11,7 @@ interface Entry {
   obj_label: string | null;
   changes: Record<string, unknown> | null;
   reason: string | null;
+  legacy_action?: string | null;
 }
 
 const CATS = ['auth', 'users', 'roles', 'settings'];
@@ -90,7 +91,15 @@ export function Audit() {
                   <td>
                     <span className="tag">{t(`cat.${r.category}`)}</span>
                   </td>
-                  <td>{t(`audit.act.${r.action}`)}</td>
+                  <td>
+                    {r.legacy_action ? (
+                      <>
+                        {r.legacy_action} <span className="tag">MyWines</span>
+                      </>
+                    ) : (
+                      t(`audit.act.${r.action}`)
+                    )}
+                  </td>
                   <td>{r.obj_label}</td>
                   <td className="small muted" style={{ maxWidth: 420 }}>
                     {fmtChanges(r.changes)}

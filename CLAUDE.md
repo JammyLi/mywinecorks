@@ -20,7 +20,7 @@ Vitest + Playwright.
 
 ## Layout
 `apps/` server, web, portal, portal-service, hq, ai-gateway, website ·
-`packages/` shared, ui, license, migrate-mywines · `installer/` · `docs/`.
+`packages/` shared, ui, license (MyWines migration: `apps/server/src/services/mywines.ts`) · `installer/` · `docs/`.
 
 ## How the server is built (M0)
 - Routes are declared with the `Api` helper in `apps/server/src/http.ts` with a guard
