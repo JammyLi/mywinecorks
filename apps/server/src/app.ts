@@ -11,6 +11,7 @@ import { mountInventory } from './routes/inventory.ts';
 import { mountImport } from './routes/import.ts';
 import { mountCollections } from './routes/collections.ts';
 import { mountAdmin } from './routes/admin.ts';
+import { mountOffline } from './routes/offline.ts';
 
 export function createApp(cfg: Config, registry = new Registry(cfg.dataDir)) {
   const app = express();
@@ -38,6 +39,7 @@ export function createApp(cfg: Config, registry = new Registry(cfg.dataDir)) {
   mountImport(api);
   mountCollections(api);
   mountAdmin(api);
+  mountOffline(api);
 
   app.use('/api', sessionMiddleware(cfg, registry), api.router);
   app.use('/api', () => {

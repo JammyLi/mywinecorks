@@ -12,6 +12,10 @@ export interface Config {
   /** e.g. smtp://user:pass@smtp.example.com:587 — blank = no email (reset links come from an admin) */
   smtpUrl: string | null;
   mailFrom: string;
+  /** Self-hosted: HTTPS for phones on the office Wi-Fi (camera scanning needs HTTPS). 0 = off. */
+  httpsPort: number;
+  /** Where the web app runs in development (the HTTPS listener forwards pages there). */
+  webDevUrl: string;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -26,5 +30,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     secureCookies: publicUrl.startsWith('https://'),
     smtpUrl: env.SMTP_URL || null,
     mailFrom: env.MAIL_FROM || 'MyWineCorks <no-reply@mywinecorks.com>',
+    httpsPort: env.HTTPS_PORT !== undefined ? Number(env.HTTPS_PORT) : mode === 'selfhost' ? 5543 : 0,
+    webDevUrl: env.WEB_DEV_URL || 'http://localhost:5500',
   };
 }

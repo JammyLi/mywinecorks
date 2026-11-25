@@ -8,7 +8,7 @@ import { LABEL_KINDS, LABEL_PRESETS, decimals, fromMinor, sees, type Permissions
 import { AUTH, Api, OWNER, actor, perm } from '../http.ts';
 import { nowIso, type DB } from '../db/registry.ts';
 import { badRequest, notFound } from '../errors.ts';
-import { audit } from '../services/audit.ts';
+import { audit, type Actor } from '../services/audit.ts';
 import {
   cellarOfRack,
   clean,
@@ -68,7 +68,7 @@ const listStats = `SELECT l.id, l.name, l.note, l.source, l.created_at createdAt
   (SELECT COUNT(*) FROM list_items i WHERE i.list_id = l.id) wines,
   (SELECT COUNT(*) FROM list_items i JOIN bottles b ON b.wine_id = i.wine_id AND b.status = 'in_stock' WHERE i.list_id = l.id) bottles FROM lists l`;
 
-function addItems(db: DB, listId: number, ids: number[]) {
+export function addItems(db: DB, listId: number, ids: number[]) {
   const pos = (
     db.prepare('SELECT COALESCE(MAX(pos), 0) n FROM list_items WHERE list_id = ?').get(listId) as {
       n: number;
@@ -614,109 +614,7 @@ export function mountCollections(api: Api) {
         startedAt: z.string().optional(),
       })
       .parse(req.body);
-    const db = req.ctx.db!;
-    const p = perms(req);
-    const l = db
-      .prepare('SELECT l.*, c.name cellar FROM lockers l JOIN cellars c ON c.id = l.cellar_id WHERE l.id = ?')
-      .get(b.lockerId) as { id: number; code: string; cellar: string; cellar_id: number } | undefined;
-    if (!l || !inScope(p, l.cellar_id)) throw notFound();
-    const codes = [...new Set(b.codes.map((c) => clean(c).replace(/^MW:/i, '')).filter(Boolean))];
-    const expectedCases = db
-      .prepare(
-        `SELECT c.case_no caseNo, COUNT(b.id) qty, GROUP_CONCAT(DISTINCT w.name) wines FROM cases c JOIN racks k ON k.id = c.rack_id
-         JOIN bottles b ON b.case_id = c.id AND b.status = 'in_stock' JOIN wines w ON w.id = b.wine_id WHERE k.locker_id = ? GROUP BY c.id ORDER BY c.case_no`,
-      )
-      .all(l.id) as { caseNo: string; qty: number; wines: string }[];
-    const expectedLoose = db
-      .prepare(
-        `SELECT b.bottle_no bottleNo, w.name, w.vintage FROM bottles b JOIN racks k ON k.id = b.rack_id JOIN wines w ON w.id = b.wine_id
-         WHERE k.locker_id = ? AND b.case_id IS NULL AND b.status = 'in_stock' ORDER BY b.bottle_no`,
-      )
-      .all(l.id) as { bottleNo: string; name: string; vintage: string }[];
-    const foundCases = new Set<string>();
-    const foundBottles = new Set<string>();
-    const elsewhere: { code: string; kind: string; recorded: string; status?: string }[] = [];
-    const unknown: string[] = [];
-    for (const code of codes) {
-      const caseNo = code.replace(/^(?:CASE|C):/i, '');
-      const c = db
-        .prepare(
-          'SELECT c.case_no, c.rack_id, k.locker_id FROM cases c JOIN racks k ON k.id = c.rack_id WHERE c.case_no = ?',
-        )
-        .get(caseNo) as { case_no: string; rack_id: number; locker_id: number } | undefined;
-      if (c) {
-        if (c.locker_id === l.id) foundCases.add(c.case_no);
-        else elsewhere.push({ code: c.case_no, kind: 'case', recorded: locationLabel(db, c.rack_id) });
-        continue;
-      }
-      const bt = db
-        .prepare(
-          'SELECT b.bottle_no, b.rack_id, b.status, k.locker_id, c.case_no FROM bottles b JOIN racks k ON k.id = b.rack_id LEFT JOIN cases c ON c.id = b.case_id WHERE b.bottle_no = ?',
-        )
-        .get(code.toUpperCase()) as
-        | { bottle_no: string; rack_id: number; status: string; locker_id: number; case_no: string | null }
-        | undefined;
-      if (bt) {
-        if (bt.locker_id === l.id && bt.status === 'in_stock') {
-          foundBottles.add(bt.bottle_no);
-          if (bt.case_no) foundCases.add(bt.case_no);
-        } else
-          elsewhere.push({
-            code: bt.bottle_no,
-            kind: 'bottle',
-            recorded: (bt.case_no ? `${bt.case_no} @ ` : '') + locationLabel(db, bt.rack_id),
-            status: bt.status,
-          });
-        continue;
-      }
-      if (/^(LOCKER|RACK):/i.test(code)) continue;
-      unknown.push(code);
-    }
-    const report = {
-      locker: `${l.cellar} › ${l.code}`,
-      expected: {
-        cases: expectedCases.length,
-        loose: expectedLoose.length,
-        bottles: expectedCases.reduce((s, c) => s + c.qty, 0) + expectedLoose.length,
-      },
-      found: expectedCases.filter((c) => foundCases.has(c.caseNo)),
-      missing: expectedCases.filter((c) => !foundCases.has(c.caseNo)),
-      looseFound: expectedLoose.filter((x) => foundBottles.has(x.bottleNo)),
-      looseMissing: expectedLoose.filter((x) => !foundBottles.has(x.bottleNo)),
-      elsewhere,
-      unknown,
-    };
-    const who = actor(req);
-    const id = Number(
-      db
-        .prepare(
-          'INSERT INTO stocktakes (locker_id, user_id, user_label, started_at, created_at, scanned, report) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        )
-        .run(
-          l.id,
-          who.id,
-          who.label,
-          b.startedAt ?? null,
-          nowIso(),
-          JSON.stringify(codes),
-          JSON.stringify(report),
-        ).lastInsertRowid,
-    );
-    audit(db, who, {
-      category: 'inventory',
-      action: 'stocktakeDone',
-      objType: 'stocktake',
-      objId: id,
-      objLabel: report.locker,
-      changes: {
-        scanned: codes.length,
-        expected: report.expected.cases + report.expected.loose,
-        found: report.found.length + report.looseFound.length,
-        missing: report.missing.length + report.looseMissing.length,
-        elsewhere: elsewhere.length,
-      },
-    });
-    return { id, report };
+    return createStocktake(req.ctx.db!, perms(req), actor(req), b.lockerId, b.codes, b.startedAt);
   });
 
   api.get('/stocktakes', perm('inventory', 'view'), (req) => {
@@ -897,4 +795,115 @@ export function mountCollections(api: Api) {
     );
     res.end(Buffer.from(await wb.xlsx.writeBuffer()));
   });
+}
+
+/** Compare scanned codes with what the records say is in a locker (web and phone sync). */
+export function createStocktake(
+  db: DB,
+  p: Permissions,
+  who: Actor,
+  lockerId: number,
+  rawCodes: string[],
+  startedAt?: string | null,
+) {
+  const l = db
+    .prepare('SELECT l.*, c.name cellar FROM lockers l JOIN cellars c ON c.id = l.cellar_id WHERE l.id = ?')
+    .get(lockerId) as { id: number; code: string; cellar: string; cellar_id: number } | undefined;
+  if (!l || !inScope(p, l.cellar_id)) throw notFound();
+  const codes = [...new Set(rawCodes.map((c) => clean(c).replace(/^MW:/i, '')).filter(Boolean))];
+  const expectedCases = db
+    .prepare(
+      `SELECT c.case_no caseNo, COUNT(b.id) qty, GROUP_CONCAT(DISTINCT w.name) wines FROM cases c JOIN racks k ON k.id = c.rack_id
+         JOIN bottles b ON b.case_id = c.id AND b.status = 'in_stock' JOIN wines w ON w.id = b.wine_id WHERE k.locker_id = ? GROUP BY c.id ORDER BY c.case_no`,
+    )
+    .all(l.id) as { caseNo: string; qty: number; wines: string }[];
+  const expectedLoose = db
+    .prepare(
+      `SELECT b.bottle_no bottleNo, w.name, w.vintage FROM bottles b JOIN racks k ON k.id = b.rack_id JOIN wines w ON w.id = b.wine_id
+         WHERE k.locker_id = ? AND b.case_id IS NULL AND b.status = 'in_stock' ORDER BY b.bottle_no`,
+    )
+    .all(l.id) as { bottleNo: string; name: string; vintage: string }[];
+  const foundCases = new Set<string>();
+  const foundBottles = new Set<string>();
+  const elsewhere: { code: string; kind: string; recorded: string; status?: string }[] = [];
+  const unknown: string[] = [];
+  for (const code of codes) {
+    const caseNo = code.replace(/^(?:CASE|C):/i, '');
+    const c = db
+      .prepare(
+        'SELECT c.case_no, c.rack_id, k.locker_id FROM cases c JOIN racks k ON k.id = c.rack_id WHERE c.case_no = ?',
+      )
+      .get(caseNo) as { case_no: string; rack_id: number; locker_id: number } | undefined;
+    if (c) {
+      if (c.locker_id === l.id) foundCases.add(c.case_no);
+      else elsewhere.push({ code: c.case_no, kind: 'case', recorded: locationLabel(db, c.rack_id) });
+      continue;
+    }
+    const bt = db
+      .prepare(
+        'SELECT b.bottle_no, b.rack_id, b.status, k.locker_id, c.case_no FROM bottles b JOIN racks k ON k.id = b.rack_id LEFT JOIN cases c ON c.id = b.case_id WHERE b.bottle_no = ?',
+      )
+      .get(code.toUpperCase()) as
+      | { bottle_no: string; rack_id: number; status: string; locker_id: number; case_no: string | null }
+      | undefined;
+    if (bt) {
+      if (bt.locker_id === l.id && bt.status === 'in_stock') {
+        foundBottles.add(bt.bottle_no);
+        if (bt.case_no) foundCases.add(bt.case_no);
+      } else
+        elsewhere.push({
+          code: bt.bottle_no,
+          kind: 'bottle',
+          recorded: (bt.case_no ? `${bt.case_no} @ ` : '') + locationLabel(db, bt.rack_id),
+          status: bt.status,
+        });
+      continue;
+    }
+    if (/^(LOCKER|RACK):/i.test(code)) continue;
+    unknown.push(code);
+  }
+  const report = {
+    locker: `${l.cellar} › ${l.code}`,
+    expected: {
+      cases: expectedCases.length,
+      loose: expectedLoose.length,
+      bottles: expectedCases.reduce((s, c) => s + c.qty, 0) + expectedLoose.length,
+    },
+    found: expectedCases.filter((c) => foundCases.has(c.caseNo)),
+    missing: expectedCases.filter((c) => !foundCases.has(c.caseNo)),
+    looseFound: expectedLoose.filter((x) => foundBottles.has(x.bottleNo)),
+    looseMissing: expectedLoose.filter((x) => !foundBottles.has(x.bottleNo)),
+    elsewhere,
+    unknown,
+  };
+  const id = Number(
+    db
+      .prepare(
+        'INSERT INTO stocktakes (locker_id, user_id, user_label, started_at, created_at, scanned, report) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      )
+      .run(
+        l.id,
+        who.id,
+        who.label,
+        startedAt ?? null,
+        nowIso(),
+        JSON.stringify(codes),
+        JSON.stringify(report),
+      ).lastInsertRowid,
+  );
+  audit(db, who, {
+    category: 'inventory',
+    action: 'stocktakeDone',
+    objType: 'stocktake',
+    objId: id,
+    objLabel: report.locker,
+    changes: {
+      scanned: codes.length,
+      expected: report.expected.cases + report.expected.loose,
+      found: report.found.length + report.looseFound.length,
+      missing: report.missing.length + report.looseMissing.length,
+      elsewhere: elsewhere.length,
+    },
+  });
+  return { id, report };
 }

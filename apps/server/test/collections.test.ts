@@ -25,19 +25,15 @@ beforeEach(async () => {
   rackA = (await owner.post('/api/racks').send({ lockerId: lockerA, code: 'Top' })).body.id;
   rackB = (await owner.post('/api/racks').send({ lockerId: lockerB, code: 'Top' })).body.id;
   caseNo = (
-    await owner
-      .post('/api/wines')
-      .send({
-        wine: { winery: 'Krug', name: 'Grande Cuvée', vintage: 'NV', typeCode: 'CP' },
-        stock: { qty: 6, dest: { mode: 'newcase', rackId: rackA }, unitCost: '5200', merchant: 'Andy' },
-      })
+    await owner.post('/api/wines').send({
+      wine: { winery: 'Krug', name: 'Grande Cuvée', vintage: 'NV', typeCode: 'CP' },
+      stock: { qty: 6, dest: { mode: 'newcase', rackId: rackA }, unitCost: '5200', merchant: 'Andy' },
+    })
   ).body.caseNo;
-  await owner
-    .post('/api/wines')
-    .send({
-      wine: { winery: 'Leroy', name: 'Bourgogne', vintage: '2015', typeCode: 'R' },
-      stock: { qty: 2, dest: { mode: 'loose', rackId: rackA } },
-    });
+  await owner.post('/api/wines').send({
+    wine: { winery: 'Leroy', name: 'Bourgogne', vintage: '2015', typeCode: 'R' },
+    stock: { qty: 2, dest: { mode: 'loose', rackId: rackA } },
+  });
   await owner.post('/api/wines/W-000001/prices').send({ price: '7000' });
 });
 afterEach(() => s.cleanup());

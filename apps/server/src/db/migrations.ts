@@ -301,4 +301,24 @@ CREATE TABLE stocktakes (
 ALTER TABLE audit_log ADD COLUMN legacy_action TEXT;
 `,
   },
+  {
+    id: 6,
+    name: 'm3_offline_ops',
+    sql: `
+-- Phone operations made offline and synced later. The op id (made on the phone) makes sync idempotent.
+CREATE TABLE offline_ops (
+  id TEXT PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  user_label TEXT NOT NULL,
+  device TEXT,
+  op_ts TEXT NOT NULL,                    -- when it was done on the phone (ISO, UTC)
+  received_at TEXT NOT NULL,
+  type TEXT NOT NULL,
+  payload TEXT NOT NULL,                  -- JSON { payload, base }
+  status TEXT NOT NULL,                   -- applied / conflict / resolved / rejected
+  result TEXT
+);
+CREATE INDEX offline_ops_user ON offline_ops(user_id, status);
+`,
+  },
 ];

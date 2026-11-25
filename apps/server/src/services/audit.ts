@@ -5,6 +5,8 @@ export interface Actor {
   id: number | null;
   label: string;
   ip?: string;
+  /** Set when the change was made on a phone offline and synced later (ISO time on the phone). */
+  offlineAt?: string;
 }
 
 export interface AuditEntry {
@@ -19,6 +21,14 @@ export interface AuditEntry {
 
 /** Append one entry to the tenant's change log. */
 export function audit(db: DB, actor: Actor, e: AuditEntry) {
+  if (actor.offlineAt)
+    e = {
+      ...e,
+      changes: {
+        ...(e.changes && typeof e.changes === 'object' ? e.changes : {}),
+        offlineAt: actor.offlineAt,
+      },
+    };
   db.prepare(
     `INSERT INTO audit_log (ts, user_id, user_label, category, action, obj_type, obj_id, obj_label, changes, reason, ip)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,

@@ -149,12 +149,10 @@ describe('MyWines migration', () => {
     expect(b('B-0000105')).toMatchObject({ status: 'out' });
 
     // new numbers continue after MyWines'
-    const nw = await owner
-      .post('/api/wines')
-      .send({
-        wine: { winery: 'Salon', name: 'Le Mesnil', vintage: '2013', typeCode: 'CP' },
-        stock: { qty: 1, dest: { mode: 'loose', rackId: 22 } },
-      });
+    const nw = await owner.post('/api/wines').send({
+      wine: { winery: 'Salon', name: 'Le Mesnil', vintage: '2013', typeCode: 'CP' },
+      stock: { qty: 1, dest: { mode: 'loose', rackId: 22 } },
+    });
     expect(nw.status).toBe(200);
     expect(nw.body.wineNo).toBe('W-000010');
     expect(nw.body.bottleNos[0]).toBe('B-0000141');
