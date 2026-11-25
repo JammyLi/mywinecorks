@@ -10,6 +10,9 @@ import { ComingSoon, Overview } from './pages/Overview.tsx';
 import { RoleEditor, Roles, Security, SettingsIndex, SettingsLayout, Users } from './pages/Settings.tsx';
 import { Audit } from './pages/Audit.tsx';
 import { ImportPage } from './pages/Import.tsx';
+import { ListDetailPage, ListsPage } from './pages/Lists.tsx';
+import { LabelsPage, PrintLabelsPage } from './pages/Labels.tsx';
+import { StocktakeReportPage, StocktakesPage } from './pages/Stocktakes.tsx';
 import { Search } from './pages/Search.tsx';
 import { BottleDetailPage, CaseDetailPage, WineDetailPage, WineFormPage } from './pages/Wine.tsx';
 import {
@@ -40,6 +43,14 @@ function App() {
       <Route path="/forgot" element={<Forgot />} />
       <Route path="/enroll" element={<Enroll />} />
       <Route
+        path="/print/labels"
+        element={
+          <RequireAuth>
+            <PrintLabelsPage />
+          </RequireAuth>
+        }
+      />
+      <Route
         element={
           <RequireAuth>
             <Layout />
@@ -59,6 +70,11 @@ function App() {
         <Route path="stockout" element={<StockoutPage />} />
         <Route path="prices" element={<PricesPage />} />
         <Route path="import" element={<ImportPage />} />
+        <Route path="lists" element={<ListsPage />} />
+        <Route path="lists/:id" element={<ListDetailPage />} />
+        <Route path="labels" element={<LabelsPage />} />
+        <Route path="stocktakes" element={<StocktakesPage />} />
+        <Route path="stocktakes/:id" element={<StocktakeReportPage />} />
         <Route path="settings" element={<SettingsLayout />}>
           <Route index element={<SettingsIndex />} />
           <Route path="users" element={<Users />} />

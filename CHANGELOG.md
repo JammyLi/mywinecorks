@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — M1 Inventory
+## 0.1.0 — M1 Inventory (2026-11-25)
 - Storage (cellars › lockers › racks), wines, purchase lots, bottles and cases with MyWines numbering.
 - Receive stock, search with filters, wine / case / bottle pages, move, stock-out, market prices.
 - Cost and merchant hidden from roles that may not see them; cellar scope and role limits enforced.
@@ -9,6 +9,13 @@
 - Ports moved to 3500 (server) / 5500 (web) to avoid MyWines; scripts migrate old settings.
 - Password reset: "Forgot password?" email link (when SMTP is set), admin reset links, and
   `scripts/reset-password.sh` for a locked-out Owner. Resetting also unlocks the account.
+- **Lists**: save search results or single wines to named lists; reorder, copy, rename, export, print.
+- **QR labels**: bottle, case, locker and rack labels; label printer (TSC TTP-247 preset sizes) or
+  A4/Letter sheets; print only unprinted bottles; printed bottles are marked. Same QR formats as MyWines.
+- **Photos** on each wine: upload several, choose the main photo, delete.
+- **Stocktakes**: scan or paste codes for a locker, compare with records (found / missing /
+  recorded elsewhere / unknown), stock out shortages or move items here in one click; history.
+- **Excel export** of search results or lists with chosen columns (cost columns only for roles that may see cost).
 
 ## 0.0.1 — M0 Foundations (2026-11-25)
 - Monorepo: pnpm workspaces, TypeScript, Vitest, GitHub Actions CI.

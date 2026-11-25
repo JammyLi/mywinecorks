@@ -92,7 +92,7 @@ assistance; scale with team).
 | # | Milestone | Content | Done when | Size |
 |---|---|---|---|---|
 | **M0** ✅ | Foundations | Monorepo, CI, design system + brand, zh-TW/en, tenant model, auth + 2-step, **custom roles/permissions**, audit log, settings shell | Owner signs in, creates roles and users; permission checks enforced in API with tests | M |
-| **M1** | Inventory core | Cellars/lockers/racks/cases, wines, lots, bottles, prices & history, search & filters, moves, stock-out, stocktake, labels, Excel import/export | All MyWines inventory tests pass against the new server | L |
+| **M1** ✅ | Inventory core | Cellars/lockers/racks/cases, wines, lots, bottles, prices & history, search & filters, moves, stock-out, stocktake, labels, Excel import/export | All MyWines inventory tests pass against the new server | L |
 | **M2** | **MyWines migration** | Importer with dry-run report; keeps bottle/case/wine numbers | Brother's real database imports cleanly; spot-check 50 bottles; labels scan correctly | S |
 | **M3** | Mobile + offline | PWA, scanner, offline lookup/move/stock-out/stocktake/pick, sync + conflicts | Field test in a real cellar with no signal | M |
 | **M4** | Orders | Draft → confirm/reserve → pick list → scan-to-ship; payment status; PDFs; reports (value, profit) | MyWines order tests pass; full order done on phone | M |

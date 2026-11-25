@@ -1,3 +1,5 @@
+import { AddToListDialog } from './Lists.tsx';
+import { ExportDialog } from './Export.tsx';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { fromMinor, toMinor } from '@mwc/shared';
@@ -93,6 +95,7 @@ export function Search() {
   >;
   const [kw, setKw] = useState(q.q);
   const [open, setOpen] = useState(false);
+  const [dlg, setDlg] = useState<'list' | 'export' | null>(null);
   useEffect(() => setKw(q.q), [q.q]);
   const set = (patch: Partial<typeof q>) => {
     const next = { ...q, page: '', ...patch };
@@ -117,6 +120,9 @@ export function Search() {
   const nf = FILTER_KEYS.filter((k) => q[k]).length;
   const pages = data ? Math.max(1, Math.ceil(data.totals.rows / data.size)) : 1;
   const stale = (d: string | null) => !d || (data && d < data.staleBefore);
+  const srcQuery = Object.fromEntries(
+    Object.entries(q).filter(([k, v]) => v && k !== 'page' && k !== 'view' && k !== 'sort'),
+  );
   const moneyIn = (v: string) => (v ? String(toMinor(v, cur) ?? '') : '');
   const moneyOut = (v: string) => (v ? String(fromMinor(Number(v), cur)) : '');
 
@@ -125,6 +131,28 @@ export function Search() {
       <div className="page-head">
         <h1>{t('nav.search')}</h1>
         <span className="sp" />
+        {data && data.totals.wines > 0 && (
+          <>
+            {can('inventory', 'view') && (
+              <button className="btn" onClick={() => setDlg('list')}>
+                {t('lists.saveResults', { n: data.totals.wines })}
+              </button>
+            )}
+            {can('importExport', 'export') && (
+              <button className="btn" onClick={() => setDlg('export')}>
+                {t('exp.title')}
+              </button>
+            )}
+            {can('labels', 'print') && (
+              <button
+                className="btn"
+                onClick={() => nav('/labels', { state: { source: { query: srcQuery }, title: q.q } })}
+              >
+                {t('lbl.title')}
+              </button>
+            )}
+          </>
+        )}
         {can('inventory', 'create') && (
           <Link className="btn primary" to="/wines/new">
             ＋ {t('wine.add')}
@@ -585,6 +613,22 @@ export function Search() {
           )}
         </section>
       </div>
+      {dlg === 'list' && (
+        <AddToListDialog
+          source={{ query: srcQuery }}
+          defaultName={q.q}
+          count={data?.totals.wines}
+          onClose={() => setDlg(null)}
+          onDone={(id) => nav(`/lists/${id}`)}
+        />
+      )}
+      {dlg === 'export' && (
+        <ExportDialog
+          source={{ query: srcQuery }}
+          title={q.q || t('nav.search')}
+          onClose={() => setDlg(null)}
+        />
+      )}
     </div>
   );
 }

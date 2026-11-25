@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { CURRENCIES, minorToInput } from '@mwc/shared';
 import { Dialog, Field, useI18n, useToast } from '@mwc/ui';
 import { api } from '../api.ts';
+import { AddToListDialog } from './Lists.tsx';
 import { qs, useApi, useFmt } from '../hooks.ts';
 import { useSession } from '../session.tsx';
 import {
@@ -79,7 +80,7 @@ export function WineDetailPage() {
   const toast = useToast();
   const typeName = useTypeName();
   const { data, error, reload } = useApi<WineDetail>(`/wines/${encodeURIComponent(no)}`);
-  const [dlg, setDlg] = useState<'stock' | 'price' | 'delete' | null>(null);
+  const [dlg, setDlg] = useState<'stock' | 'price' | 'delete' | 'list' | null>(null);
   const [voidId, setVoidId] = useState<number | null>(null);
   const [all, setAll] = useState(false);
   if (error)
@@ -149,8 +150,20 @@ export function WineDetailPage() {
               {t('nav.stockout')}
             </button>
           )}
+          <button className="btn" onClick={() => setDlg('list')}>
+            {t('lists.addTo')}
+          </button>
         </div>
       </div>
+      {dlg === 'list' && (
+        <AddToListDialog
+          source={{ wineNos: [w.wine_no] }}
+          count={1}
+          onClose={() => setDlg(null)}
+          onDone={() => setDlg(null)}
+        />
+      )}
+      <Photos wineNo={w.wine_no} canEdit={can('inventory', 'edit')} />
 
       <div className="grid g4">
         <div className="card kpi">
@@ -1464,3 +1477,88 @@ function RestoreDialog(props: { bottleNo: string; onClose: () => void; onDone: (
 }
 
 export { Changes };
+
+/** Wine photos: upload (raw image body), choose the main photo, delete. */
+function Photos({ wineNo, canEdit }: { wineNo: string; canEdit: boolean }) {
+  const { t } = useI18n();
+  const toast = useToast();
+  const { data, reload } = useApi<{ id: number; file: string; isMain: number }[]>(
+    `/wines/${encodeURIComponent(wineNo)}/photos`,
+  );
+  const [busy, setBusy] = useState(false);
+  if (!data || (!data.length && !canEdit)) return null;
+  const upload = async (files: FileList | null) => {
+    if (!files?.length) return;
+    setBusy(true);
+    try {
+      for (const f of Array.from(files)) {
+        const r = await fetch(`/api/wines/${encodeURIComponent(wineNo)}/photos`, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': f.type || 'image/jpeg' },
+          body: f,
+        });
+        if (!r.ok) {
+          const j = (await r.json().catch(() => ({}))) as { error?: string };
+          toast(t(`err.${j.error ?? 'server'}`));
+        }
+      }
+    } finally {
+      setBusy(false);
+      reload();
+    }
+  };
+  const act = async (path: string, method = 'POST') => {
+    await api(path, method === 'DELETE' ? { method: 'DELETE' } : { body: {} });
+    reload();
+  };
+  return (
+    <div className="card stack">
+      <div className="row">
+        <h2 style={{ margin: 0 }}>{t('ph.title')}</h2>
+        <span className="sp" />
+        {canEdit && (
+          <label className="btn sm">
+            {busy ? t('ph.uploading') : `＋ ${t('ph.add')}`}
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              hidden
+              disabled={busy}
+              onChange={(e) => {
+                void upload(e.target.files);
+                e.target.value = '';
+              }}
+            />
+          </label>
+        )}
+      </div>
+      {data.length === 0 ? (
+        <div className="muted small">{t('ph.none')}</div>
+      ) : (
+        <div className="photos">
+          {data.map((p) => (
+            <div
+              key={p.id}
+              className={'photo' + (p.isMain ? ' is-main' : '')}
+              title={p.isMain ? t('ph.main') : ''}
+            >
+              <a href={`/api/photo/${p.file}`} target="_blank" rel="noreferrer">
+                <img src={`/api/photo/${p.file}`} alt="" loading="lazy" />
+              </a>
+              {canEdit && (
+                <div className="acts">
+                  {!p.isMain && (
+                    <button onClick={() => act(`/photos/${p.id}/main`)}>{t('ph.setMain')}</button>
+                  )}
+                  <button onClick={() => act(`/photos/${p.id}`, 'DELETE')}>{t('act.delete')}</button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
