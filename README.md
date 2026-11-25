@@ -10,24 +10,25 @@ Launch markets: Taiwan and the United States (Traditional Chinese / English).
 
 ## Run it on your Mac
 
-Needs Node 22 and pnpm (`brew install node@22 pnpm`).
+In Terminal, in this folder:
 
 ```bash
-pnpm install
-cp apps/server/.env.example apps/server/.env     # self-hosted mode, data in apps/server/data
-
-# Create your workspace (once) — prints a one-time setup link for the Owner
-pnpm --filter @mwc/server create-tenant --slug my-cellar --name "我的酒窖" --owner you@example.com
-
-pnpm dev          # server on :3000 + web app on :5173
+./scripts/setup-mac.sh     # first time: installs Node 22 + pnpm if needed, creates your workspace, starts the app
+./scripts/start.sh         # every time after that
 ```
 
-Open the setup link, choose a password, then sign in at http://localhost:5173.
-To try cloud mode (workspace field on sign-in, 2-step verification required for Owner/Admin),
-set `MODE=cloud` in `apps/server/.env`.
+The first run asks for your company name, workspace id and Owner email, then opens your
+one-time setup link in the browser. Choose a password and you are in.
+The app runs at http://localhost:5173 (phones on the same Wi-Fi: http://<Mac IP>:5173).
+Stop it with Ctrl+C. Your data is in `apps/server/data/` — back it up by copying that folder.
 
-Other commands: `pnpm test` (all tests), `pnpm typecheck`, `pnpm --filter @mwc/web build`
-(after a build, `pnpm --filter @mwc/server start` serves the app on :3000 by itself).
+Manual steps, if you prefer: `pnpm install`, copy `apps/server/.env.example` to `.env`,
+`pnpm --filter @mwc/server create-tenant --slug my-cellar --name "我的酒窖" --owner you@example.com`, `pnpm dev`.
+Set `MODE=cloud` in `apps/server/.env` to try cloud mode (workspace field on sign-in,
+2-step verification required for Owner/Admin).
+
+Other commands: `pnpm test`, `pnpm typecheck`, `pnpm --filter @mwc/web build`
+(after a build, `pnpm --filter @mwc/server start` serves everything on :3000).
 
 ## Status
 
