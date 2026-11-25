@@ -87,7 +87,8 @@ export class Api {
     this.router[method](path, async (req, res) => {
       enforce(req, guard);
       const out = await h(req, res);
-      if (!res.headersSent) res.json(out ?? { ok: true });
+      // Handlers that stream a file set res.locals.raw and answer themselves.
+      if (!res.headersSent && !res.locals.raw) res.json(out ?? { ok: true });
     });
   }
   get = (p: string, g: Guard, h: Handler) => this.add('get', p, g, h);

@@ -248,4 +248,49 @@ CREATE TABLE name_aliases (
 );
 `,
   },
+  {
+    id: 4,
+    name: 'm1_lists_photos_stocktakes',
+    sql: `
+CREATE TABLE lists (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  note TEXT,
+  source TEXT,                            -- search / manual / scan
+  query TEXT,                             -- search conditions it was made from (JSON)
+  created_by INTEGER,
+  created_at TEXT NOT NULL,
+  updated_at TEXT
+);
+CREATE TABLE list_items (
+  id INTEGER PRIMARY KEY,
+  list_id INTEGER NOT NULL REFERENCES lists(id) ON DELETE CASCADE,
+  wine_id INTEGER NOT NULL REFERENCES wines(id),
+  pos INTEGER NOT NULL DEFAULT 0,
+  note TEXT,
+  UNIQUE (list_id, wine_id)
+);
+CREATE TABLE photos (
+  id INTEGER PRIMARY KEY,
+  wine_id INTEGER NOT NULL REFERENCES wines(id),
+  file TEXT NOT NULL,                     -- stored in <tenant>/photos/
+  is_main INTEGER NOT NULL DEFAULT 0,
+  created_by INTEGER,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX photos_wine ON photos(wine_id);
+-- Stocktake: what was scanned in a locker and the difference report.
+CREATE TABLE stocktakes (
+  id INTEGER PRIMARY KEY,
+  locker_id INTEGER NOT NULL REFERENCES lockers(id),
+  user_id INTEGER,
+  user_label TEXT NOT NULL,
+  started_at TEXT,
+  created_at TEXT NOT NULL,
+  scanned TEXT NOT NULL,                  -- JSON array of codes
+  report TEXT NOT NULL,                   -- JSON
+  closed INTEGER NOT NULL DEFAULT 0
+);
+`,
+  },
 ];
