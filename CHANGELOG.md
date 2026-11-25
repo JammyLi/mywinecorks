@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.3.0 — M3 Phone app + offline (2026-11-25)
+- Phone screens at `/m` (ported from MyWines): scan / look up, bottle, case, locker, wine, move
+  (bottles, whole case, into a new case), stock-out with reason, scan to a list, stocktake, search,
+  sync status and conflicts. Camera scanning (BarcodeDetector, jsQR fallback) or typed codes;
+  MyWines QR formats.
+- Works with no signal: the phone keeps a copy of the stock (IndexedDB) and a queue of changes;
+  they sync automatically when back online. Each change is applied once (retries are safe) and
+  the change log records the time it was made on the phone. If someone else changed the same
+  bottle or case meanwhile, the phone shows a conflict: keep mine / keep the server's.
+- The phone copy follows the role: only the cellars it may see, market price only with price
+  access, never cost, merchants, customers or settings; cleared on sign-out or when another person
+  signs in. Phones sign in as "mobile"; Picker-type roles go straight to the phone app.
+- Installable app (manifest + service worker) that opens offline.
+- Self-hosted HTTPS for phones on the office Wi-Fi: a local certificate authority is created on
+  first start, the server certificate follows the computer's address; `/phone` guides installing
+  it on iPhone / Android (zh-TW / en). Ports: 3500 (http), 5543 (https for phones).
+- Scan-to-pick and ship come with orders (M4).
+
 ## 0.2.1 — Owner-only deleting (2026-11-25)
 - Every delete is for the Owner only (decision 17); "delete" is removed from role permissions.
   Even an Admin gets 403; a test checks that every DELETE endpoint is Owner-only.

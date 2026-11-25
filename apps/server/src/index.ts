@@ -52,25 +52,22 @@ if (cfg.mode === 'selfhost' && cfg.httpsPort) {
   }
 }
 
-http
-  .createServer(app)
-  .on('error', busy(cfg.port))
-  .listen(cfg.port, () => {
-    const n = registry.list().length;
-    console.log(
-      `MyWineCorks server (${cfg.mode}) on http://localhost:${cfg.port} — ${n} workspace(s), data in ${cfg.dataDir}`,
-    );
-    if (n === 0) console.log('No workspace yet. Create one with: pnpm --filter @mwc/server create-tenant');
-    if (!tls) return;
-    const srv = https.createServer({ key: tls.key, cert: tls.cert }, pages).on('error', busy(cfg.httpsPort));
-    if (proxy) srv.on('upgrade', (req, socket, head) => proxy.ws(req, socket, head));
-    srv.listen(cfg.httpsPort, () => {
-      for (const ip of lanAddresses()) {
-        console.log(`Phones (scan, offline):  https://${ip}:${cfg.httpsPort}/m`);
-        console.log(
-          `Phone setup, first time: https://${ip}:${cfg.httpsPort}/phone  (or http://${ip}:5500/phone)`,
-        );
-      }
-      if (tls!.fresh) console.log('(New HTTPS certificate issued for the current office-network address.)');
-    });
+const plain = http.createServer(pages).on('error', busy(cfg.port));
+if (proxy) plain.on('upgrade', (req, socket, head) => proxy.ws(req, socket, head));
+plain.listen(cfg.port, () => {
+  const n = registry.list().length;
+  console.log(
+    `MyWineCorks server (${cfg.mode}) on http://localhost:${cfg.port} — ${n} workspace(s), data in ${cfg.dataDir}`,
+  );
+  if (n === 0) console.log('No workspace yet. Create one with: pnpm --filter @mwc/server create-tenant');
+  if (!tls) return;
+  const srv = https.createServer({ key: tls.key, cert: tls.cert }, pages).on('error', busy(cfg.httpsPort));
+  if (proxy) srv.on('upgrade', (req, socket, head) => proxy.ws(req, socket, head));
+  srv.listen(cfg.httpsPort, () => {
+    for (const ip of lanAddresses()) {
+      console.log(`Phones (scan, offline):  https://${ip}:${cfg.httpsPort}/m`);
+      console.log(`Phone setup, first time: http://${ip}:${cfg.port}/phone`);
+    }
+    if (tls!.fresh) console.log('(New HTTPS certificate issued for the current office-network address.)');
   });
+});

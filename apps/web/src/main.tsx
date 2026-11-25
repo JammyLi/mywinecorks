@@ -1,4 +1,19 @@
-import { StrictMode, type ReactNode } from 'react';
+import { StrictMode, useEffect, type ReactNode } from 'react';
+import { startOffline } from './offline/store.ts';
+import { PhoneSetup } from './pages/Phone.tsx';
+import {
+  MBottle,
+  MCase,
+  MConflicts,
+  MCount,
+  MHome,
+  MLocker,
+  MMove,
+  MScanList,
+  MSearch,
+  MSync,
+  MWine,
+} from './m/pages.tsx';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { I18nProvider, ToastProvider, useI18n } from '@mwc/ui';
@@ -26,11 +41,19 @@ import {
 } from './pages/Ops.tsx';
 
 function RequireAuth({ children }: { children: ReactNode }) {
-  const { me, loading } = useSession();
+  const { me, loading, offline } = useSession();
   const { t } = useI18n();
   const loc = useLocation();
+  const phone = loc.pathname.startsWith('/m');
+  useEffect(() => {
+    // Phone screens (and any phone-sized screen) keep the offline copy up to date.
+    if (me && (phone || window.matchMedia('(max-width: 900px)').matches)) startOffline();
+  }, [me, phone]);
   if (loading) return <div className="page muted">{t('loading')}</div>;
   if (!me) return <Navigate to="/login" replace state={{ from: loc.pathname }} />;
+  if (offline && !phone) return <Navigate to="/m" replace />;
+  if (!me.permissions.access.backOffice && !phone && loc.pathname === '/')
+    return <Navigate to="/m" replace />;
   if (me.mustEnrollTotp) return <Navigate to="/enroll" replace />;
   return <>{children}</>;
 }
@@ -43,6 +66,7 @@ function App() {
       <Route path="/setup" element={<Setup />} />
       <Route path="/forgot" element={<Forgot />} />
       <Route path="/enroll" element={<Enroll />} />
+      <Route path="/phone" element={<PhoneSetup />} />
       <Route
         path="/print/labels"
         element={
@@ -87,11 +111,26 @@ function App() {
           <Route path="data" element={<DataSettings />} />
         </Route>
         <Route path="more" element={<More />} />
+        <Route path="m" element={<MHome />} />
+        <Route path="m/b/:no" element={<MBottle />} />
+        <Route path="m/c/:no" element={<MCase />} />
+        <Route path="m/l/:id" element={<MLocker />} />
+        <Route path="m/w/:no" element={<MWine />} />
+        <Route path="m/move" element={<MMove />} />
+        <Route path="m/list" element={<MScanList />} />
+        <Route path="m/count" element={<MCount />} />
+        <Route path="m/search" element={<MSearch />} />
+        <Route path="m/sync" element={<MSync />} />
+        <Route path="m/conflicts" element={<MConflicts />} />
         <Route path="*" element={<ComingSoon />} />
       </Route>
     </Routes>
   );
 }
+
+// Built app on HTTPS / localhost: cache it so phones open it with no signal.
+if (import.meta.env.PROD && 'serviceWorker' in navigator && window.isSecureContext)
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

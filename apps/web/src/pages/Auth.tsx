@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import type { Me } from '@mwc/shared';
 import { BottleMark, Field, PasswordInput, Seg, useI18n, Wordmark } from '@mwc/ui';
 import { api, ApiError, errText } from '../api.ts';
@@ -37,6 +37,7 @@ export function Login() {
   const { t } = useI18n();
   const { setMe } = useSession();
   const nav = useNavigate();
+  const loc = useLocation();
   const [info, setInfo] = useState<{ mode: string; workspace: string | null; company: string | null } | null>(
     null,
   );
@@ -59,18 +60,37 @@ export function Login() {
     setErr('');
     setBusy(true);
     try {
-      const me = await api<Me>('/auth/login', {
-        body: {
-          workspace: workspace || undefined,
-          email,
-          password,
-          code: needCode ? code : undefined,
-          client: 'web',
-        },
-      });
+      // Phones sign in as "mobile"; a role without one kind of access tries the other.
+      const login = (client: 'web' | 'mobile') =>
+        api<Me>('/auth/login', {
+          body: {
+            workspace: workspace || undefined,
+            email,
+            password,
+            code: needCode ? code : undefined,
+            client,
+          },
+        });
+      const phone = window.matchMedia('(max-width: 900px)').matches;
+      let client: 'web' | 'mobile' = phone ? 'mobile' : 'web';
+      let me: Me;
+      try {
+        me = await login(client);
+      } catch (ex) {
+        const other = ex instanceof ApiError && (ex.code === 'noBackOffice' || ex.code === 'noMobile');
+        if (!other) throw ex;
+        client = client === 'web' ? 'mobile' : 'web';
+        me = await login(client);
+      }
       if (workspace) localStorage.setItem('mwc.workspace', workspace);
       setMe(me);
-      nav(me.mustEnrollTotp ? '/enroll' : '/', { replace: true });
+      const from = (loc.state as { from?: string } | null)?.from;
+      nav(
+        me.mustEnrollTotp ? '/enroll' : from && from !== '/login' ? from : client === 'mobile' ? '/m' : '/',
+        {
+          replace: true,
+        },
+      );
     } catch (ex) {
       if (ex instanceof ApiError && ex.code === 'totpNeeded') setNeedCode(true);
       else setErr(errText(t, ex));

@@ -29,6 +29,11 @@ settings automatically and tells you if another program is using a port.
 locked out: `./scripts/reset-password.sh you@example.com` prints a reset link. To email reset links
 from the sign-in page instead, set `SMTP_URL` in `apps/server/.env`.
 
+**Phones:** on the same Wi-Fi, open `http://<Mac IP>:3500/phone` on the phone once and follow the
+steps (install the office certificate). Then use `https://<Mac IP>:5543/m` — camera scanning, and it
+keeps working in the cellar with no signal; changes sync when the phone is back on the Wi-Fi.
+`start.sh` prints both addresses. A fixed IP for the Mac is best.
+
 **Moving from MyWines:** the move needs an empty workspace (same currency as MyWines, TWD).
 To start over, stop the app, rename `apps/server/data` to keep it as a backup, and run `./start.sh`
 again to create a fresh workspace. Then:

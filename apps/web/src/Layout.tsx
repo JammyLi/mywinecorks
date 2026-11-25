@@ -2,7 +2,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { BottleMark, Seg, useI18n } from '@mwc/ui';
 import type { Module } from '@mwc/shared';
 import { api } from './api.ts';
-import { useSession, useTheme } from './session.tsx';
+import { forgetDevice, useSession, useTheme } from './session.tsx';
 import { Icon } from './icons.tsx';
 
 /** Navigation mirrors MyWines; items appear only when the role can view them. */
@@ -37,6 +37,7 @@ export function Layout() {
   };
   const logout = async () => {
     await api('/auth/logout', { method: 'POST' }).catch(() => {});
+    await forgetDevice();
     setMe(null);
     nav('/login', { replace: true });
   };

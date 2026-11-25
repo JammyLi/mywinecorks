@@ -2,11 +2,27 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import type { Me } from '@mwc/shared';
 import { can as canP, sees as seesP, type Module, type Visibility } from '@mwc/shared';
 import { useI18n } from '@mwc/ui';
-import { api } from './api.ts';
+import { ApiError, api } from './api.ts';
+import { clearLocal } from './offline/store.ts';
+import { clearRecent } from './m/common.tsx';
+
+const ME_KEY = 'mwc.me';
+/** Remove everything a signed-in user leaves on this device (SPEC: phone data cleared on sign-out). */
+export async function forgetDevice() {
+  try {
+    localStorage.removeItem(ME_KEY);
+  } catch {
+    /* */
+  }
+  clearRecent();
+  await clearLocal().catch(() => {});
+}
 
 interface SessionCtx {
   me: Me | null;
   loading: boolean;
+  /** Server unreachable: signed in from this phone's last session (phone screens only). */
+  offline: boolean;
   setMe: (m: Me | null) => void;
   refresh: () => Promise<void>;
   can: (m: Module, action: string) => boolean;
@@ -19,10 +35,20 @@ const Ctx = createContext<SessionCtx | null>(null);
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [me, setMeState] = useState<Me | null>(null);
   const [loading, setLoading] = useState(true);
+  const [offline, setOffline] = useState(false);
   const { lang, setLang } = useI18n();
   const setMe = useCallback(
     (m: Me | null) => {
       setMeState(m);
+      setOffline(false);
+      try {
+        const prev = JSON.parse(localStorage.getItem(ME_KEY) ?? 'null') as Me | null;
+        // Another person signs in on this phone: their stock copy and queue start fresh.
+        if (m && prev && (prev.id !== m.id || prev.tenant?.slug !== m.tenant?.slug)) void clearLocal();
+        if (m) localStorage.setItem(ME_KEY, JSON.stringify(m));
+      } catch {
+        /* */
+      }
       if (m && m.lang !== lang) setLang(m.lang);
     },
     [lang, setLang],
@@ -30,8 +56,18 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     try {
       setMe(await api<Me>('/me'));
-    } catch {
-      setMeState(null);
+    } catch (e) {
+      // No signal in the cellar: keep working on the phone copy as the last signed-in user.
+      let cached: Me | null = null;
+      try {
+        cached = JSON.parse(localStorage.getItem(ME_KEY) ?? 'null');
+      } catch {
+        /* */
+      }
+      if (e instanceof ApiError && e.status === 0 && cached) {
+        setMeState(cached);
+        setOffline(true);
+      } else setMeState(null);
     } finally {
       setLoading(false);
     }
@@ -42,6 +78,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const value: SessionCtx = {
     me,
     loading,
+    offline,
     setMe,
     refresh,
     can: (m, a) => canP(me?.permissions, m, a),
