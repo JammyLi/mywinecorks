@@ -74,7 +74,7 @@ interface WineDetail {
 export function WineDetailPage() {
   const { no = '' } = useParams();
   const { t } = useI18n();
-  const { can, sees } = useSession();
+  const { can, sees, isOwner } = useSession();
   const f = useFmt();
   const nav = useNavigate();
   const toast = useToast();
@@ -163,7 +163,7 @@ export function WineDetailPage() {
           onDone={() => setDlg(null)}
         />
       )}
-      <Photos wineNo={w.wine_no} canEdit={can('inventory', 'edit')} />
+      <Photos wineNo={w.wine_no} canEdit={can('inventory', 'edit')} canDelete={isOwner} />
 
       <div className="grid g4">
         <div className="card kpi">
@@ -364,7 +364,7 @@ export function WineDetailPage() {
         <h2 style={{ margin: 0 }}>{t('wine.log')}</h2>
         <LogList logs={data.logs} />
       </div>
-      {can('inventory', 'delete') && data.qty === 0 && (
+      {isOwner && data.qty === 0 && (
         <button className="btn danger" style={{ alignSelf: 'flex-start' }} onClick={() => setDlg('delete')}>
           {t('wine.delete')}
         </button>
@@ -1479,7 +1479,7 @@ function RestoreDialog(props: { bottleNo: string; onClose: () => void; onDone: (
 export { Changes };
 
 /** Wine photos: upload (raw image body), choose the main photo, delete. */
-function Photos({ wineNo, canEdit }: { wineNo: string; canEdit: boolean }) {
+function Photos({ wineNo, canEdit, canDelete }: { wineNo: string; canEdit: boolean; canDelete: boolean }) {
   const { t } = useI18n();
   const toast = useToast();
   const { data, reload } = useApi<{ id: number; file: string; isMain: number }[]>(
@@ -1552,7 +1552,9 @@ function Photos({ wineNo, canEdit }: { wineNo: string; canEdit: boolean }) {
                   {!p.isMain && (
                     <button onClick={() => act(`/photos/${p.id}/main`)}>{t('ph.setMain')}</button>
                   )}
-                  <button onClick={() => act(`/photos/${p.id}`, 'DELETE')}>{t('act.delete')}</button>
+                  {canDelete && (
+                    <button onClick={() => act(`/photos/${p.id}`, 'DELETE')}>{t('act.delete')}</button>
+                  )}
                 </div>
               )}
             </div>

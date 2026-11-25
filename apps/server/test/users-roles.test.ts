@@ -50,7 +50,7 @@ describe('users and roles', () => {
     // Admin template has roles.view but not roles.manage.
     await admin.post('/api/roles').send({ name: 'x', permissions: {} }).expect(403);
 
-    // Give a custom "HR" role users.manage + roles.manage but no data deletion; HR cannot create a role with data.clear.
+    // Give a custom "HR" role users.manage + roles.manage but no inventory rights; HR cannot create a role with inventory.edit.
     const hr = await owner
       .post('/api/roles')
       .send({
@@ -61,7 +61,7 @@ describe('users and roles', () => {
     const hrAgent = await userWithRole(s, owner, hr.body.id, 'hr@example.com');
     await hrAgent
       .post('/api/roles')
-      .send({ name: 'Wipe', permissions: { functions: { data: ['clear'] } } })
+      .send({ name: 'Stock', permissions: { functions: { inventory: ['view', 'edit'] } } })
       .expect(403);
     await hrAgent
       .post('/api/roles')

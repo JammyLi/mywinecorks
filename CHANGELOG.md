@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.1 — Owner-only deleting (2026-11-25)
+- Every delete is for the Owner only (decision 17); "delete" is removed from role permissions.
+  Even an Admin gets 403; a test checks that every DELETE endpoint is Owner-only.
+- New (from MyWines): merge merchants (purchases move, the old name is remembered for imports),
+  delete unused merchants; merge / delete wine types.
+- Settings › Data (資料管理): clear inventory, cellars, users or the change log — typed phrase
+  (中文 or English) + password, the whole database is backed up first, numbers are never reused.
+- Change-log retention: keep forever or 3 / 6 / 12 months, purged hourly; each purge is recorded.
+
 ## 0.2.0 — M2 MyWines migration (2026-11-25)
 - `scripts/migrate-mywines.sh`: moves a MyWines 0.1.x database into an empty workspace. Dry run by
   default (full import, checks, report, then rolled back); `--commit` to save.

@@ -4,12 +4,14 @@
  * Shared by server (enforcement) and web (showing/hiding UI).
  */
 
+// Deleting anything (and merging, clearing data, change-log retention) is for the Owner only —
+// it is not a role permission (decision 17).
 export const MODULES = {
-  inventory: ['view', 'create', 'edit', 'delete'],
-  locations: ['view', 'createCellar', 'edit', 'delete'],
+  inventory: ['view', 'create', 'edit'],
+  locations: ['view', 'createCellar', 'edit'],
   prices: ['view', 'edit'],
   orders: ['view', 'create', 'edit', 'confirm', 'ship', 'cancel'],
-  customers: ['view', 'create', 'edit', 'delete'],
+  customers: ['view', 'create', 'edit'],
   catalogs: ['view', 'edit'],
   reports: ['view'],
   importExport: ['import', 'export'],
@@ -18,7 +20,6 @@ export const MODULES = {
   users: ['view', 'manage'],
   roles: ['view', 'manage'],
   audit: ['view'],
-  data: ['clear'],
 } as const;
 
 export type Module = keyof typeof MODULES;

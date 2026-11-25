@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { STOCKOUT_REASONS, sees, toMinor } from '@mwc/shared';
-import { AUTH, Api, actor, perm } from '../http.ts';
+import { AUTH, Api, OWNER, actor, perm } from '../http.ts';
 import { nowIso } from '../db/registry.ts';
 import { ApiError, badRequest, conflict, notFound } from '../errors.ts';
 import { audit } from '../services/audit.ts';
@@ -439,7 +439,7 @@ export function mountInventory(api: Api) {
   });
 
   /** A wine can be deleted only if it was entered by mistake: never ordered/shipped, no bottles in stock. */
-  api.delete('/wines/:no', perm('inventory', 'delete'), (req) => {
+  api.delete('/wines/:no', OWNER, (req) => {
     const db = req.ctx.db!;
     return db.transaction(() => {
       const w = wineByNo(db, String(req.params.no));

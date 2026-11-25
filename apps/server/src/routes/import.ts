@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import { sees } from '@mwc/shared';
-import { Api, actor, perm } from '../http.ts';
+import { Api, OWNER, actor, perm } from '../http.ts';
 import { ApiError, badRequest, forbidden, notFound } from '../errors.ts';
 import { audit } from '../services/audit.ts';
 import { perms, settings } from '../services/inventory.ts';
@@ -66,7 +66,7 @@ export function mountImport(api: Api) {
     return sees(perms(req), 'seeMerchants') ? rows : rows.filter((r) => r.field !== 'merchant');
   });
 
-  api.delete('/import/aliases', perm('importExport', 'import'), (req) => {
+  api.delete('/import/aliases', OWNER, (req) => {
     const b = z
       .object({ field: z.enum(['winery', 'merchant', 'region']), alias: z.string().min(1) })
       .parse(req.body);

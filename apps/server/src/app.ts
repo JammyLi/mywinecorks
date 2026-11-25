@@ -10,6 +10,7 @@ import { mountLocations } from './routes/locations.ts';
 import { mountInventory } from './routes/inventory.ts';
 import { mountImport } from './routes/import.ts';
 import { mountCollections } from './routes/collections.ts';
+import { mountAdmin } from './routes/admin.ts';
 
 export function createApp(cfg: Config, registry = new Registry(cfg.dataDir)) {
   const app = express();
@@ -36,6 +37,7 @@ export function createApp(cfg: Config, registry = new Registry(cfg.dataDir)) {
   mountInventory(api);
   mountImport(api);
   mountCollections(api);
+  mountAdmin(api);
 
   app.use('/api', sessionMiddleware(cfg, registry), api.router);
   app.use('/api', () => {

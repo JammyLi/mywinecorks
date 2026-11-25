@@ -16,13 +16,14 @@ import { TotpSetup } from './Auth.tsx';
 
 export function SettingsLayout() {
   const { t } = useI18n();
-  const { can, sees } = useSession();
+  const { can, sees, isOwner } = useSession();
   const tabs = [
     can('users', 'view') && { to: 'users', label: t('settings.users') },
     can('roles', 'view') && { to: 'roles', label: t('settings.roles') },
     { to: 'security', label: t('settings.security') },
     can('settings', 'view') && { to: 'types', label: t('settings.types') },
     can('settings', 'view') && sees('seeMerchants') && { to: 'merchants', label: t('settings.merchants') },
+    isOwner && { to: 'data', label: t('set.data') },
   ].filter(Boolean) as { to: string; label: string }[];
   return (
     <div className="page">
@@ -360,7 +361,7 @@ const EMPTY: Permissions = sanitizePermissions({ functions: {} });
 
 export function RoleEditor() {
   const { t } = useI18n();
-  const { can, me, refresh } = useSession();
+  const { can, me, refresh, isOwner } = useSession();
   const toast = useToast();
   const nav = useNavigate();
   const { id } = useParams();
@@ -434,7 +435,7 @@ export function RoleEditor() {
             ‹ {t('back')}
           </button>
           <span style={{ flex: 1 }} />
-          {!readOnly && !isNew && role && role.userCount === 0 && (
+          {isOwner && !readOnly && !isNew && role && role.userCount === 0 && (
             <button className="btn danger" onClick={remove}>
               {t('delete')}
             </button>

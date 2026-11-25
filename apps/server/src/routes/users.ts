@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { MODULES, VISIBILITY, type Permissions, type Role, sanitizePermissions } from '@mwc/shared';
-import { Api, actor, perm, type UserRow } from '../http.ts';
+import { Api, OWNER, actor, perm, type UserRow } from '../http.ts';
 import { nowIso, type DB } from '../db/registry.ts';
 import { badRequest, conflict, forbidden, notFound } from '../errors.ts';
 import { audit, diff } from '../services/audit.ts';
@@ -254,7 +254,7 @@ export function mountUsers(api: Api) {
     return getRole(db, role.id);
   });
 
-  api.delete('/roles/:id', perm('roles', 'manage'), (req) => {
+  api.delete('/roles/:id', OWNER, (req) => {
     const db = req.ctx.db!;
     const role = getRole(db, Number(req.params.id));
     if (!role) throw notFound();

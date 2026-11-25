@@ -62,11 +62,14 @@ export type Guard =
   /** Signed in and fully verified. */
   | { kind: 'auth' }
   /** Signed in, verified, and role has this permission. */
-  | { kind: 'perm'; module: Module; action: string };
+  | { kind: 'perm'; module: Module; action: string }
+  /** Signed in, verified, and the Owner role (all deleting, merging, clearing). */
+  | { kind: 'owner' };
 
 export const PUBLIC: Guard = { kind: 'public' };
 export const SESSION: Guard = { kind: 'session' };
 export const AUTH: Guard = { kind: 'auth' };
+export const OWNER: Guard = { kind: 'owner' };
 export const perm = (module: Module, action: string): Guard => ({ kind: 'perm', module, action });
 
 export interface RouteDef {
@@ -106,6 +109,10 @@ function enforce(req: Request, g: Guard) {
   if (session.client === 'web' && !role.permissions.access.backOffice) throw forbidden('noBackOffice');
   if (session.client === 'mobile' && !role.permissions.access.mobile) throw forbidden('noMobile');
   if (g.kind === 'auth') return;
+  if (g.kind === 'owner') {
+    if (!role.isOwner) throw forbidden('ownerOnly');
+    return;
+  }
   if (!can(role.permissions, g.module, g.action)) throw forbidden();
 }
 

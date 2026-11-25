@@ -446,6 +446,7 @@ One-click import of a MyWines database (`mywines.db` + `photos/`):
 | 14 | Online payment, checkout and final pricing moved to Release 2; Release 1 billing is manual | 2026-11-25 |
 | 15 | Owner keeps "Export my data" while locked | 2026-11-25 |
 | 16 | MyWines migration (M2) moves inventory, storage, prices, lists, photos, stocktakes, users and the change log now; customers, addresses and orders follow with M4 from a copy of the MyWines database kept in the workspace. Migration only into an empty workspace; ids kept so LOCKER:/RACK: labels still scan | 2026-11-25 |
+| 17 | All deleting is Owner-only (MyWines had no roles): delete wine, photo, list, cellar/locker/rack, role, merchant, wine type, remembered import matches; merge merchants / wine types; clear data (typed phrase + password, automatic backup, numbers not reused); change-log retention 3/6/12 months or forever. "Delete" is no longer a role permission. The change log stays append-only apart from Owner clear / retention, each of which leaves an entry | 2026-11-25 |
 
 ## 19. Open questions
 1. Market-price data: stay with manual + price helper, or budget for a licensed feed?

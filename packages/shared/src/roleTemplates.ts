@@ -25,11 +25,11 @@ export const ROLE_TEMPLATES: RoleTemplate[] = [
     isOwner: false,
     permissions: {
       functions: {
-        inventory: ['view', 'create', 'edit', 'delete'],
-        locations: ['view', 'edit', 'delete'],
+        inventory: ['view', 'create', 'edit'],
+        locations: ['view', 'edit'],
         prices: ['view', 'edit'],
         orders: ['view', 'create', 'edit', 'confirm', 'ship', 'cancel'],
-        customers: ['view', 'create', 'edit', 'delete'],
+        customers: ['view', 'create', 'edit'],
         catalogs: ['view', 'edit'],
         reports: ['view'],
         importExport: ['import', 'export'],

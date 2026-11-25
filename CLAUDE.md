@@ -24,7 +24,8 @@ Vitest + Playwright.
 
 ## How the server is built (M0)
 - Routes are declared with the `Api` helper in `apps/server/src/http.ts` with a guard
-  (`PUBLIC`, `SESSION`, `AUTH`, `perm(module, action)`). `test/permissions.test.ts` walks every
+  (`PUBLIC`, `SESSION`, `AUTH`, `perm(module, action)`, `OWNER`). Every DELETE route, merge and
+  data-clearing route uses `OWNER` (decision 17); the permissions test enforces it. `test/permissions.test.ts` walks every
   registered route, so new endpoints are covered automatically.
 - Errors are `ApiError(status, code)`; the web app shows `err.<code>` from `packages/ui/src/i18n`.
   `test/i18n.test.ts` fails if a change-log action or error code has no zh-TW/en label.

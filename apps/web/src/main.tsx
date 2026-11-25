@@ -10,6 +10,7 @@ import { ComingSoon, Overview } from './pages/Overview.tsx';
 import { RoleEditor, Roles, Security, SettingsIndex, SettingsLayout, Users } from './pages/Settings.tsx';
 import { Audit } from './pages/Audit.tsx';
 import { ImportPage } from './pages/Import.tsx';
+import { DataSettings } from './pages/Data.tsx';
 import { ListDetailPage, ListsPage } from './pages/Lists.tsx';
 import { LabelsPage, PrintLabelsPage } from './pages/Labels.tsx';
 import { StocktakeReportPage, StocktakesPage } from './pages/Stocktakes.tsx';
@@ -83,6 +84,7 @@ function App() {
           <Route path="security" element={<Security />} />
           <Route path="types" element={<TypesSettings />} />
           <Route path="merchants" element={<MerchantsSettings />} />
+          <Route path="data" element={<DataSettings />} />
         </Route>
         <Route path="more" element={<More />} />
         <Route path="*" element={<ComingSoon />} />

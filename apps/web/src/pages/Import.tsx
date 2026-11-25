@@ -453,6 +453,7 @@ function PreviewView(props: {
 
 function Aliases() {
   const { t } = useI18n();
+  const { isOwner } = useSession();
   const [rows, setRows] = useState<{ field: string; alias: string; canonical: string }[] | null>(null);
   const load = () =>
     api<typeof rows>('/import/aliases')
@@ -482,9 +483,11 @@ function Aliases() {
                   {r.alias} → <b>{r.canonical}</b>
                 </td>
                 <td className="num">
-                  <button className="btn ghost sm" onClick={() => forget(r.field, r.alias)}>
-                    {t('imp.forget')}
-                  </button>
+                  {isOwner && (
+                    <button className="btn ghost sm" onClick={() => forget(r.field, r.alias)}>
+                      {t('imp.forget')}
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

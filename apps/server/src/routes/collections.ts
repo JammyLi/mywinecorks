@@ -5,7 +5,7 @@ import { randomBytes } from 'node:crypto';
 import ExcelJS from 'exceljs';
 import { z } from 'zod';
 import { LABEL_KINDS, LABEL_PRESETS, decimals, fromMinor, sees, type Permissions } from '@mwc/shared';
-import { AUTH, Api, actor, perm } from '../http.ts';
+import { AUTH, Api, OWNER, actor, perm } from '../http.ts';
 import { nowIso, type DB } from '../db/registry.ts';
 import { badRequest, notFound } from '../errors.ts';
 import { audit } from '../services/audit.ts';
@@ -250,7 +250,7 @@ export function mountCollections(api: Api) {
     return { ok: true };
   });
 
-  api.delete('/lists/:id', perm('inventory', 'view'), (req) => {
+  api.delete('/lists/:id', OWNER, (req) => {
     const db = req.ctx.db!;
     const l = db.prepare('SELECT * FROM lists WHERE id = ?').get(Number(req.params.id)) as
       { id: number; name: string } | undefined;
@@ -556,7 +556,7 @@ export function mountCollections(api: Api) {
     return { ok: true };
   });
 
-  api.delete('/photos/:id', perm('inventory', 'edit'), (req) => {
+  api.delete('/photos/:id', OWNER, (req) => {
     const db = req.ctx.db!;
     const p = db
       .prepare(

@@ -11,6 +11,8 @@ interface SessionCtx {
   refresh: () => Promise<void>;
   can: (m: Module, action: string) => boolean;
   sees: (v: Visibility) => boolean;
+  /** Deleting, merging and clearing data are for the Owner only. */
+  isOwner: boolean;
 }
 const Ctx = createContext<SessionCtx | null>(null);
 
@@ -44,6 +46,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     refresh,
     can: (m, a) => canP(me?.permissions, m, a),
     sees: (v) => seesP(me?.permissions, v),
+    isOwner: !!me?.role.isOwner,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

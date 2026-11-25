@@ -192,7 +192,7 @@ function LocationDialog({
   onDone: () => void;
 }) {
   const { t } = useI18n();
-  const { can } = useSession();
+  const { can, isOwner } = useSession();
   const it = target.item as Record<string, unknown> | undefined;
   const [name, setName] = useState(String(it?.name ?? it?.code ?? ''));
   const [address, setAddress] = useState(String(it?.address ?? ''));
@@ -230,7 +230,7 @@ function LocationDialog({
       onClose={onClose}
       footer={
         <>
-          {it && can('locations', 'delete') && (
+          {it && isOwner && (
             <button className="btn danger" style={{ marginRight: 'auto' }} onClick={del}>
               {t('delete')}
             </button>
@@ -636,9 +636,77 @@ export function PricesPage() {
 
 // ---------------------------------------------------------------- settings: types & merchants
 
+/** Owner only: merge one merchant / wine type into another. */
+function MergeDialog(props: {
+  name: string;
+  options: { value: string; label: string }[];
+  onMerge: (into: string) => Promise<unknown>;
+  onClose: () => void;
+}) {
+  const { t } = useI18n();
+  const [into, setInto] = useState('');
+  const [err, setErr] = useState<unknown>(null);
+  return (
+    <Dialog
+      title={t('merge.title', { name: props.name })}
+      onClose={props.onClose}
+      footer={
+        <>
+          <button className="btn" onClick={props.onClose}>
+            {t('cancel')}
+          </button>
+          <button
+            className="btn danger"
+            disabled={!into}
+            onClick={async () => {
+              try {
+                await props.onMerge(into);
+                props.onClose();
+              } catch (e) {
+                setErr(e);
+              }
+            }}
+          >
+            {t('merge.btn')}
+          </button>
+        </>
+      }
+    >
+      <select className="input" value={into} onChange={(e) => setInto(e.target.value)} autoFocus>
+        <option value="">{t('dest.choose')}</option>
+        {props.options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      <ErrorBox error={err} />
+    </Dialog>
+  );
+}
+
+function OwnerActions(props: { onMerge: () => void; onDelete?: () => void }) {
+  const { t } = useI18n();
+  return (
+    <td className="num" onClick={(e) => e.stopPropagation()} style={{ whiteSpace: 'nowrap' }}>
+      <button className="btn sm" onClick={props.onMerge}>
+        {t('merge.btn')}
+      </button>{' '}
+      {props.onDelete && (
+        <button className="btn sm danger" onClick={props.onDelete}>
+          {t('delete')}
+        </button>
+      )}
+    </td>
+  );
+}
+
 export function TypesSettings() {
   const { t } = useI18n();
-  const { can } = useSession();
+  const toast = useToast();
+  const { can, isOwner } = useSession();
+  const [merging, setMerging] = useState<{ code: string; zh: string } | null>(null);
+  const [rowErr, setRowErr] = useState<unknown>(null);
   const { data, reload } = useApi<{ code: string; zh: string; en: string; mapped: number }[]>('/wine-types');
   const [edit, setEdit] = useState<{ code: string; zh: string; en: string; isNew: boolean } | null>(null);
   const [err, setErr] = useState<unknown>(null);
@@ -674,6 +742,7 @@ export function TypesSettings() {
             <th>{t('f.code')}</th>
             <th>{t('f.zh')}</th>
             <th>{t('f.en')}</th>
+            {isOwner && <th />}
           </tr>
         </thead>
         <tbody>
@@ -691,10 +760,40 @@ export function TypesSettings() {
                 {!x.mapped && <span className="tag warn"> {t('types.unmapped')}</span>}
               </td>
               <td>{x.en}</td>
+              {isOwner && (
+                <OwnerActions
+                  onMerge={() => setMerging(x)}
+                  onDelete={async () => {
+                    setRowErr(null);
+                    try {
+                      await api(`/wine-types/${encodeURIComponent(x.code)}`, { method: 'DELETE' });
+                      toast(t('saved'));
+                      reload();
+                    } catch (e) {
+                      setRowErr(e);
+                    }
+                  }}
+                />
+              )}
             </tr>
           ))}
         </tbody>
       </table>
+      <ErrorBox error={rowErr} />
+      {merging && data && (
+        <MergeDialog
+          name={`${merging.code} ${merging.zh}`}
+          options={data
+            .filter((y) => y.code !== merging.code)
+            .map((y) => ({ value: y.code, label: `${y.code} ${y.zh}` }))}
+          onMerge={async (into) => {
+            await api(`/wine-types/${encodeURIComponent(merging.code)}/merge`, { body: { into } });
+            toast(t('merge.done'));
+            reload();
+          }}
+          onClose={() => setMerging(null)}
+        />
+      )}
       {edit && (
         <Dialog
           title={edit.isNew ? t('types.add') : edit.code}
@@ -742,7 +841,10 @@ export function TypesSettings() {
 
 export function MerchantsSettings() {
   const { t } = useI18n();
-  const { can } = useSession();
+  const toast = useToast();
+  const { can, isOwner } = useSession();
+  const [merging, setMerging] = useState<{ id: number; name: string } | null>(null);
+  const [rowErr, setRowErr] = useState<unknown>(null);
   const { data, reload } = useApi<
     {
       id: number;
@@ -785,6 +887,7 @@ export function MerchantsSettings() {
             <th>{t('f.contact')}</th>
             <th>{t('f.phone')}</th>
             <th className="num">{t('merchants.lots')}</th>
+            {isOwner && <th />}
           </tr>
         </thead>
         <tbody>
@@ -794,10 +897,44 @@ export function MerchantsSettings() {
               <td>{m.contact ?? '—'}</td>
               <td>{m.phone ?? '—'}</td>
               <td className="num">{m.lots}</td>
+              {isOwner && (
+                <OwnerActions
+                  onMerge={() => setMerging(m)}
+                  onDelete={
+                    m.lots
+                      ? undefined
+                      : async () => {
+                          setRowErr(null);
+                          try {
+                            await api(`/merchants/${m.id}`, { method: 'DELETE' });
+                            toast(t('saved'));
+                            reload();
+                          } catch (e) {
+                            setRowErr(e);
+                          }
+                        }
+                  }
+                />
+              )}
             </tr>
           ))}
         </tbody>
       </table>
+      <ErrorBox error={rowErr} />
+      {merging && data && (
+        <MergeDialog
+          name={merging.name}
+          options={data
+            .filter((y) => y.id !== merging.id)
+            .map((y) => ({ value: String(y.id), label: y.name }))}
+          onMerge={async (into) => {
+            await api(`/merchants/${merging.id}/merge`, { body: { into: Number(into) } });
+            toast(t('merge.done'));
+            reload();
+          }}
+          onClose={() => setMerging(null)}
+        />
+      )}
       {adding && (
         <Dialog
           title={t('merchants.add')}

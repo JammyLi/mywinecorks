@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { toMinor } from '@mwc/shared';
-import { Api, actor, perm } from '../http.ts';
+import { Api, OWNER, actor, perm } from '../http.ts';
 import { nowIso, type DB } from '../db/registry.ts';
 import { badRequest, conflict, forbidden, notFound } from '../errors.ts';
 import { audit, diff } from '../services/audit.ts';
@@ -147,7 +147,7 @@ export function mountLocations(api: Api) {
     return { changed: Object.keys(changes).length };
   });
 
-  api.delete('/cellars/:id', perm('locations', 'delete'), (req) => {
+  api.delete('/cellars/:id', OWNER, (req) => {
     const db = req.ctx.db!;
     const id = Number(req.params.id);
     const old = db.prepare('SELECT * FROM cellars WHERE id = ?').get(id) as { name: string } | undefined;
@@ -224,7 +224,7 @@ export function mountLocations(api: Api) {
     return { changed: Object.keys(changes).length };
   });
 
-  api.delete('/lockers/:id', perm('locations', 'delete'), (req) => {
+  api.delete('/lockers/:id', OWNER, (req) => {
     const db = req.ctx.db!;
     const id = Number(req.params.id);
     const old = db.prepare('SELECT * FROM lockers WHERE id = ?').get(id) as
@@ -309,7 +309,7 @@ export function mountLocations(api: Api) {
     return { changed: Object.keys(changes).length };
   });
 
-  api.delete('/racks/:id', perm('locations', 'delete'), (req) => {
+  api.delete('/racks/:id', OWNER, (req) => {
     const db = req.ctx.db!;
     const id = Number(req.params.id);
     const old = db.prepare('SELECT * FROM racks WHERE id = ?').get(id) as

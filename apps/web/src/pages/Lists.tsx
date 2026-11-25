@@ -83,7 +83,7 @@ interface ListDetail {
 export function ListDetailPage() {
   const { id = '' } = useParams();
   const { t } = useI18n();
-  const { can } = useSession();
+  const { can, isOwner } = useSession();
   const f = useFmt();
   const nav = useNavigate();
   const toast = useToast();
@@ -146,9 +146,11 @@ export function ListDetailPage() {
           <button className="btn" onClick={() => setDlg('rename')}>
             {t('edit')}
           </button>
-          <button className="btn danger" onClick={() => setDlg('delete')}>
-            {t('delete')}
-          </button>
+          {isOwner && (
+            <button className="btn danger" onClick={() => setDlg('delete')}>
+              {t('delete')}
+            </button>
+          )}
         </div>
       </div>
       <div className="card" style={{ padding: 0 }}>
