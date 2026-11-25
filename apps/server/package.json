@@ -1,0 +1,34 @@
+{
+  "name": "@mwc/server",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=.env src/index.ts",
+    "start": "tsx src/index.ts",
+    "create-tenant": "tsx --env-file-if-exists=.env src/cli/create-tenant.ts",
+    "test": "vitest run",
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@mwc/shared": "workspace:*",
+    "@node-rs/argon2": "^2.0.2",
+    "better-sqlite3": "^12.4.0",
+    "cookie-parser": "^1.4.7",
+    "express": "^5.1.0",
+    "otpauth": "^9.3.0",
+    "qrcode": "^1.5.4",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/cookie-parser": "^1.4.8",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.0",
+    "@types/qrcode": "^1.5.5",
+    "@types/supertest": "^6.0.2",
+    "supertest": "^7.0.0",
+    "tsx": "^4.19.0",
+    "vitest": "^3.2.0"
+  }
+}
