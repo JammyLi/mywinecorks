@@ -78,6 +78,7 @@ export function Users() {
   const [roles, setRoles] = useState<RoleItem[]>([]);
   const [edit, setEdit] = useState<UserItem | 'new' | null>(null);
   const [link, setLink] = useState<string | null>(null);
+  const [linkIsReset, setLinkIsReset] = useState(false);
   const manage = can('users', 'manage');
 
   const load = async () => {
@@ -90,6 +91,7 @@ export function Users() {
 
   const newLink = async (u: UserItem) => {
     try {
+      setLinkIsReset(!u.invited);
       setLink((await api<{ setupUrl: string }>(`/users/${u.id}/setup-link`, { method: 'POST' })).setupUrl);
     } catch (e) {
       toast(errText(t, e));
@@ -146,7 +148,7 @@ export function Users() {
                 {manage && (
                   <td className="num" onClick={(e) => e.stopPropagation()}>
                     <button className="btn sm" onClick={() => newLink(u)}>
-                      {t('users.resetLink')}
+                      {t(u.invited ? 'users.inviteLink' : 'users.resetPwLink')}
                     </button>
                   </td>
                 )}
@@ -163,8 +165,10 @@ export function Users() {
           onSaved={(url) => {
             setEdit(null);
             load();
-            if (url) setLink(url);
-            else toast(t('saved'));
+            if (url) {
+              setLinkIsReset(false);
+              setLink(url);
+            } else toast(t('saved'));
           }}
         />
       )}
@@ -178,7 +182,7 @@ export function Users() {
             </button>
           }
         >
-          <p style={{ margin: 0 }}>{t('users.setupLinkIntro')}</p>
+          <p style={{ margin: 0 }}>{t(linkIsReset ? 'users.resetLinkIntro' : 'users.setupLinkIntro')}</p>
           <input className="input code" readOnly value={link} onFocus={(e) => e.target.select()} />
           <button className="btn" onClick={() => navigator.clipboard?.writeText(link).then(() => toast('✓'))}>
             {t('copy')}

@@ -149,17 +149,19 @@ in sequence, M9 can slot in whenever a break from the app is useful.
 
 All cloud services (portal-service, ai-gateway, HQ, license API, website) run locally on
 separate ports during development, so the full self-hosted ↔ cloud flow can be tested on one
-Mac. One command — `pnpm dev` — starts everything.
+Mac. One command — `pnpm dev` — starts everything. Ports avoid 3000/3200/5173, which MyWines
+and other common tools use.
 
 | Service | Local URL |
 |---|---|
-| app server + staff web | http://localhost:3000 · phones: https://<Mac IP>:3443 |
-| portal | http://localhost:3100 |
-| portal-service | http://localhost:3101 |
-| hq | http://localhost:3200 |
-| license API (in hq) | http://localhost:3200/api/license |
-| ai-gateway | http://localhost:3300 |
-| website | http://localhost:4321 |
+| app server (API) | http://localhost:3500 · phones: https://<Mac IP>:3543 |
+| staff web (dev) | http://localhost:5500 |
+| portal | http://localhost:3600 |
+| portal-service | http://localhost:3601 |
+| hq | http://localhost:3700 |
+| license API (in hq) | http://localhost:3700/api/license |
+| ai-gateway | http://localhost:3800 |
+| website | http://localhost:4500 |
 | Mailpit | http://localhost:8025 |
 
 ## 8. Ways of working

@@ -8,7 +8,8 @@
     "start": "tsx src/index.ts",
     "create-tenant": "tsx --env-file-if-exists=.env src/cli/create-tenant.ts",
     "test": "vitest run",
-    "typecheck": "tsc -p ."
+    "typecheck": "tsc -p .",
+    "reset-password": "tsx --env-file-if-exists=.env src/cli/reset-password.ts"
   },
   "dependencies": {
     "@mwc/shared": "workspace:*",
@@ -17,6 +18,7 @@
     "cookie-parser": "^1.4.7",
     "exceljs": "^4.4.0",
     "express": "^5.1.0",
+    "nodemailer": "^6.10.1",
     "otpauth": "^9.3.0",
     "qrcode": "^1.5.4",
     "zod": "^3.24.0"
@@ -27,6 +29,7 @@
     "@types/cookie-parser": "^1.4.8",
     "@types/express": "^5.0.0",
     "@types/node": "^22.10.0",
+    "@types/nodemailer": "^8.0.2",
     "@types/qrcode": "^1.5.5",
     "@types/supertest": "^6.0.2",
     "supertest": "^7.0.0",

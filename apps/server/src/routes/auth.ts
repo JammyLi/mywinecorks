@@ -8,6 +8,11 @@ import { MIN_PASSWORD, hashPassword, newToken, sha256, verifyPassword } from '..
 import { audit } from '../services/audit.ts';
 import { getRole, isAdminLike } from '../services/roles.ts';
 import { checkTotp, newTotpSecret, totpSetupInfo } from '../services/totp.ts';
+import { sendMail } from '../services/mail.ts';
+import { issueSetupToken, setupUrl, SETUP_TOKEN_DAYS } from '../services/workspace.ts';
+
+/** At most 3 reset emails per address per hour. */
+const forgotLog = new Map<string, number[]>();
 
 export const MAX_FAILED = 5;
 export const LOCK_MINUTES = 15;
@@ -158,6 +163,55 @@ export function mountAuth(api: Api) {
     req.ctx.role = role;
     req.ctx.session = { tokenHash: sha256(token), client: body.client, mustEnrollTotp: mustEnroll };
     return meOf(req);
+  });
+
+  /**
+   * "Forgot password?" — emails a one-time reset link when email is set up.
+   * Always answers the same way, so it never reveals whether an address has an account.
+   */
+  api.post('/auth/forgot', PUBLIC, async (req) => {
+    const body = z
+      .object({
+        workspace: z.string().trim().toLowerCase().optional(),
+        email: z.string().trim().toLowerCase().min(3),
+      })
+      .parse(req.body);
+    const { cfg } = req.ctx;
+    if (!cfg.smtpUrl) return { ok: true, email: false };
+    const ws = resolveWorkspace(req, body.workspace);
+    const key = `${ws?.tenant.slug}|${body.email}`;
+    const recent = (forgotLog.get(key) ?? []).filter((t) => t > Date.now() - 3600_000);
+    if (ws && recent.length < 3) {
+      forgotLog.set(key, [...recent, Date.now()]);
+      const user = ws.db.prepare('SELECT * FROM users WHERE email = ? AND active = 1').get(body.email) as
+        UserRow | undefined;
+      if (user) {
+        const link = setupUrl(
+          cfg.publicUrl,
+          ws.tenant.slug,
+          issueSetupToken(ws.db, user.id, user.pw_hash ? 'reset' : 'invite'),
+        );
+        const en = user.lang === 'en';
+        const subject = en ? 'Reset your MyWineCorks password' : '重設你的 MyWineCorks 密碼';
+        const text = en
+          ? `Someone asked to reset the password for ${user.email}.\n\nOpen this link to choose a new password (works once, valid ${SETUP_TOKEN_DAYS} days):\n${link}\n\nIf this wasn't you, ignore this email — your password stays the same.`
+          : `有人要求重設 ${user.email} 的密碼。\n\n請開啟以下連結設定新密碼（只能使用一次，${SETUP_TOKEN_DAYS} 天內有效）：\n${link}\n\n如果不是你本人，請忽略這封信，密碼不會改變。`;
+        const sent = await sendMail(cfg, user.email, subject, text);
+        audit(
+          ws.db,
+          { id: user.id, label: user.name || user.email, ip: req.ip },
+          {
+            category: 'auth',
+            action: 'resetRequested',
+            objType: 'user',
+            objId: user.id,
+            objLabel: user.email,
+            changes: { emailSent: sent },
+          },
+        );
+      }
+    }
+    return { ok: true, email: true };
   });
 
   api.post('/auth/logout', PUBLIC, (req, res) => {

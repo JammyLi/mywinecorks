@@ -555,6 +555,26 @@ export const en = {
   'f.firstBottle': 'First bottle',
   'f.lastBottle': 'Last bottle',
   'f.email': 'Email',
+  'audit.act.resetRequested': 'Password reset requested',
+  'forgot.link': 'Forgot password?',
+  'forgot.title': 'Reset your password',
+  'forgot.intro':
+    'Enter your email. If it belongs to an account, we will email you a link to choose a new password.',
+  'forgot.send': 'Send reset link',
+  'forgot.sent':
+    'If this email has an account, a reset link is on its way. Check your inbox (and spam folder). The link works once and expires in 7 days.',
+  'forgot.noEmailTitle': 'Ask for a reset link',
+  'forgot.noEmail1':
+    'This server does not send email. Ask your Owner or Admin to open Settings › Users, choose your name and click "Reset password link", then send you the link.',
+  'forgot.noEmail2':
+    'If you are the Owner and cannot sign in, run this in Terminal in the MyWineCorks folder on the server:',
+  'reset.title': 'Choose a new password',
+  'reset.intro': 'Choose a new password for your account. You will be signed out on other devices.',
+  'reset.done': 'Your password has been changed. Sign in with the new password.',
+  'users.inviteLink': 'Resend invitation link',
+  'users.resetPwLink': 'Reset password link',
+  'users.resetLinkIntro':
+    'Send this link to the user. It works once, expires in 7 days, and unlocks the account.',
 };
 
 export type Dict = typeof en;

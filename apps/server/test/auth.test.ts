@@ -109,3 +109,52 @@ describe('setup links and sign-in', () => {
     await b.get('/api/me').expect(401);
   });
 });
+
+describe('password reset', () => {
+  it('without email: forgot-password reveals nothing and sends nothing; an admin link resets and unlocks', async () => {
+    s = makeServer();
+    await setupAndLogin(s, s.ownerToken, 'owner@example.com');
+    const info = await request(s.app).get('/api/public/info').expect(200);
+    expect(info.body.email).toBe(false);
+    const r = await request(s.app).post('/api/auth/forgot').send({ email: 'owner@example.com' }).expect(200);
+    expect(r.body).toEqual({ ok: true, email: false });
+  });
+
+  it('with email: sends a one-time link (same answer for unknown addresses, max 3 per hour)', async () => {
+    const mail = await import('../src/services/mail.ts');
+    s = makeServer('selfhost', { SMTP_URL: 'test://' });
+    mail.useTestTransport();
+    mail.outbox.length = 0;
+    await setupAndLogin(s, s.ownerToken, 'owner@example.com');
+    // Lock the account with wrong passwords first.
+    for (let i = 0; i < 5; i++)
+      await request(s.app)
+        .post('/api/auth/login')
+        .send({ email: 'owner@example.com', password: 'nope-nope-nope' });
+    const unknown = await request(s.app)
+      .post('/api/auth/forgot')
+      .send({ email: 'nobody@example.com' })
+      .expect(200);
+    const known = await request(s.app)
+      .post('/api/auth/forgot')
+      .send({ email: 'OWNER@example.com' })
+      .expect(200);
+    expect(unknown.body).toEqual(known.body);
+    expect(mail.outbox).toHaveLength(1);
+    const link = mail.outbox[0].text.match(/http\S+/)![0];
+    const token = new URL(link).searchParams.get('t')!;
+    expect((await request(s.app).get(`/api/auth/setup?w=demo&t=${token}`)).body.purpose).toBe('reset');
+    await request(s.app)
+      .post('/api/auth/setup')
+      .send({ workspace: 'demo', token, password: 'brand-new-pass-1' })
+      .expect(200);
+    // Reset also unlocks the account.
+    await request(s.app)
+      .post('/api/auth/login')
+      .send({ email: 'owner@example.com', password: 'brand-new-pass-1' })
+      .expect(200);
+    for (let i = 0; i < 4; i++)
+      await request(s.app).post('/api/auth/forgot').send({ email: 'owner@example.com' });
+    expect(mail.outbox).toHaveLength(3);
+  });
+});

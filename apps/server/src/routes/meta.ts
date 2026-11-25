@@ -20,9 +20,15 @@ export function mountMeta(api: Api) {
               { value: string } | undefined
           )?.value ?? '{}',
         );
-      return { mode: cfg.mode, version: VERSION, workspace: t?.slug ?? null, company: company?.name ?? null };
+      return {
+        mode: cfg.mode,
+        version: VERSION,
+        workspace: t?.slug ?? null,
+        company: company?.name ?? null,
+        email: !!cfg.smtpUrl,
+      };
     }
-    return { mode: cfg.mode, version: VERSION, workspace: null, company: null };
+    return { mode: cfg.mode, version: VERSION, workspace: null, company: null, email: !!cfg.smtpUrl };
   });
 
   api.get('/meta/permissions', perm('roles', 'view'), () => ({

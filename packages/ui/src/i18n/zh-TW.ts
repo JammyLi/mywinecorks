@@ -543,4 +543,21 @@ export const zhTW: Dict = {
   'f.firstBottle': '第一瓶',
   'f.lastBottle': '最後一瓶',
   'f.email': 'Email',
+  'audit.act.resetRequested': '要求重設密碼',
+  'forgot.link': '忘記密碼？',
+  'forgot.title': '重設密碼',
+  'forgot.intro': '輸入你的 Email。如果有這個帳號，我們會寄出設定新密碼的連結。',
+  'forgot.send': '寄送重設連結',
+  'forgot.sent':
+    '如果這個 Email 有帳號，重設連結已寄出。請查看收件匣（和垃圾郵件）。連結只能使用一次，7 天後失效。',
+  'forgot.noEmailTitle': '請索取重設連結',
+  'forgot.noEmail1':
+    '這台伺服器沒有設定寄信功能。請擁有者或管理員到「設定 › 使用者」，在你的名字旁按「重設密碼連結」，再把連結傳給你。',
+  'forgot.noEmail2': '如果你是擁有者且無法登入，請在伺服器的 MyWineCorks 資料夾，用終端機執行：',
+  'reset.title': '設定新密碼',
+  'reset.intro': '為你的帳號設定新密碼。其他裝置會被登出。',
+  'reset.done': '密碼已更新，請用新密碼登入。',
+  'users.inviteLink': '重新產生邀請連結',
+  'users.resetPwLink': '重設密碼連結',
+  'users.resetLinkIntro': '把這個連結傳給使用者。只能使用一次，7 天後失效，並會解除帳號鎖定。',
 };

@@ -11,7 +11,7 @@ export const PW = 'correct-horse-9';
 
 export function makeServer(mode: Mode = 'selfhost', extra: Record<string, string> = {}) {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mwc-test-'));
-  const cfg = loadConfig({ MODE: mode, DATA_DIR: dataDir, PUBLIC_URL: 'http://localhost:5173', ...extra });
+  const cfg = loadConfig({ MODE: mode, DATA_DIR: dataDir, PUBLIC_URL: 'http://localhost:5500', ...extra });
   const { app, api, registry } = createApp(cfg);
   const ws = createWorkspace(registry, {
     slug: 'demo',

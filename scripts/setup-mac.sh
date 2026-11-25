@@ -66,18 +66,34 @@ else
 fi
 
 # 5. Start ------------------------------------------------------------------
+
+# Older settings used ports 3000 / 5173, which clash with MyWines and other tools → move to 3500 / 5500.
+ENV_FILE=apps/server/.env
+if [ -f "$ENV_FILE" ]; then
+  if grep -q '^PORT=3000$' "$ENV_FILE"; then sed -i '' 's/^PORT=3000$/PORT=3500/' "$ENV_FILE"; echo "Updated $ENV_FILE: PORT=3500"; fi
+  if grep -q 'localhost:5173' "$ENV_FILE"; then sed -i '' 's/localhost:5173/localhost:5500/' "$ENV_FILE"; echo "Updated $ENV_FILE: PUBLIC_URL uses port 5500"; fi
+fi
+# Stop early with a clear message if another program already uses our ports.
+API_PORT=$(grep -E '^PORT=' "$ENV_FILE" 2>/dev/null | cut -d= -f2); API_PORT=${API_PORT:-3500}
+for P in "$API_PORT" 5500; do
+  if lsof -nP -iTCP:"$P" -sTCP:LISTEN >/dev/null 2>&1; then
+    echo "Port $P is already in use by:"; lsof -nP -iTCP:"$P" -sTCP:LISTEN | tail -n +2 | awk '{print "  " $1 " (pid " $2 ")"}'
+    echo "Stop that program (or MyWineCorks if it is already running in another Terminal window) and try again."
+    exit 1
+  fi
+done
 echo
 IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || true)
 green "Starting MyWineCorks…"
-echo "  This Mac:          http://localhost:5173"
-[ -n "$IP" ] && echo "  Phone (same Wi-Fi): http://$IP:5173"
+echo "  This Mac:          http://localhost:5500"
+[ -n "$IP" ] && echo "  Phone (same Wi-Fi): http://$IP:5500"
 LINK=$(grep -Eo 'http://[^ ]+/setup\?[^ ]+' setup-link.txt 2>/dev/null | tail -1 || true)
 if [ -n "$LINK" ] && [ ! -f apps/server/data/.owner-ready ]; then
   echo "  First time? Open your setup link: $LINK"
   (sleep 6 && open "$LINK") >/dev/null 2>&1 &
   touch apps/server/data/.owner-ready
 else
-  (sleep 6 && open "http://localhost:5173") >/dev/null 2>&1 &
+  (sleep 6 && open "http://localhost:5500") >/dev/null 2>&1 &
 fi
 echo "  Stop with Ctrl+C. Next time just run: ./scripts/start.sh"
 echo

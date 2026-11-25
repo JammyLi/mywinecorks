@@ -130,6 +130,9 @@ export function Login() {
         <button className="btn primary" disabled={busy}>
           {t('signIn')}
         </button>
+        <Link to="/forgot" className="small" style={{ alignSelf: 'center' }}>
+          {t('forgot.link')}
+        </Link>
       </form>
     </AuthFrame>
   );
@@ -174,10 +177,10 @@ export function Setup() {
 
   return (
     <AuthFrame>
-      <h1>{t('setupTitle')}</h1>
+      <h1>{t(info?.purpose === 'reset' ? 'reset.title' : 'setupTitle')}</h1>
       {done ? (
         <>
-          <div className="alert ok">{t('setupDone')}</div>
+          <div className="alert ok">{t(info?.purpose === 'reset' ? 'reset.done' : 'setupDone')}</div>
           <Link className="btn primary" to="/login">
             {t('signIn')}
           </Link>
@@ -185,7 +188,7 @@ export function Setup() {
       ) : info ? (
         <form className="stack" onSubmit={submit}>
           <p className="muted" style={{ margin: 0 }}>
-            {t('setupIntro')}
+            {t(info?.purpose === 'reset' ? 'reset.intro' : 'setupIntro')}
           </p>
           <Field label={t('email')}>
             <input className="input" value={info.email} readOnly autoComplete="username" />
@@ -281,6 +284,81 @@ export function Enroll() {
           nav('/', { replace: true });
         }}
       />
+    </AuthFrame>
+  );
+}
+
+export function Forgot() {
+  const { t } = useI18n();
+  const [info, setInfo] = useState<{ mode: string; email: boolean } | null>(null);
+  const [workspace, setWorkspace] = useState(() => localStorage.getItem('mwc.workspace') ?? '');
+  const [email, setEmail] = useState('');
+  const [sent, setSent] = useState(false);
+  const [err, setErr] = useState('');
+  useEffect(() => {
+    api<{ mode: string; email: boolean }>('/public/info')
+      .then(setInfo)
+      .catch(() => {});
+  }, []);
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setErr('');
+    try {
+      await api('/auth/forgot', { body: { workspace: workspace || undefined, email } });
+      setSent(true);
+    } catch (ex) {
+      setErr(errText(t, ex));
+    }
+  };
+  return (
+    <AuthFrame>
+      <h1>{t('forgot.title')}</h1>
+      {!info ? null : !info.email ? (
+        <div className="stack">
+          <b>{t('forgot.noEmailTitle')}</b>
+          <p style={{ margin: 0 }}>{t('forgot.noEmail1')}</p>
+          <p className="muted small" style={{ margin: 0 }}>
+            {t('forgot.noEmail2')}
+          </p>
+          <code className="code small" style={{ background: 'var(--ground)', padding: 10, borderRadius: 8 }}>
+            ./scripts/reset-password.sh you@example.com
+          </code>
+        </div>
+      ) : sent ? (
+        <div className="alert ok">{t('forgot.sent')}</div>
+      ) : (
+        <form className="stack" onSubmit={submit}>
+          <p className="muted" style={{ margin: 0 }}>
+            {t('forgot.intro')}
+          </p>
+          {info.mode === 'cloud' && (
+            <Field label={t('workspace')}>
+              <input
+                className="input"
+                value={workspace}
+                onChange={(e) => setWorkspace(e.target.value.trim().toLowerCase())}
+                required
+              />
+            </Field>
+          )}
+          <Field label={t('email')}>
+            <input
+              className="input"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="username"
+              autoFocus
+              required
+            />
+          </Field>
+          {err && <div className="alert err">{err}</div>}
+          <button className="btn primary">{t('forgot.send')}</button>
+        </form>
+      )}
+      <Link to="/login" className="small" style={{ alignSelf: 'center' }}>
+        ‹ {t('signIn')}
+      </Link>
     </AuthFrame>
   );
 }

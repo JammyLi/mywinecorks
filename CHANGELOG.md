@@ -6,6 +6,9 @@
 - Cost and merchant hidden from roles that may not see them; cellar scope and role limits enforced.
 - **Excel import** for inventory, storage, market prices and merchants: example files in Chinese
   or English, preview with problems and merge suggestions before saving, reads MyWines Excel files.
+- Ports moved to 3500 (server) / 5500 (web) to avoid MyWines; scripts migrate old settings.
+- Password reset: "Forgot password?" email link (when SMTP is set), admin reset links, and
+  `scripts/reset-password.sh` for a locked-out Owner. Resetting also unlocks the account.
 
 ## 0.0.1 — M0 Foundations (2026-11-25)
 - Monorepo: pnpm workspaces, TypeScript, Vitest, GitHub Actions CI.

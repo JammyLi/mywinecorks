@@ -5,7 +5,7 @@ import { I18nProvider, ToastProvider, useI18n } from '@mwc/ui';
 import '@mwc/ui/styles.css';
 import { SessionProvider, useSession, useTheme } from './session.tsx';
 import { Layout, More } from './Layout.tsx';
-import { Enroll, Login, Setup } from './pages/Auth.tsx';
+import { Enroll, Forgot, Login, Setup } from './pages/Auth.tsx';
 import { ComingSoon, Overview } from './pages/Overview.tsx';
 import { RoleEditor, Roles, Security, SettingsIndex, SettingsLayout, Users } from './pages/Settings.tsx';
 import { Audit } from './pages/Audit.tsx';
@@ -37,6 +37,7 @@ function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/setup" element={<Setup />} />
+      <Route path="/forgot" element={<Forgot />} />
       <Route path="/enroll" element={<Enroll />} />
       <Route
         element={
