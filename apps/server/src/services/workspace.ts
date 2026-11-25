@@ -29,10 +29,23 @@ export function createWorkspace(registry: Registry, w: NewWorkspace) {
     ownerId = Number(
       db
         .prepare('INSERT INTO users (email, name, role_id, lang, created_at) VALUES (?, ?, ?, ?, ?)')
-        .run(w.ownerEmail.trim().toLowerCase(), w.ownerName ?? '', ownerRoleId(db), w.lang, nowIso()).lastInsertRowid,
+        .run(w.ownerEmail.trim().toLowerCase(), w.ownerName ?? '', ownerRoleId(db), w.lang, nowIso())
+        .lastInsertRowid,
     );
-    audit(db, sys, { category: 'settings', action: 'workspaceCreated', objType: 'workspace', objId: w.slug, objLabel: w.name });
-    audit(db, sys, { category: 'users', action: 'userInvited', objType: 'user', objId: ownerId, objLabel: w.ownerEmail });
+    audit(db, sys, {
+      category: 'settings',
+      action: 'workspaceCreated',
+      objType: 'workspace',
+      objId: w.slug,
+      objLabel: w.name,
+    });
+    audit(db, sys, {
+      category: 'users',
+      action: 'userInvited',
+      objType: 'user',
+      objId: ownerId,
+      objLabel: w.ownerEmail,
+    });
   })();
   const token = issueSetupToken(db, ownerId, 'invite');
   return { db, ownerId, token };
@@ -42,7 +55,10 @@ export function createWorkspace(registry: Registry, w: NewWorkspace) {
 export function issueSetupToken(db: DB, userId: number, purpose: 'invite' | 'reset'): string {
   const token = newToken(24);
   const exp = new Date(Date.now() + SETUP_TOKEN_DAYS * 86400_000).toISOString();
-  db.prepare('UPDATE setup_tokens SET used_at = ? WHERE user_id = ? AND used_at IS NULL').run(nowIso(), userId);
+  db.prepare('UPDATE setup_tokens SET used_at = ? WHERE user_id = ? AND used_at IS NULL').run(
+    nowIso(),
+    userId,
+  );
   db.prepare('INSERT INTO setup_tokens (token_hash, user_id, purpose, expires_at) VALUES (?, ?, ?, ?)').run(
     sha256(token),
     userId,

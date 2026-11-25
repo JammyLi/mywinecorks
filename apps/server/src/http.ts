@@ -127,10 +127,17 @@ export function sessionMiddleware(cfg: Config, registry: Registry) {
         const db = registry.tenantDb(slug);
         const tokenHash = sha256(token);
         const s = db.prepare('SELECT * FROM sessions WHERE token_hash = ?').get(tokenHash) as
-          | { user_id: number; client: string; must_enroll_totp: number; expires_at: string; last_seen: string }
+          | {
+              user_id: number;
+              client: string;
+              must_enroll_totp: number;
+              expires_at: string;
+              last_seen: string;
+            }
           | undefined;
         if (s && s.expires_at > nowIso()) {
-          const user = db.prepare('SELECT * FROM users WHERE id = ? AND active = 1').get(s.user_id) as UserRow | undefined;
+          const user = db.prepare('SELECT * FROM users WHERE id = ? AND active = 1').get(s.user_id) as
+            UserRow | undefined;
           const role = user && getRole(db, user.role_id);
           if (user && role) {
             req.ctx = {
@@ -139,12 +146,20 @@ export function sessionMiddleware(cfg: Config, registry: Registry) {
               db,
               user,
               role,
-              session: { tokenHash, client: s.client === 'mobile' ? 'mobile' : 'web', mustEnrollTotp: !!s.must_enroll_totp },
+              session: {
+                tokenHash,
+                client: s.client === 'mobile' ? 'mobile' : 'web',
+                mustEnrollTotp: !!s.must_enroll_totp,
+              },
             };
             // Sliding expiry, written at most once an hour.
             if (Date.now() - Date.parse(s.last_seen) > 3600_000) {
               const exp = new Date(Date.now() + SESSION_DAYS * 86400_000).toISOString();
-              db.prepare('UPDATE sessions SET last_seen = ?, expires_at = ? WHERE token_hash = ?').run(nowIso(), exp, tokenHash);
+              db.prepare('UPDATE sessions SET last_seen = ?, expires_at = ? WHERE token_hash = ?').run(
+                nowIso(),
+                exp,
+                tokenHash,
+              );
             }
           }
         }

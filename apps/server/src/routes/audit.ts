@@ -20,7 +20,9 @@ export function mountAudit(api: Api) {
       args.push(`%${q.q}%`, `%${q.q}%`, `%${q.q}%`);
     }
     const rows = req.ctx
-      .db!.prepare(`SELECT * FROM audit_log ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY id DESC LIMIT ?`)
+      .db!.prepare(
+        `SELECT * FROM audit_log ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY id DESC LIMIT ?`,
+      )
       .all(...args, q.limit) as Record<string, unknown>[];
     return rows.map((r) => ({ ...r, changes: r.changes ? JSON.parse(String(r.changes)) : null }));
   });

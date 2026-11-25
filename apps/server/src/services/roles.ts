@@ -39,12 +39,28 @@ export function listRoles(db: DB): (Role & { userCount: number })[] {
 
 /** Template role names are stored in the workspace language chosen at creation. */
 const TEMPLATE_NAMES: Record<string, Record<string, string>> = {
-  'zh-TW': { owner: '擁有者', admin: '管理員', manager: '經理／業務', employee: '員工', picker: '揀貨員', viewer: '檢視者／會計' },
-  en: { owner: 'Owner', admin: 'Admin', manager: 'Manager / Sales', employee: 'Employee', picker: 'Picker', viewer: 'Viewer / Accountant' },
+  'zh-TW': {
+    owner: '擁有者',
+    admin: '管理員',
+    manager: '經理／業務',
+    employee: '員工',
+    picker: '揀貨員',
+    viewer: '檢視者／會計',
+  },
+  en: {
+    owner: 'Owner',
+    admin: 'Admin',
+    manager: 'Manager / Sales',
+    employee: 'Employee',
+    picker: 'Picker',
+    viewer: 'Viewer / Accountant',
+  },
 };
 
 export function seedRoles(db: DB, lang: 'zh-TW' | 'en') {
-  const ins = db.prepare('INSERT INTO roles (name, template, is_owner, permissions, created_at) VALUES (?, ?, ?, ?, ?)');
+  const ins = db.prepare(
+    'INSERT INTO roles (name, template, is_owner, permissions, created_at) VALUES (?, ?, ?, ?, ?)',
+  );
   for (const t of ROLE_TEMPLATES) {
     ins.run(TEMPLATE_NAMES[lang][t.key], t.key, t.isOwner ? 1 : 0, JSON.stringify(t.permissions), nowIso());
   }

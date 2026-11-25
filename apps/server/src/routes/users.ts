@@ -38,7 +38,9 @@ const publicUser = (u: UserRow, roleName?: string) => ({
 function activeOwnerCount(db: DB, exceptUserId?: number) {
   return (
     db
-      .prepare('SELECT COUNT(*) n FROM users u JOIN roles r ON r.id = u.role_id WHERE r.is_owner = 1 AND u.active = 1 AND u.id <> ?')
+      .prepare(
+        'SELECT COUNT(*) n FROM users u JOIN roles r ON r.id = u.role_id WHERE r.is_owner = 1 AND u.active = 1 AND u.id <> ?',
+      )
       .get(exceptUserId ?? 0) as { n: number }
   ).n;
 }
@@ -90,7 +92,10 @@ export function mountUsers(api: Api) {
       });
     })();
     const u = db.prepare('SELECT * FROM users WHERE id = ?').get(id) as UserRow;
-    return { user: publicUser(u, role.name), setupUrl: setupUrl(req.ctx.cfg.publicUrl, req.ctx.tenant!.slug, token) };
+    return {
+      user: publicUser(u, role.name),
+      setupUrl: setupUrl(req.ctx.cfg.publicUrl, req.ctx.tenant!.slug, token),
+    };
   });
 
   api.patch('/users/:id', perm('users', 'manage'), (req) => {
@@ -105,7 +110,8 @@ export function mountUsers(api: Api) {
     const db = req.ctx.db!;
     const me = req.ctx.user!;
     const myRole = req.ctx.role!;
-    const u = db.prepare('SELECT * FROM users WHERE id = ?').get(Number(req.params.id)) as UserRow | undefined;
+    const u = db.prepare('SELECT * FROM users WHERE id = ?').get(Number(req.params.id)) as
+      UserRow | undefined;
     if (!u) throw notFound();
     const curRole = getRole(db, u.role_id)!;
     if (curRole.isOwner && !myRole.isOwner) throw forbidden('ownerLocked');
@@ -123,22 +129,25 @@ export function mountUsers(api: Api) {
       active: body.active === undefined ? u.active : body.active ? 1 : 0,
     };
     db.transaction(() => {
-      db.prepare('UPDATE users SET name = ?, role_id = ?, lang = ?, active = ?, updated_at = ? WHERE id = ?').run(
-        next.name,
-        next.role_id,
-        next.lang,
-        next.active,
-        nowIso(),
-        u.id,
-      );
+      db.prepare(
+        'UPDATE users SET name = ?, role_id = ?, lang = ?, active = ?, updated_at = ? WHERE id = ?',
+      ).run(next.name, next.role_id, next.lang, next.active, nowIso(), u.id);
       // Deactivation or a role change ends the user's sessions immediately.
-      if (next.active === 0 || next.role_id !== u.role_id) db.prepare('DELETE FROM sessions WHERE user_id = ?').run(u.id);
+      if (next.active === 0 || next.role_id !== u.role_id)
+        db.prepare('DELETE FROM sessions WHERE user_id = ?').run(u.id);
       const changes = diff(
         { name: u.name, role: curRole.name, lang: u.lang, active: !!u.active },
         { name: next.name, role: newRole.name, lang: next.lang, active: !!next.active },
       );
       if (Object.keys(changes).length)
-        audit(db, actor(req), { category: 'users', action: 'userUpdated', objType: 'user', objId: u.id, objLabel: u.email, changes });
+        audit(db, actor(req), {
+          category: 'users',
+          action: 'userUpdated',
+          objType: 'user',
+          objId: u.id,
+          objLabel: u.email,
+          changes,
+        });
     })();
     return publicUser(db.prepare('SELECT * FROM users WHERE id = ?').get(u.id) as UserRow, newRole.name);
   });
@@ -146,21 +155,36 @@ export function mountUsers(api: Api) {
   /** New one-time setup link (invite again or reset password). */
   api.post('/users/:id/setup-link', perm('users', 'manage'), (req) => {
     const db = req.ctx.db!;
-    const u = db.prepare('SELECT * FROM users WHERE id = ?').get(Number(req.params.id)) as UserRow | undefined;
+    const u = db.prepare('SELECT * FROM users WHERE id = ?').get(Number(req.params.id)) as
+      UserRow | undefined;
     if (!u) throw notFound();
     if (getRole(db, u.role_id)!.isOwner && !req.ctx.role!.isOwner) throw forbidden('ownerLocked');
     const token = issueSetupToken(db, u.id, u.pw_hash ? 'reset' : 'invite');
-    audit(db, actor(req), { category: 'users', action: 'setupLinkIssued', objType: 'user', objId: u.id, objLabel: u.email });
+    audit(db, actor(req), {
+      category: 'users',
+      action: 'setupLinkIssued',
+      objType: 'user',
+      objId: u.id,
+      objLabel: u.email,
+    });
     return { setupUrl: setupUrl(req.ctx.cfg.publicUrl, req.ctx.tenant!.slug, token) };
   });
 
   api.post('/users/:id/sign-out-all', perm('users', 'manage'), (req) => {
     const db = req.ctx.db!;
-    const u = db.prepare('SELECT * FROM users WHERE id = ?').get(Number(req.params.id)) as UserRow | undefined;
+    const u = db.prepare('SELECT * FROM users WHERE id = ?').get(Number(req.params.id)) as
+      UserRow | undefined;
     if (!u) throw notFound();
     if (getRole(db, u.role_id)!.isOwner && !req.ctx.role!.isOwner) throw forbidden('ownerLocked');
     const n = db.prepare('DELETE FROM sessions WHERE user_id = ?').run(u.id).changes;
-    audit(db, actor(req), { category: 'users', action: 'userSignedOutEverywhere', objType: 'user', objId: u.id, objLabel: u.email, changes: { sessions: n } });
+    audit(db, actor(req), {
+      category: 'users',
+      action: 'userSignedOutEverywhere',
+      objType: 'user',
+      objId: u.id,
+      objLabel: u.email,
+      changes: { sessions: n },
+    });
     return { ok: true, ended: n };
   });
 
@@ -177,10 +201,19 @@ export function mountUsers(api: Api) {
     if (db.prepare('SELECT 1 FROM roles WHERE name = ?').get(body.name)) throw conflict('roleNameTaken');
     const id = Number(
       db
-        .prepare('INSERT INTO roles (name, template, is_owner, permissions, created_at) VALUES (?, ?, 0, ?, ?)')
+        .prepare(
+          'INSERT INTO roles (name, template, is_owner, permissions, created_at) VALUES (?, ?, 0, ?, ?)',
+        )
         .run(body.name, null, JSON.stringify(p), nowIso()).lastInsertRowid,
     );
-    audit(db, actor(req), { category: 'roles', action: 'roleCreated', objType: 'role', objId: id, objLabel: body.name, changes: { permissions: p } });
+    audit(db, actor(req), {
+      category: 'roles',
+      action: 'roleCreated',
+      objType: 'role',
+      objId: id,
+      objLabel: body.name,
+      changes: { permissions: p },
+    });
     return getRole(db, id);
   });
 
@@ -195,13 +228,28 @@ export function mountUsers(api: Api) {
     const p = body.permissions !== undefined ? sanitizePermissions(body.permissions) : role.permissions;
     if (!myRole.isOwner && !isSubset(p, myRole.permissions)) throw forbidden('roleTooHigh');
     const name = body.name ?? role.name;
-    if (name.toLowerCase() !== role.name.toLowerCase() && db.prepare('SELECT 1 FROM roles WHERE name = ?').get(name))
+    if (
+      name.toLowerCase() !== role.name.toLowerCase() &&
+      db.prepare('SELECT 1 FROM roles WHERE name = ?').get(name)
+    )
       throw conflict('roleNameTaken');
     db.transaction(() => {
-      db.prepare('UPDATE roles SET name = ?, permissions = ?, updated_at = ? WHERE id = ?').run(name, JSON.stringify(p), nowIso(), role.id);
+      db.prepare('UPDATE roles SET name = ?, permissions = ?, updated_at = ? WHERE id = ?').run(
+        name,
+        JSON.stringify(p),
+        nowIso(),
+        role.id,
+      );
       const changes = diff({ name: role.name, ...flat(role.permissions) }, { name, ...flat(p) });
       if (Object.keys(changes).length)
-        audit(db, actor(req), { category: 'roles', action: 'roleUpdated', objType: 'role', objId: role.id, objLabel: name, changes });
+        audit(db, actor(req), {
+          category: 'roles',
+          action: 'roleUpdated',
+          objType: 'role',
+          objId: role.id,
+          objLabel: name,
+          changes,
+        });
     })();
     return getRole(db, role.id);
   });
@@ -211,10 +259,17 @@ export function mountUsers(api: Api) {
     const role = getRole(db, Number(req.params.id));
     if (!role) throw notFound();
     if (role.isOwner) throw forbidden('ownerLocked');
-    if (!req.ctx.role!.isOwner && !isSubset(role.permissions, req.ctx.role!.permissions)) throw forbidden('roleTooHigh');
+    if (!req.ctx.role!.isOwner && !isSubset(role.permissions, req.ctx.role!.permissions))
+      throw forbidden('roleTooHigh');
     if (db.prepare('SELECT 1 FROM users WHERE role_id = ?').get(role.id)) throw conflict('roleInUse');
     db.prepare('DELETE FROM roles WHERE id = ?').run(role.id);
-    audit(db, actor(req), { category: 'roles', action: 'roleDeleted', objType: 'role', objId: role.id, objLabel: role.name });
+    audit(db, actor(req), {
+      category: 'roles',
+      action: 'roleDeleted',
+      objType: 'role',
+      objId: role.id,
+      objLabel: role.name,
+    });
     return { ok: true };
   });
 }
@@ -222,7 +277,8 @@ export function mountUsers(api: Api) {
 /** Flatten permissions for readable audit diffs: "functions.orders": [...], "visibility.seeCost": true … */
 function flat(p: Permissions): Record<string, unknown> {
   const out: Record<string, unknown> = {};
-  for (const m of Object.keys(MODULES)) out[`functions.${m}`] = [...(((p.functions as Record<string, string[]>)[m]) ?? [])].sort();
+  for (const m of Object.keys(MODULES))
+    out[`functions.${m}`] = [...((p.functions as Record<string, string[]>)[m] ?? [])].sort();
   for (const v of VISIBILITY) out[`visibility.${v}`] = !!p.visibility[v];
   out.locationScope = p.locationScope;
   out.limits = p.limits;

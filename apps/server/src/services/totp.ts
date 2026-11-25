@@ -2,7 +2,14 @@ import { Secret, TOTP } from 'otpauth';
 import QRCode from 'qrcode';
 
 const make = (secretB32: string, label = '') =>
-  new TOTP({ issuer: 'MyWineCorks', label, algorithm: 'SHA1', digits: 6, period: 30, secret: Secret.fromBase32(secretB32) });
+  new TOTP({
+    issuer: 'MyWineCorks',
+    label,
+    algorithm: 'SHA1',
+    digits: 6,
+    period: 30,
+    secret: Secret.fromBase32(secretB32),
+  });
 
 export function newTotpSecret(): string {
   return new Secret({ size: 20 }).base32;

@@ -1,6 +1,10 @@
 /** API errors carry a stable code; the web app translates `err.<code>`. */
 export class ApiError extends Error {
-  constructor(public status: number, public code: string, public details?: unknown) {
+  constructor(
+    public status: number,
+    public code: string,
+    public details?: unknown,
+  ) {
     super(code);
   }
 }

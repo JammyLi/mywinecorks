@@ -13,7 +13,13 @@ export function makeServer(mode: Mode = 'selfhost', extra: Record<string, string
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mwc-test-'));
   const cfg = loadConfig({ MODE: mode, DATA_DIR: dataDir, PUBLIC_URL: 'http://localhost:5173', ...extra });
   const { app, api, registry } = createApp(cfg);
-  const ws = createWorkspace(registry, { slug: 'demo', name: 'Demo Cellar', lang: 'en', ownerEmail: 'owner@example.com', ownerName: 'Olivia' });
+  const ws = createWorkspace(registry, {
+    slug: 'demo',
+    name: 'Demo Cellar',
+    lang: 'en',
+    ownerEmail: 'owner@example.com',
+    ownerName: 'Olivia',
+  });
   const cleanup = () => {
     registry.close();
     fs.rmSync(dataDir, { recursive: true, force: true });
@@ -26,7 +32,12 @@ export type Server = ReturnType<typeof makeServer>;
 export const tokenFrom = (url: string) => new URL(url).searchParams.get('t')!;
 
 /** Complete a setup link and return a signed-in agent. */
-export async function setupAndLogin(s: Server, token: string, email: string, password = PW): Promise<TestAgent> {
+export async function setupAndLogin(
+  s: Server,
+  token: string,
+  email: string,
+  password = PW,
+): Promise<TestAgent> {
   await request(s.app).post('/api/auth/setup').send({ workspace: 'demo', token, password }).expect(200);
   const agent = request.agent(s.app);
   await agent.post('/api/auth/login').send({ workspace: 'demo', email, password }).expect(200);
@@ -34,7 +45,15 @@ export async function setupAndLogin(s: Server, token: string, email: string, pas
 }
 
 /** Create a user with the given role (as owner) and return their signed-in agent. */
-export async function userWithRole(s: Server, owner: TestAgent, roleId: number, email: string): Promise<TestAgent> {
-  const r = await owner.post('/api/users').send({ email, name: email.split('@')[0], roleId }).expect(200);
+export async function userWithRole(
+  s: Server,
+  owner: TestAgent,
+  roleId: number,
+  email: string,
+): Promise<TestAgent> {
+  const r = await owner
+    .post('/api/users')
+    .send({ email, name: email.split('@')[0], roleId })
+    .expect(200);
   return setupAndLogin(s, tokenFrom(r.body.setupUrl), email);
 }

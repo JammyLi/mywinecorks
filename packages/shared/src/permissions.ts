@@ -24,7 +24,13 @@ export const MODULES = {
 export type Module = keyof typeof MODULES;
 export type Action<M extends Module = Module> = (typeof MODULES)[M][number];
 
-export const VISIBILITY = ['seeCost', 'seeProfit', 'seeMerchants', 'seeCustomerPrices', 'seeOthersOrders'] as const;
+export const VISIBILITY = [
+  'seeCost',
+  'seeProfit',
+  'seeMerchants',
+  'seeCustomerPrices',
+  'seeOthersOrders',
+] as const;
 export type Visibility = (typeof VISIBILITY)[number];
 
 export interface Limits {
@@ -88,7 +94,9 @@ export function sanitizePermissions(input: unknown): Permissions {
   for (const [m, actions] of Object.entries(MODULES)) {
     const given = (src.functions as Record<string, unknown> | undefined)?.[m];
     if (Array.isArray(given)) {
-      const ok = given.filter((a): a is string => typeof a === 'string' && (actions as readonly string[]).includes(a));
+      const ok = given.filter(
+        (a): a is string => typeof a === 'string' && (actions as readonly string[]).includes(a),
+      );
       if (ok.length) functions[m] = [...new Set(ok)];
     }
   }
@@ -105,7 +113,11 @@ export function sanitizePermissions(input: unknown): Permissions {
     functions: functions as Permissions['functions'],
     visibility,
     locationScope,
-    limits: { maxOrderConfirm: num(lim.maxOrderConfirm), maxPriceChangePct: num(lim.maxPriceChangePct), maxStockout: num(lim.maxStockout) },
+    limits: {
+      maxOrderConfirm: num(lim.maxOrderConfirm),
+      maxPriceChangePct: num(lim.maxPriceChangePct),
+      maxStockout: num(lim.maxStockout),
+    },
     access: { backOffice: access.backOffice !== false, mobile: access.mobile !== false },
   };
 }

@@ -32,10 +32,19 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(initialLang);
   const setLang = useCallback((l: Lang) => {
     setLangState(l);
-    try { localStorage.setItem('mwc.lang', l); } catch {}
+    try {
+      localStorage.setItem('mwc.lang', l);
+    } catch {}
     document.documentElement.lang = l;
   }, []);
-  const value = useMemo(() => ({ lang, setLang, t: (k: Key | string, v?: Record<string, string | number>) => translate(lang, k, v) }), [lang, setLang]);
+  const value = useMemo(
+    () => ({
+      lang,
+      setLang,
+      t: (k: Key | string, v?: Record<string, string | number>) => translate(lang, k, v),
+    }),
+    [lang, setLang],
+  );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 

@@ -35,7 +35,7 @@
 |---|---|---|
 | Language | **TypeScript** everywhere | Same as MyWines (JS) but safer for a larger team/codebase |
 | App server | Node 22 + Express 5 (or Fastify) | MyWines stack; easy reuse |
-| Client database | **SQLite** (better-sqlite3), one file per tenant, Drizzle ORM + migrations | Same in cloud and self-hosted; simple backup; MyWines migration is file-to-file |
+| Client database | **SQLite** (better-sqlite3), one file per tenant, plain SQL migrations | Same in cloud and self-hosted; simple backup; MyWines migration is file-to-file |
 | Cloud databases | PostgreSQL for HQ, licences, portal-service | Shared, multi-client data |
 | Staff web + mobile | React 19 + Vite, PWA, React Router | MyWines stack; reuse screens, scanner, offline store |
 | Customer portal | React + Vite (separate app, own build) | Never ships staff code to customers |
@@ -91,7 +91,7 @@ assistance; scale with team).
 
 | # | Milestone | Content | Done when | Size |
 |---|---|---|---|---|
-| **M0** | Foundations | Monorepo, CI, design system + brand, zh-TW/en, tenant model, auth + 2-step, **custom roles/permissions**, audit log, settings shell | Owner signs in, creates roles and users; permission checks enforced in API with tests | M |
+| **M0** ✅ | Foundations | Monorepo, CI, design system + brand, zh-TW/en, tenant model, auth + 2-step, **custom roles/permissions**, audit log, settings shell | Owner signs in, creates roles and users; permission checks enforced in API with tests | M |
 | **M1** | Inventory core | Cellars/lockers/racks/cases, wines, lots, bottles, prices & history, search & filters, moves, stock-out, stocktake, labels, Excel import/export | All MyWines inventory tests pass against the new server | L |
 | **M2** | **MyWines migration** | Importer with dry-run report; keeps bottle/case/wine numbers | Brother's real database imports cleanly; spot-check 50 bottles; labels scan correctly | S |
 | **M3** | Mobile + offline | PWA, scanner, offline lookup/move/stock-out/stocktake/pick, sync + conflicts | Field test in a real cellar with no signal | M |

@@ -13,13 +13,22 @@ Launch markets: Taiwan and the US. Built by Jammy with Claude Code.
   screen structure and flows.
 
 ## Stack
-TypeScript · Node 22 · Express 5 · SQLite (better-sqlite3, one file per tenant) + Drizzle ·
+TypeScript · Node 22 · Express 5 · SQLite (better-sqlite3, one file per tenant, SQL migrations in
+`apps/server/src/db/migrations.ts`) ·
 PostgreSQL for cloud services · React 19 + Vite (PWA) · Astro (website) · pnpm workspaces ·
 Vitest + Playwright.
 
 ## Layout
 `apps/` server, web, portal, portal-service, hq, ai-gateway, website ·
 `packages/` shared, ui, license, migrate-mywines · `installer/` · `docs/`.
+
+## How the server is built (M0)
+- Routes are declared with the `Api` helper in `apps/server/src/http.ts` with a guard
+  (`PUBLIC`, `SESSION`, `AUTH`, `perm(module, action)`). `test/permissions.test.ts` walks every
+  registered route, so new endpoints are covered automatically.
+- Errors are `ApiError(status, code)`; the web app shows `err.<code>` from `packages/ui/src/i18n`.
+  `test/i18n.test.ts` fails if a change-log action or error code has no zh-TW/en label.
+- Write change-log entries with `audit(db, actor(req), {...})`.
 
 ## Rules
 - **Permissions are enforced in the API**, never only in the UI. Every new endpoint gets a

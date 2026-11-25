@@ -38,7 +38,10 @@ export function audit(db: DB, actor: Actor, e: AuditEntry) {
 }
 
 /** Field-level diff: { field: [before, after] } for fields that changed. */
-export function diff(before: Record<string, unknown>, after: Record<string, unknown>): Record<string, [unknown, unknown]> {
+export function diff(
+  before: Record<string, unknown>,
+  after: Record<string, unknown>,
+): Record<string, [unknown, unknown]> {
   const out: Record<string, [unknown, unknown]> = {};
   for (const k of new Set([...Object.keys(before), ...Object.keys(after)])) {
     const a = before[k];

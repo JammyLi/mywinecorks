@@ -4,10 +4,12 @@ import { can, sanitizePermissions, ROLE_TEMPLATES, MODULES } from './index.ts';
 describe('permissions', () => {
   it('owner template has every action', () => {
     const owner = ROLE_TEMPLATES.find((t) => t.key === 'owner')!;
-    for (const [m, actions] of Object.entries(MODULES)) for (const a of actions) expect(can(owner.permissions, m as never, a)).toBe(true);
+    for (const [m, actions] of Object.entries(MODULES))
+      for (const a of actions) expect(can(owner.permissions, m as never, a)).toBe(true);
   });
   it('only owner can create cellars by default', () => {
-    for (const t of ROLE_TEMPLATES) expect(can(t.permissions, 'locations', 'createCellar')).toBe(t.key === 'owner');
+    for (const t of ROLE_TEMPLATES)
+      expect(can(t.permissions, 'locations', 'createCellar')).toBe(t.key === 'owner');
   });
   it('sanitize drops unknown modules/actions and bad values', () => {
     const p = sanitizePermissions({

@@ -16,6 +16,8 @@ if (fs.existsSync(webDist)) {
 
 app.listen(cfg.port, () => {
   const n = registry.list().length;
-  console.log(`MyWineCorks server (${cfg.mode}) on http://localhost:${cfg.port} — ${n} workspace(s), data in ${cfg.dataDir}`);
+  console.log(
+    `MyWineCorks server (${cfg.mode}) on http://localhost:${cfg.port} — ${n} workspace(s), data in ${cfg.dataDir}`,
+  );
   if (n === 0) console.log('No workspace yet. Create one with: pnpm --filter @mwc/server create-tenant');
 });

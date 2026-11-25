@@ -21,7 +21,9 @@ const { values } = parseArgs({
 const cfg = loadConfig();
 const registry = new Registry(cfg.dataDir);
 if (!values.slug || !values.name || !values.owner) {
-  console.error('Usage: create-tenant --slug <id> --name "<company>" --owner <email> [--owner-name "<name>"] [--lang zh-TW|en]');
+  console.error(
+    'Usage: create-tenant --slug <id> --name "<company>" --owner <email> [--owner-name "<name>"] [--lang zh-TW|en]',
+  );
   process.exit(1);
 }
 if (cfg.mode === 'selfhost' && registry.list().length > 0) {

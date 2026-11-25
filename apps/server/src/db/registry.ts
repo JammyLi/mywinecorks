@@ -50,7 +50,9 @@ export class Registry {
   create(slug: string, name: string): TenantRow {
     if (!isValidSlug(slug)) throw new Error('Invalid workspace id: use a-z, 0-9 and dashes');
     if (this.get(slug)) throw new Error(`Workspace "${slug}" already exists`);
-    this.db.prepare('INSERT INTO tenants (slug, name, created_at) VALUES (?, ?, ?)').run(slug, name, nowIso());
+    this.db
+      .prepare('INSERT INTO tenants (slug, name, created_at) VALUES (?, ?, ?)')
+      .run(slug, name, nowIso());
     this.tenantDb(slug); // create + migrate
     return this.get(slug)!;
   }
@@ -78,13 +80,19 @@ export class Registry {
 }
 
 export function migrate(db: DB) {
-  db.exec('CREATE TABLE IF NOT EXISTS _migrations (id INTEGER PRIMARY KEY, name TEXT NOT NULL, applied_at TEXT NOT NULL)');
+  db.exec(
+    'CREATE TABLE IF NOT EXISTS _migrations (id INTEGER PRIMARY KEY, name TEXT NOT NULL, applied_at TEXT NOT NULL)',
+  );
   const done = new Set((db.prepare('SELECT id FROM _migrations').all() as { id: number }[]).map((r) => r.id));
   for (const m of TENANT_MIGRATIONS) {
     if (done.has(m.id)) continue;
     db.transaction(() => {
       db.exec(m.sql);
-      db.prepare('INSERT INTO _migrations (id, name, applied_at) VALUES (?, ?, ?)').run(m.id, m.name, nowIso());
+      db.prepare('INSERT INTO _migrations (id, name, applied_at) VALUES (?, ?, ?)').run(
+        m.id,
+        m.name,
+        nowIso(),
+      );
     })();
   }
 }

@@ -44,7 +44,8 @@ function resolveWorkspace(req: Request, slug?: string) {
 export function meOf(req: Request): Me {
   const { user, role, tenant, session, cfg, db } = req.ctx;
   const company = JSON.parse(
-    (db!.prepare("SELECT value FROM settings WHERE key = 'company'").get() as { value: string } | undefined)?.value ?? '{}',
+    (db!.prepare("SELECT value FROM settings WHERE key = 'company'").get() as { value: string } | undefined)
+      ?.value ?? '{}',
   );
   return {
     id: user!.id,
@@ -72,15 +73,23 @@ function setSessionCookie(req: Request, res: Response, slug: string, token: stri
 function recordFailure(db: DB, user: UserRow, req: Request, reason: string) {
   const failed = user.failed_count + 1;
   const lock = failed >= MAX_FAILED ? new Date(Date.now() + LOCK_MINUTES * 60_000).toISOString() : null;
-  db.prepare('UPDATE users SET failed_count = ?, locked_until = ? WHERE id = ?').run(lock ? 0 : failed, lock, user.id);
-  audit(db, { id: user.id, label: user.name || user.email, ip: req.ip }, {
-    category: 'auth',
-    action: lock ? 'accountLocked' : 'signInFailed',
-    objType: 'user',
-    objId: user.id,
-    objLabel: user.email,
-    reason,
-  });
+  db.prepare('UPDATE users SET failed_count = ?, locked_until = ? WHERE id = ?').run(
+    lock ? 0 : failed,
+    lock,
+    user.id,
+  );
+  audit(
+    db,
+    { id: user.id, label: user.name || user.email, ip: req.ip },
+    {
+      category: 'auth',
+      action: lock ? 'accountLocked' : 'signInFailed',
+      objType: 'user',
+      objId: user.id,
+      objLabel: user.email,
+      reason,
+    },
+  );
 }
 
 export function mountAuth(api: Api) {
@@ -89,7 +98,8 @@ export function mountAuth(api: Api) {
     const ws = resolveWorkspace(req, body.workspace);
     if (!ws) throw unauthorized('badLogin');
     const { db, tenant } = ws;
-    const user = db.prepare('SELECT * FROM users WHERE email = ? AND active = 1').get(body.email) as UserRow | undefined;
+    const user = db.prepare('SELECT * FROM users WHERE email = ? AND active = 1').get(body.email) as
+      UserRow | undefined;
     if (!user || !user.pw_hash) {
       await verifyPassword(null, body.password); // keep timing similar
       throw unauthorized('badLogin');
@@ -127,15 +137,22 @@ export function mountAuth(api: Api) {
       now,
       String(req.headers['user-agent'] ?? '').slice(0, 200),
     );
-    db.prepare('UPDATE users SET failed_count = 0, locked_until = NULL, last_login = ? WHERE id = ?').run(now, user.id);
-    audit(db, { id: user.id, label: user.name || user.email, ip: req.ip }, {
-      category: 'auth',
-      action: 'signedIn',
-      objType: 'user',
-      objId: user.id,
-      objLabel: user.email,
-      changes: { client: body.client },
-    });
+    db.prepare('UPDATE users SET failed_count = 0, locked_until = NULL, last_login = ? WHERE id = ?').run(
+      now,
+      user.id,
+    );
+    audit(
+      db,
+      { id: user.id, label: user.name || user.email, ip: req.ip },
+      {
+        category: 'auth',
+        action: 'signedIn',
+        objType: 'user',
+        objId: user.id,
+        objLabel: user.email,
+        changes: { client: body.client },
+      },
+    );
     setSessionCookie(req, res, tenant.slug, token);
     req.ctx.user = user;
     req.ctx.role = role;
@@ -147,7 +164,13 @@ export function mountAuth(api: Api) {
     const { db, session, user } = req.ctx;
     if (db && session) {
       db.prepare('DELETE FROM sessions WHERE token_hash = ?').run(session.tokenHash);
-      audit(db, actor(req), { category: 'auth', action: 'signedOut', objType: 'user', objId: user!.id, objLabel: user!.email });
+      audit(db, actor(req), {
+        category: 'auth',
+        action: 'signedOut',
+        objType: 'user',
+        objId: user!.id,
+        objLabel: user!.email,
+      });
     }
     res.clearCookie(SESSION_COOKIE, { path: '/' });
     return { ok: true };
@@ -159,7 +182,10 @@ export function mountAuth(api: Api) {
     const token = String(req.query.t ?? '');
     const row = ws && findSetupToken(ws.db, token);
     if (!ws || !row) throw notFound('tokenInvalid');
-    const user = ws.db.prepare('SELECT email, name FROM users WHERE id = ?').get(row.user_id) as { email: string; name: string };
+    const user = ws.db.prepare('SELECT email, name FROM users WHERE id = ?').get(row.user_id) as {
+      email: string;
+      name: string;
+    };
     return { email: user.email, name: user.name, purpose: row.purpose, workspace: ws.tenant.slug };
   });
 
@@ -171,23 +197,38 @@ export function mountAuth(api: Api) {
     if (!ws || !row) throw notFound('tokenInvalid');
     const hash = await hashPassword(body.password);
     ws.db.transaction(() => {
-      ws.db.prepare('UPDATE setup_tokens SET used_at = ? WHERE token_hash = ?').run(nowIso(), sha256(body.token));
+      ws.db
+        .prepare('UPDATE setup_tokens SET used_at = ? WHERE token_hash = ?')
+        .run(nowIso(), sha256(body.token));
       ws.db
         .prepare(
           `UPDATE users SET pw_hash = ?, failed_count = 0, locked_until = NULL, updated_at = ?
            ${body.name ? ', name = ?' : ''} WHERE id = ?`,
         )
-        .run(...([hash, nowIso(), ...(body.name ? [body.name] : []), row.user_id] as [string, string, ...unknown[]]));
+        .run(
+          ...([hash, nowIso(), ...(body.name ? [body.name] : []), row.user_id] as [
+            string,
+            string,
+            ...unknown[],
+          ]),
+        );
       // A password reset ends all existing sessions.
       ws.db.prepare('DELETE FROM sessions WHERE user_id = ?').run(row.user_id);
-      const u = ws.db.prepare('SELECT email, name FROM users WHERE id = ?').get(row.user_id) as { email: string; name: string };
-      audit(ws.db, { id: row.user_id, label: u.name || u.email, ip: req.ip }, {
-        category: 'auth',
-        action: row.purpose === 'invite' ? 'accountSetUp' : 'passwordReset',
-        objType: 'user',
-        objId: row.user_id,
-        objLabel: u.email,
-      });
+      const u = ws.db.prepare('SELECT email, name FROM users WHERE id = ?').get(row.user_id) as {
+        email: string;
+        name: string;
+      };
+      audit(
+        ws.db,
+        { id: row.user_id, label: u.name || u.email, ip: req.ip },
+        {
+          category: 'auth',
+          action: row.purpose === 'invite' ? 'accountSetUp' : 'passwordReset',
+          objType: 'user',
+          objId: row.user_id,
+          objLabel: u.email,
+        },
+      );
     })();
     return { ok: true, workspace: ws.tenant.slug };
   });
@@ -195,14 +236,15 @@ export function mountAuth(api: Api) {
   api.get('/me', SESSION, (req) => meOf(req));
 
   api.patch('/me', SESSION, (req) => {
-    const body = z.object({ name: z.string().trim().max(80).optional(), lang: z.enum(['zh-TW', 'en']).optional() }).parse(req.body);
+    const body = z
+      .object({ name: z.string().trim().max(80).optional(), lang: z.enum(['zh-TW', 'en']).optional() })
+      .parse(req.body);
     const { db, user } = req.ctx;
-    db!.prepare('UPDATE users SET name = COALESCE(?, name), lang = COALESCE(?, lang), updated_at = ? WHERE id = ?').run(
-      body.name ?? null,
-      body.lang ?? null,
-      nowIso(),
-      user!.id,
-    );
+    db!
+      .prepare(
+        'UPDATE users SET name = COALESCE(?, name), lang = COALESCE(?, lang), updated_at = ? WHERE id = ?',
+      )
+      .run(body.name ?? null, body.lang ?? null, nowIso(), user!.id);
     req.ctx.user = db!.prepare('SELECT * FROM users WHERE id = ?').get(user!.id) as UserRow;
     return meOf(req);
   });
@@ -212,10 +254,20 @@ export function mountAuth(api: Api) {
     const { db, user, session } = req.ctx;
     if (!(await verifyPassword(user!.pw_hash, body.current))) throw badRequest('badLogin');
     if (body.next.length < MIN_PASSWORD) throw badRequest('passwordShort');
-    db!.prepare('UPDATE users SET pw_hash = ?, updated_at = ? WHERE id = ?').run(await hashPassword(body.next), nowIso(), user!.id);
+    db!
+      .prepare('UPDATE users SET pw_hash = ?, updated_at = ? WHERE id = ?')
+      .run(await hashPassword(body.next), nowIso(), user!.id);
     // Keep this session, end all others.
-    db!.prepare('DELETE FROM sessions WHERE user_id = ? AND token_hash <> ?').run(user!.id, session!.tokenHash);
-    audit(db!, actor(req), { category: 'auth', action: 'passwordChanged', objType: 'user', objId: user!.id, objLabel: user!.email });
+    db!
+      .prepare('DELETE FROM sessions WHERE user_id = ? AND token_hash <> ?')
+      .run(user!.id, session!.tokenHash);
+    audit(db!, actor(req), {
+      category: 'auth',
+      action: 'passwordChanged',
+      objType: 'user',
+      objId: user!.id,
+      objLabel: user!.email,
+    });
     return { ok: true };
   });
 
@@ -230,13 +282,24 @@ export function mountAuth(api: Api) {
   api.post('/me/totp/enable', SESSION, (req) => {
     const { code } = z.object({ code: z.string().trim() }).parse(req.body);
     const { db, user, session } = req.ctx;
-    const pending = (db!.prepare('SELECT totp_pending FROM users WHERE id = ?').get(user!.id) as { totp_pending: string | null })
-      .totp_pending;
+    const pending = (
+      db!.prepare('SELECT totp_pending FROM users WHERE id = ?').get(user!.id) as {
+        totp_pending: string | null;
+      }
+    ).totp_pending;
     if (!pending) throw badRequest();
     if (!checkTotp(pending, code)) throw badRequest('badCode');
-    db!.prepare('UPDATE users SET totp_secret = ?, totp_pending = NULL, updated_at = ? WHERE id = ?').run(pending, nowIso(), user!.id);
+    db!
+      .prepare('UPDATE users SET totp_secret = ?, totp_pending = NULL, updated_at = ? WHERE id = ?')
+      .run(pending, nowIso(), user!.id);
     db!.prepare('UPDATE sessions SET must_enroll_totp = 0 WHERE token_hash = ?').run(session!.tokenHash);
-    audit(db!, actor(req), { category: 'auth', action: 'totpEnabled', objType: 'user', objId: user!.id, objLabel: user!.email });
+    audit(db!, actor(req), {
+      category: 'auth',
+      action: 'totpEnabled',
+      objType: 'user',
+      objId: user!.id,
+      objLabel: user!.email,
+    });
     req.ctx.user = db!.prepare('SELECT * FROM users WHERE id = ?').get(user!.id) as UserRow;
     req.ctx.session = { ...session!, mustEnrollTotp: false };
     return meOf(req);
@@ -247,15 +310,32 @@ export function mountAuth(api: Api) {
     const { db, user, role, cfg } = req.ctx;
     if (cfg.require2faAdmins && isAdminLike(role!)) throw forbidden('totpRequiredForRole');
     if (!(await verifyPassword(user!.pw_hash, password))) throw badRequest('badLogin');
-    db!.prepare('UPDATE users SET totp_secret = NULL, totp_pending = NULL, updated_at = ? WHERE id = ?').run(nowIso(), user!.id);
-    audit(db!, actor(req), { category: 'auth', action: 'totpDisabled', objType: 'user', objId: user!.id, objLabel: user!.email });
+    db!
+      .prepare('UPDATE users SET totp_secret = NULL, totp_pending = NULL, updated_at = ? WHERE id = ?')
+      .run(nowIso(), user!.id);
+    audit(db!, actor(req), {
+      category: 'auth',
+      action: 'totpDisabled',
+      objType: 'user',
+      objId: user!.id,
+      objLabel: user!.email,
+    });
     return { ok: true };
   });
 
   api.post('/me/sign-out-others', AUTH, (req) => {
     const { db, user, session } = req.ctx;
-    const n = db!.prepare('DELETE FROM sessions WHERE user_id = ? AND token_hash <> ?').run(user!.id, session!.tokenHash).changes;
-    audit(db!, actor(req), { category: 'auth', action: 'signedOutOthers', objType: 'user', objId: user!.id, objLabel: user!.email, changes: { sessions: n } });
+    const n = db!
+      .prepare('DELETE FROM sessions WHERE user_id = ? AND token_hash <> ?')
+      .run(user!.id, session!.tokenHash).changes;
+    audit(db!, actor(req), {
+      category: 'auth',
+      action: 'signedOutOthers',
+      objType: 'user',
+      objId: user!.id,
+      objLabel: user!.email,
+      changes: { sessions: n },
+    });
     return { ok: true, ended: n };
   });
 }

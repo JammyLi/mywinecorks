@@ -26,7 +26,9 @@ describe('permission guard on every endpoint', () => {
 
   it('anonymous requests are rejected (401) on all non-public routes', async () => {
     for (const r of s.api.routes.filter((r) => r.guard.kind !== 'public')) {
-      const res = await request(s.app)[r.method]('/api' + fill(r.path)).send({});
+      const res = await request(s.app)
+        [r.method]('/api' + fill(r.path))
+        .send({});
       expect(res.status, `${r.method.toUpperCase()} ${r.path}`).toBe(401);
     }
   });

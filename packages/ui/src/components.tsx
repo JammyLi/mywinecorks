@@ -1,7 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { useT } from './i18n/index.tsx';
 
-export function Dialog(props: { title: ReactNode; onClose: () => void; children: ReactNode; footer?: ReactNode }) {
+export function Dialog(props: {
+  title: ReactNode;
+  onClose: () => void;
+  children: ReactNode;
+  footer?: ReactNode;
+}) {
   useEffect(() => {
     const k = (e: KeyboardEvent) => e.key === 'Escape' && props.onClose();
     window.addEventListener('keydown', k);
@@ -31,7 +36,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <div className="toasts" aria-live="polite">
         {items.map((i) => (
-          <div className="toast" key={i.id}>{i.msg}</div>
+          <div className="toast" key={i.id}>
+            {i.msg}
+          </div>
         ))}
       </div>
     </ToastCtx.Provider>
@@ -49,26 +56,56 @@ export function Field(props: { label: ReactNode; children: ReactNode; hint?: Rea
   );
 }
 
-export function PasswordInput(props: { value: string; onChange: (v: string) => void; autoComplete?: string; autoFocus?: boolean; id?: string }) {
+export function PasswordInput(props: {
+  value: string;
+  onChange: (v: string) => void;
+  autoComplete?: string;
+  autoFocus?: boolean;
+  id?: string;
+}) {
   const t = useT();
   const [show, setShow] = useState(false);
   return (
     <div style={{ position: 'relative' }}>
-      <input id={props.id} className="input" type={show ? 'text' : 'password'} value={props.value} autoFocus={props.autoFocus}
-        autoComplete={props.autoComplete} onChange={(e) => props.onChange(e.target.value)} style={{ paddingRight: 44 }} />
-      <button type="button" className="btn ghost sm" onClick={() => setShow((s) => !s)} aria-label={show ? t('hidePassword') : t('showPassword')}
-        title={show ? t('hidePassword') : t('showPassword')} style={{ position: 'absolute', right: 4, top: 4 }}>
+      <input
+        id={props.id}
+        className="input"
+        type={show ? 'text' : 'password'}
+        value={props.value}
+        autoFocus={props.autoFocus}
+        autoComplete={props.autoComplete}
+        onChange={(e) => props.onChange(e.target.value)}
+        style={{ paddingRight: 44 }}
+      />
+      <button
+        type="button"
+        className="btn ghost sm"
+        onClick={() => setShow((s) => !s)}
+        aria-label={show ? t('hidePassword') : t('showPassword')}
+        title={show ? t('hidePassword') : t('showPassword')}
+        style={{ position: 'absolute', right: 4, top: 4 }}
+      >
         {show ? '🙈' : '👁'}
       </button>
     </div>
   );
 }
 
-export function Seg<T extends string>(props: { value: T; options: { value: T; label: ReactNode }[]; onChange: (v: T) => void; label?: string }) {
+export function Seg<T extends string>(props: {
+  value: T;
+  options: { value: T; label: ReactNode }[];
+  onChange: (v: T) => void;
+  label?: string;
+}) {
   return (
     <div className="seg" role="group" aria-label={props.label}>
       {props.options.map((o) => (
-        <button key={o.value} type="button" className={o.value === props.value ? 'on' : ''} onClick={() => props.onChange(o.value)}>
+        <button
+          key={o.value}
+          type="button"
+          className={o.value === props.value ? 'on' : ''}
+          onClick={() => props.onChange(o.value)}
+        >
           {o.label}
         </button>
       ))}

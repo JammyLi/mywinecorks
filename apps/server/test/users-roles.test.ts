@@ -6,14 +6,22 @@ let s: Server;
 afterEach(() => s?.cleanup());
 
 const roleId = async (agent: Awaited<ReturnType<typeof setupAndLogin>>, template: string) =>
-  (await agent.get('/api/roles').expect(200)).body.find((r: { template: string }) => r.template === template).id as number;
+  (await agent.get('/api/roles').expect(200)).body.find((r: { template: string }) => r.template === template)
+    .id as number;
 
 describe('users and roles', () => {
   it('seeds the six role templates; Owner role cannot be edited or deleted', async () => {
     s = makeServer();
     const owner = await setupAndLogin(s, s.ownerToken, 'owner@example.com');
     const roles = (await owner.get('/api/roles').expect(200)).body;
-    expect(roles.map((r: { template: string }) => r.template)).toEqual(['owner', 'admin', 'manager', 'employee', 'picker', 'viewer']);
+    expect(roles.map((r: { template: string }) => r.template)).toEqual([
+      'owner',
+      'admin',
+      'manager',
+      'employee',
+      'picker',
+      'viewer',
+    ]);
     const ownerRole = roles[0];
     await owner.patch(`/api/roles/${ownerRole.id}`).send({ name: 'Boss' }).expect(403);
     await owner.delete(`/api/roles/${ownerRole.id}`).expect(403);
@@ -45,13 +53,25 @@ describe('users and roles', () => {
     // Give a custom "HR" role users.manage + roles.manage but no data deletion; HR cannot create a role with data.clear.
     const hr = await owner
       .post('/api/roles')
-      .send({ name: 'HR', permissions: { functions: { users: ['view', 'manage'], roles: ['view', 'manage'] } } })
+      .send({
+        name: 'HR',
+        permissions: { functions: { users: ['view', 'manage'], roles: ['view', 'manage'] } },
+      })
       .expect(200);
     const hrAgent = await userWithRole(s, owner, hr.body.id, 'hr@example.com');
-    await hrAgent.post('/api/roles').send({ name: 'Wipe', permissions: { functions: { data: ['clear'] } } }).expect(403);
-    await hrAgent.post('/api/roles').send({ name: 'UsersOnly', permissions: { functions: { users: ['view'] } } }).expect(200);
+    await hrAgent
+      .post('/api/roles')
+      .send({ name: 'Wipe', permissions: { functions: { data: ['clear'] } } })
+      .expect(403);
+    await hrAgent
+      .post('/api/roles')
+      .send({ name: 'UsersOnly', permissions: { functions: { users: ['view'] } } })
+      .expect(200);
     // HR cannot assign the Admin role (it has far more than HR).
-    await hrAgent.post('/api/users').send({ email: 'x@example.com', roleId: await roleId(owner, 'admin') }).expect(403);
+    await hrAgent
+      .post('/api/users')
+      .send({ email: 'x@example.com', roleId: await roleId(owner, 'admin') })
+      .expect(403);
   });
 
   it('deactivating a user or changing their role signs them out immediately', async () => {
@@ -59,7 +79,10 @@ describe('users and roles', () => {
     const owner = await setupAndLogin(s, s.ownerToken, 'owner@example.com');
     const emp = await userWithRole(s, owner, await roleId(owner, 'employee'), 'emp@example.com');
     const empId = (await emp.get('/api/me').expect(200)).body.id;
-    await owner.patch(`/api/users/${empId}`).send({ roleId: await roleId(owner, 'viewer') }).expect(200);
+    await owner
+      .patch(`/api/users/${empId}`)
+      .send({ roleId: await roleId(owner, 'viewer') })
+      .expect(200);
     await emp.get('/api/me').expect(401);
     const again = request.agent(s.app);
     await again.post('/api/auth/login').send({ email: 'emp@example.com', password: PW }).expect(200);
@@ -71,11 +94,23 @@ describe('users and roles', () => {
   it('picker role cannot sign in to the back office but can use mobile', async () => {
     s = makeServer();
     const owner = await setupAndLogin(s, s.ownerToken, 'owner@example.com');
-    const r = await owner.post('/api/users').send({ email: 'pick@example.com', roleId: await roleId(owner, 'picker') }).expect(200);
-    await request(s.app).post('/api/auth/setup').send({ workspace: 'demo', token: tokenFrom(r.body.setupUrl), password: PW }).expect(200);
-    const web = await request(s.app).post('/api/auth/login').send({ email: 'pick@example.com', password: PW }).expect(403);
+    const r = await owner
+      .post('/api/users')
+      .send({ email: 'pick@example.com', roleId: await roleId(owner, 'picker') })
+      .expect(200);
+    await request(s.app)
+      .post('/api/auth/setup')
+      .send({ workspace: 'demo', token: tokenFrom(r.body.setupUrl), password: PW })
+      .expect(200);
+    const web = await request(s.app)
+      .post('/api/auth/login')
+      .send({ email: 'pick@example.com', password: PW })
+      .expect(403);
     expect(web.body.error).toBe('noBackOffice');
-    await request(s.app).post('/api/auth/login').send({ email: 'pick@example.com', password: PW, client: 'mobile' }).expect(200);
+    await request(s.app)
+      .post('/api/auth/login')
+      .send({ email: 'pick@example.com', password: PW, client: 'mobile' })
+      .expect(200);
   });
 
   it('duplicate email is refused; role changes are written to the change log', async () => {
