@@ -9,6 +9,7 @@ import { Enroll, Login, Setup } from './pages/Auth.tsx';
 import { ComingSoon, Overview } from './pages/Overview.tsx';
 import { RoleEditor, Roles, Security, SettingsIndex, SettingsLayout, Users } from './pages/Settings.tsx';
 import { Audit } from './pages/Audit.tsx';
+import { ImportPage } from './pages/Import.tsx';
 import { Search } from './pages/Search.tsx';
 import { BottleDetailPage, CaseDetailPage, WineDetailPage, WineFormPage } from './pages/Wine.tsx';
 import {
@@ -56,6 +57,7 @@ function App() {
         <Route path="move" element={<MovePage />} />
         <Route path="stockout" element={<StockoutPage />} />
         <Route path="prices" element={<PricesPage />} />
+        <Route path="import" element={<ImportPage />} />
         <Route path="settings" element={<SettingsLayout />}>
           <Route index element={<SettingsIndex />} />
           <Route path="users" element={<Users />} />

@@ -743,17 +743,16 @@ export function TypesSettings() {
 export function MerchantsSettings() {
   const { t } = useI18n();
   const { can } = useSession();
-  const { data, reload } =
-    useApi<
-      {
-        id: number;
-        name: string;
-        contact: string | null;
-        phone: string | null;
-        email: string | null;
-        lots: number;
-      }[]
-    >('/merchants');
+  const { data, reload } = useApi<
+    {
+      id: number;
+      name: string;
+      contact: string | null;
+      phone: string | null;
+      email: string | null;
+      lots: number;
+    }[]
+  >('/merchants');
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState('');
   const [contact, setContact] = useState('');

@@ -15,12 +15,14 @@
     "@node-rs/argon2": "^2.0.2",
     "better-sqlite3": "^12.4.0",
     "cookie-parser": "^1.4.7",
+    "exceljs": "^4.4.0",
     "express": "^5.1.0",
     "otpauth": "^9.3.0",
     "qrcode": "^1.5.4",
     "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@mwc/ui": "workspace:*",
     "@types/better-sqlite3": "^7.6.12",
     "@types/cookie-parser": "^1.4.8",
     "@types/express": "^5.0.0",
@@ -29,7 +31,6 @@
     "@types/supertest": "^6.0.2",
     "supertest": "^7.0.0",
     "tsx": "^4.19.0",
-    "vitest": "^3.2.0",
-    "@mwc/ui": "workspace:*"
+    "vitest": "^3.2.0"
   }
 }

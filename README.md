@@ -35,4 +35,4 @@ Other commands: `pnpm test`, `pnpm typecheck`, `pnpm --filter @mwc/web build`
 | Milestone | State |
 |---|---|
 | M0 Foundations — sign-in, 2-step verification, custom roles, users, change log, brand, zh-TW/en | ✅ done |
-| M1 Inventory core | next |
+| M1 Inventory core — storage, wines, stock, search, moves, stock-out, prices, Excel import | 🟡 in progress (lists, labels, photos, stocktakes next) |
