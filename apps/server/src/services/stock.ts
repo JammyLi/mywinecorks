@@ -4,6 +4,7 @@ import type { DB } from '../db/registry.ts';
 import { nowIso } from '../db/registry.ts';
 import { ApiError, badRequest, conflict, forbidden, notFound } from '../errors.ts';
 import { audit, type Actor } from './audit.ts';
+import { canonicalName } from './importer.ts';
 import {
   cellarOfRack,
   clean,
@@ -111,7 +112,8 @@ export function merchantId(db: DB, m: unknown): number | null {
     if (!db.prepare('SELECT 1 FROM merchants WHERE id = ?').get(m)) throw badRequest();
     return m;
   }
-  const name = clean(m);
+  // A remembered match (e.g. 吉興 → 吉星) applies to typed names too.
+  const name = canonicalName(db, 'merchant', clean(m));
   const row = db.prepare('SELECT id FROM merchants WHERE name = ?').get(name) as { id: number } | undefined;
   return row?.id ?? Number(db.prepare('INSERT INTO merchants (name) VALUES (?)').run(name).lastInsertRowid);
 }

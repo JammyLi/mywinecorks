@@ -1,4 +1,4 @@
-import { useRef, useState, type DragEvent } from 'react';
+import { useEffect, useRef, useState, type DragEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useI18n } from '@mwc/ui';
 import { ApiError, api } from '../api.ts';
@@ -14,13 +14,23 @@ interface Issue {
 }
 interface Suggestion {
   field: string;
-  kind: 'spelling' | 'synonym' | 'similar';
+  kind: 'remembered' | 'spelling' | 'synonym' | 'similar';
   from: string;
   to: string;
   fromCount: number;
   toCount: number;
   auto: boolean;
+  existing?: boolean;
 }
+/** For each look-alike pair: are they the same, and which spelling to keep. */
+type Choices = Record<string, { same: boolean; keep: 'to' | 'from' }>;
+const pairId = (x: Suggestion) => `${x.field}|${x.from}|${x.to}`;
+const acceptedOf = (sugs: Suggestion[], c: Choices) =>
+  sugs
+    .filter((x) => !x.auto && c[pairId(x)]?.same)
+    .map((x) =>
+      c[pairId(x)].keep === 'to' ? `${x.field}|${x.from}|${x.to}` : `${x.field}|${x.to}|${x.from}`,
+    );
 interface Preview {
   previewId: string;
   kind: Kind;
@@ -82,7 +92,8 @@ export function ImportPage() {
   const kinds = KINDS.filter(has);
   const [kind, setKind] = useState<Kind>(kinds[0] ?? 'inventory');
   const [pv, setPv] = useState<Preview | null>(null);
-  const [accepted, setAccepted] = useState<string[]>([]);
+  const [choices, setChoices] = useState<Choices>({});
+  const [remember, setRemember] = useState(true);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<unknown>(null);
   const [done, setDone] = useState<Record<string, unknown> | null>(null);
@@ -93,7 +104,7 @@ export function ImportPage() {
     setPv(null);
     setDone(null);
     setErr(null);
-    setAccepted([]);
+    setChoices({});
     if (fileRef.current) fileRef.current.value = '';
   };
   const pick = async (file: File | undefined) => {
@@ -117,7 +128,11 @@ export function ImportPage() {
     setBusy(true);
     setErr(null);
     try {
-      setDone(await api(`/import/${kind}/commit`, { body: { previewId: pv!.previewId, accepted } }));
+      setDone(
+        await api(`/import/${kind}/commit`, {
+          body: { previewId: pv!.previewId, accepted: acceptedOf(pv!.suggestions, choices), remember },
+        }),
+      );
       setPv(null);
     } catch (e) {
       setErr(e);
@@ -211,7 +226,15 @@ export function ImportPage() {
         <ErrorBox error={err} />
       )}
 
-      {pv && <PreviewView pv={pv} accepted={accepted} setAccepted={setAccepted} />}
+      {pv && (
+        <PreviewView
+          pv={pv}
+          choices={choices}
+          setChoices={setChoices}
+          remember={remember}
+          setRemember={setRemember}
+        />
+      )}
       {pv && (
         <div className="row">
           <button className="btn primary" onClick={commit} disabled={busy}>
@@ -226,6 +249,8 @@ export function ImportPage() {
           </span>
         </div>
       )}
+
+      {!pv && kind === 'inventory' && <Aliases />}
 
       {done && (
         <div className="card stack">
@@ -265,15 +290,14 @@ export function ImportPage() {
   );
 }
 
-function PreviewView({
-  pv,
-  accepted,
-  setAccepted,
-}: {
+function PreviewView(props: {
   pv: Preview;
-  accepted: string[];
-  setAccepted: (a: string[]) => void;
+  choices: Choices;
+  setChoices: (c: Choices) => void;
+  remember: boolean;
+  setRemember: (b: boolean) => void;
 }) {
+  const { pv, choices, setChoices } = props;
   const { t } = useI18n();
   const order = { error: 0, warn: 1, info: 2 };
   const issues = [...pv.issues].sort((a, b) => order[a.level] - order[b.level]);
@@ -328,26 +352,71 @@ function PreviewView({
         <div className="card stack">
           <h2 style={{ margin: 0 }}>{t('imp.merges')}</h2>
           {ask.length > 0 && <div className="small muted">{t('imp.mergeHint')}</div>}
-          {ask.map((s) => {
-            const id = `${s.field}|${s.from}|${s.to}`;
+          {ask.map((x) => {
+            const id = pairId(x);
+            const c = choices[id] ?? { same: false, keep: 'to' as const };
+            const set = (p: Partial<typeof c>) => setChoices({ ...choices, [id]: { ...c, ...p } });
+            // An existing winery/region spelling must be kept (renaming would change wine records).
+            const fromLocked = x.existing && x.field !== 'merchant';
+            const name = (n: string, count: number, existing?: boolean) => (
+              <span>
+                “{n}” <span className="muted small">{t('imp.inFile', { n: count })}</span>
+                {existing && (
+                  <span className="tag gold" style={{ marginLeft: 4 }}>
+                    {t('imp.existingTag')}
+                  </span>
+                )}
+              </span>
+            );
             return (
-              <label key={id} className="check">
-                <input
-                  type="checkbox"
-                  checked={accepted.includes(id)}
-                  onChange={(e) =>
-                    setAccepted(e.target.checked ? [...accepted, id] : accepted.filter((x) => x !== id))
-                  }
-                />
-                <span>
-                  {t(`imp.field.${s.field}`)}: “{s.from}” ({s.fromCount}) → “{s.to}” ({s.toCount})
-                </span>
-              </label>
+              <div key={id} className="row" style={{ borderTop: '1px solid var(--line)', paddingTop: 8 }}>
+                <label className="check" style={{ minWidth: 150 }}>
+                  <input type="checkbox" checked={c.same} onChange={(e) => set({ same: e.target.checked })} />
+                  <b>{t(`imp.field.${x.field}`)}</b> · {t('imp.same')}
+                </label>
+                <span className="small muted">{t('imp.keep')}:</span>
+                <label className="check">
+                  <input
+                    type="radio"
+                    name={id}
+                    disabled={!c.same}
+                    checked={c.keep === 'to'}
+                    onChange={() => set({ keep: 'to' })}
+                  />
+                  {name(x.to, x.toCount, x.existing)}
+                </label>
+                <label className="check" style={{ opacity: fromLocked ? 0.5 : 1 }}>
+                  <input
+                    type="radio"
+                    name={id}
+                    disabled={!c.same || fromLocked}
+                    checked={c.keep === 'from'}
+                    onChange={() => set({ keep: 'from' })}
+                  />
+                  {name(x.from, x.fromCount)}
+                </label>
+              </div>
             );
           })}
+          {ask.length > 0 && (
+            <label className="check small">
+              <input
+                type="checkbox"
+                checked={props.remember}
+                onChange={(e) => props.setRemember(e.target.checked)}
+              />
+              {t('imp.remember')}
+            </label>
+          )}
           {auto.length > 0 && (
             <div className="small muted">
-              {t('imp.mergeAuto')}: {auto.map((s) => `“${s.from}” → “${s.to}”`).join('；')}
+              {t('imp.mergeAuto')}:{' '}
+              {auto
+                .map(
+                  (s) =>
+                    `“${s.from}” → “${s.to}”${s.kind === 'remembered' ? ` (${t('imp.rememberedTag')})` : ''}`,
+                )
+                .join('；')}
             </div>
           )}
         </div>
@@ -379,5 +448,49 @@ function PreviewView({
         </div>
       </div>
     </div>
+  );
+}
+
+function Aliases() {
+  const { t } = useI18n();
+  const [rows, setRows] = useState<{ field: string; alias: string; canonical: string }[] | null>(null);
+  const load = () =>
+    api<typeof rows>('/import/aliases')
+      .then(setRows)
+      .catch(() => setRows([]));
+  useEffect(() => {
+    load();
+  }, []);
+  const forget = async (field: string, alias: string) => {
+    await api('/import/aliases', { method: 'DELETE', body: { field, alias } });
+    load();
+  };
+  if (!rows) return null;
+  return (
+    <details className="card">
+      <summary style={{ cursor: 'pointer' }}>
+        <b>{t('imp.aliasesTitle')}</b> <span className="muted">({rows.length})</span>
+      </summary>
+      <p className="muted small">{rows.length ? t('imp.aliasesIntro') : t('imp.aliasesNone')}</p>
+      {rows.length > 0 && (
+        <table className="t">
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.field + r.alias}>
+                <td className="muted">{t(`imp.field.${r.field}`)}</td>
+                <td>
+                  {r.alias} → <b>{r.canonical}</b>
+                </td>
+                <td className="num">
+                  <button className="btn ghost sm" onClick={() => forget(r.field, r.alias)}>
+                    {t('imp.forget')}
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </details>
   );
 }

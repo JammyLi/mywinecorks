@@ -11,6 +11,8 @@ import {
   parseWorkbook,
   plan,
   suggestMerges,
+  rememberMerges,
+  renameMerchants,
   template,
   type ImportKind,
   type Parsed,
@@ -54,6 +56,36 @@ function checkKind(req: Parameters<Parameters<Api['get']>[2]>[0], kind: ImportKi
 }
 
 export function mountImport(api: Api) {
+  /** Remembered "same name" matches (e.g. 吉興 → 吉星). */
+  api.get('/import/aliases', perm('importExport', 'import'), (req) => {
+    const rows = req.ctx
+      .db!.prepare(
+        'SELECT field, alias, canonical, created_at FROM name_aliases ORDER BY field, canonical, alias',
+      )
+      .all() as { field: string }[];
+    return sees(perms(req), 'seeMerchants') ? rows : rows.filter((r) => r.field !== 'merchant');
+  });
+
+  api.delete('/import/aliases', perm('importExport', 'import'), (req) => {
+    const b = z
+      .object({ field: z.enum(['winery', 'merchant', 'region']), alias: z.string().min(1) })
+      .parse(req.body);
+    const db = req.ctx.db!;
+    const row = db
+      .prepare('SELECT canonical FROM name_aliases WHERE field = ? AND alias = ?')
+      .get(b.field, b.alias) as { canonical: string } | undefined;
+    if (!row) throw notFound();
+    db.prepare('DELETE FROM name_aliases WHERE field = ? AND alias = ?').run(b.field, b.alias);
+    audit(db, actor(req), {
+      category: 'import',
+      action: 'aliasRemoved',
+      objType: 'alias',
+      objId: b.field,
+      objLabel: `${b.alias} → ${row.canonical}`,
+    });
+    return { ok: true };
+  });
+
   api.get('/import/:kind/template', perm('importExport', 'import'), async (req, res) => {
     const kind = kindOf(req.params.kind);
     checkKind(req, kind);
@@ -80,7 +112,7 @@ export function mountImport(api: Api) {
       throw new ApiError(400, 'missingColumns', { columns: parsed.missingColumns });
     if (!parsed.rows.length) throw badRequest('emptySheet');
     if (parsed.rows.length > MAX_ROWS) throw new ApiError(400, 'tooManyRows', { max: MAX_ROWS });
-    const suggestions = kind === 'inventory' ? suggestMerges(parsed.rows) : [];
+    const suggestions = kind === 'inventory' ? suggestMerges(parsed.rows, req.ctx.db!) : [];
     const ctx = { db: req.ctx.db!, p: perms(req), who: actor(req), filename };
     const pl = plan(kind, ctx, parsed.rows, mergesFrom(suggestions), false);
     for (const [id, v] of previews) if (v.expires < Date.now()) previews.delete(id);
@@ -111,7 +143,11 @@ export function mountImport(api: Api) {
     const kind = kindOf(req.params.kind);
     checkKind(req, kind);
     const body = z
-      .object({ previewId: z.string(), accepted: z.array(z.string()).max(500).default([]) })
+      .object({
+        previewId: z.string(),
+        accepted: z.array(z.string()).max(500).default([]),
+        remember: z.boolean().default(true),
+      })
       .parse(req.body);
     const pv = previews.get(body.previewId);
     if (
@@ -125,8 +161,10 @@ export function mountImport(api: Api) {
     const db = req.ctx.db!;
     const ctx = { db, p: perms(req), who: actor(req), filename: pv.filename };
     const result = db.transaction(() => {
+      renameMerchants(db, pv.suggestions, body.accepted, ctx.who);
       const pl = plan(kind, ctx, pv.parsed.rows, mergesFrom(pv.suggestions, body.accepted), true);
       const r = pl.apply();
+      if (body.remember) rememberMerges(db, pv.suggestions, body.accepted, req.ctx.user!.id);
       audit(db, ctx.who, {
         category: 'import',
         action: 'importDone',

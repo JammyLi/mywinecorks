@@ -353,3 +353,96 @@ describe('storage, prices and merchants import', () => {
     await commit(owner, 'merchants', pv.body.previewId).expect(404); // a preview can be used once
   });
 });
+
+describe('look-alike names (Chinese and existing data)', () => {
+  const sheet = (merchant: string, caseNo: string) => [
+    ['酒窖', '箱號', '酒莊', '品名', '年份', '種類', '瓶數', '酒商'],
+    ['內湖', caseNo, 'Krug', 'Grande Cuvée', 'NV', 'CP', 6, merchant],
+  ];
+
+  it('suggests 吉星 = 吉興 and 安迪 = 安迪酒藏, against names already in the workspace; remembers the choice', async () => {
+    // Existing data: merchants 吉星 and 安迪酒藏.
+    const first = await preview(
+      owner,
+      'inventory',
+      await xlsx([
+        ...sheet('吉星', 'C-1'),
+        ['內湖', 'C-2', 'Krug', 'Grande Cuvée', 'NV', 'CP', 6, '安迪酒藏'],
+      ]),
+    ).expect(200);
+    await commit(owner, 'inventory', first.body.previewId).expect(200);
+
+    const rows = [...sheet('吉興', 'C-3'), ['內湖', 'C-4', 'Krug', 'Grande Cuvée', 'NV', 'CP', 6, '安迪']];
+    const pv = await preview(owner, 'inventory', await xlsx(rows)).expect(200);
+    const sims = pv.body.suggestions
+      .filter((x: { kind: string }) => x.kind === 'similar')
+      .map((x: { from: string; to: string; existing: boolean }) => [x.from, x.to, x.existing]);
+    expect(sims).toEqual(
+      expect.arrayContaining([
+        ['吉興', '吉星', true],
+        ['安迪', '安迪酒藏', true],
+      ]),
+    );
+    // Keep the existing spelling 吉星; for 安迪 the user prefers the short name → the existing merchant is renamed.
+    await commit(owner, 'inventory', pv.body.previewId, [
+      'merchant|吉興|吉星',
+      'merchant|安迪酒藏|安迪',
+    ]).expect(200);
+    const merchants = (await owner.get('/api/merchants')).body.map((m: { name: string; lots: number }) => [
+      m.name,
+      m.lots,
+    ]);
+    expect(merchants).toEqual(
+      expect.arrayContaining([
+        ['吉星', 2],
+        ['安迪', 2],
+      ]),
+    );
+    expect(merchants).toHaveLength(2);
+
+    // Next import: 吉興 is matched automatically ("remembered").
+    const next = await preview(owner, 'inventory', await xlsx(sheet('吉興', 'C-5'))).expect(200);
+    expect(next.body.suggestions[0]).toMatchObject({
+      kind: 'remembered',
+      from: '吉興',
+      to: '吉星',
+      auto: true,
+    });
+    // Typing 吉興 when receiving stock also becomes 吉星.
+    await owner
+      .post('/api/wines/W-000001/stock')
+      .send({
+        qty: 1,
+        dest: {
+          mode: 'loose',
+          rackId: (s.db.prepare('SELECT id FROM racks LIMIT 1').get() as { id: number }).id,
+        },
+        merchant: '吉興',
+      })
+      .expect(200);
+    expect(
+      (
+        s.db
+          .prepare('SELECT m.name FROM lots l JOIN merchants m ON m.id = l.merchant_id ORDER BY l.id DESC')
+          .get() as { name: string }
+      ).name,
+    ).toBe('吉星');
+
+    const aliases = (await owner.get('/api/import/aliases').expect(200)).body;
+    expect(
+      aliases.map((a: { alias: string; canonical: string }) => `${a.alias}→${a.canonical}`).sort(),
+    ).toEqual(['吉興→吉星', '安迪酒藏→安迪']);
+    await owner.delete('/api/import/aliases').send({ field: 'merchant', alias: '吉興' }).expect(200);
+    const after = await preview(owner, 'inventory', await xlsx(sheet('吉興', 'C-6'))).expect(200);
+    expect(after.body.suggestions[0].kind).toBe('similar');
+  });
+
+  it('does not pair unrelated short Chinese names', async () => {
+    const pv = await preview(
+      owner,
+      'inventory',
+      await xlsx([...sheet('吉星', 'D-1'), ['內湖', 'D-2', 'Krug', 'Grande Cuvée', 'NV', 'CP', 6, '金星']]),
+    ).expect(200);
+    expect(pv.body.suggestions.filter((x: { field: string }) => x.field === 'merchant')).toEqual([]);
+  });
+});

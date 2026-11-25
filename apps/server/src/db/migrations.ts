@@ -233,4 +233,19 @@ CREATE TABLE price_history (
 CREATE INDEX price_wine ON price_history(wine_id, voided, effective_date);
 `,
   },
+  {
+    id: 3,
+    name: 'name_aliases',
+    sql: `
+-- Confirmed "same name" matches (e.g. merchant 吉興 = 吉星), applied on later imports and typing.
+CREATE TABLE name_aliases (
+  field TEXT NOT NULL,                    -- winery / merchant / region
+  alias TEXT NOT NULL COLLATE NOCASE,
+  canonical TEXT NOT NULL,
+  created_by INTEGER,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (field, alias)
+);
+`,
+  },
 ];

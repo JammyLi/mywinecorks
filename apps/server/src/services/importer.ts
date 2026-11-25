@@ -491,12 +491,14 @@ export interface Issue {
 }
 export interface Suggestion {
   field: 'winery' | 'merchant' | 'region';
-  kind: 'spelling' | 'synonym' | 'similar';
+  kind: 'remembered' | 'spelling' | 'synonym' | 'similar';
   from: string;
   to: string;
   fromCount: number;
   toCount: number;
   auto: boolean;
+  /** `to` is already used in this workspace */
+  existing?: boolean;
 }
 type Row = Record<string, string> & { line: number };
 
@@ -557,35 +559,115 @@ export async function parseWorkbook(kind: ImportKind, buf: Buffer): Promise<Pars
 }
 
 // ---------------------------------------------------------------- name merging (inventory)
-export function suggestMerges(rows: Row[]): Suggestion[] {
+type Field = 'winery' | 'merchant' | 'region';
+const FIELDS: Field[] = ['winery', 'merchant', 'region'];
+const hasHan = (s: string) => /\p{Script=Han}/u.test(s);
+
+/** Names already in this workspace, with how often they are used. */
+function knownNames(db: DB, field: Field): Map<string, number> {
+  const sql =
+    field === 'merchant'
+      ? 'SELECT m.name n, (SELECT COUNT(*) FROM lots WHERE merchant_id = m.id) c FROM merchants m'
+      : `SELECT ${field} n, COUNT(*) c FROM wines WHERE COALESCE(${field}, '') <> '' GROUP BY ${field}`;
+  return new Map((db.prepare(sql).all() as { n: string; c: number }[]).map((r) => [r.n, r.c]));
+}
+
+export function aliasesOf(db: DB, field: Field): Map<string, string> {
+  return new Map(
+    (
+      db.prepare('SELECT alias, canonical FROM name_aliases WHERE field = ?').all(field) as {
+        alias: string;
+        canonical: string;
+      }[]
+    ).map((r) => [r.alias.toLowerCase(), r.canonical]),
+  );
+}
+
+/** Apply a remembered match to a typed name (merchant / winery). */
+export function canonicalName(db: DB, field: Field, name: string): string {
+  return aliasesOf(db, field).get(name.trim().toLowerCase()) ?? name;
+}
+
+/**
+ * Could two names be the same thing spelled differently?
+ * Chinese names are short, so 2 characters already count: 吉星 ≈ 吉興, 安迪 ≈ 安迪酒藏.
+ */
+export function looksSame(a: string, b: string): boolean {
+  const [ka, kb] = [norm(a), norm(b)];
+  if (!ka || !kb || ka === kb) return false;
+  const short = Math.min(ka.length, kb.length);
+  const dist = lev(ka, kb);
+  if (hasHan(ka) || hasHan(kb)) {
+    if (short >= 2 && (ka.startsWith(kb) || kb.startsWith(ka))) return true;
+    return short >= 2 && ka[0] === kb[0] && dist <= 1 && Math.abs(ka.length - kb.length) <= 1;
+  }
+  const contains = short >= 3 && (ka.startsWith(kb) || kb.startsWith(ka));
+  const near =
+    (short >= 3 && short < 6 && dist <= 1 && ka.length === kb.length && ka[0] === kb[0]) ||
+    (short >= 6 && dist <= 2);
+  return contains || near;
+}
+
+/**
+ * Name problems in an import file, compared within the file AND against names already in the workspace:
+ * remembered matches and spelling variants are applied automatically; look-alikes are suggested.
+ */
+export function suggestMerges(rows: Row[], db?: DB): Suggestion[] {
   const out: Suggestion[] = [];
-  for (const field of ['winery', 'merchant', 'region'] as const) {
+  for (const field of FIELDS) {
     const counts = new Map<string, number>();
     for (const r of rows) if (r[field]) counts.set(r[field], (counts.get(r[field]) ?? 0) + 1);
+    const known = db ? knownNames(db, field) : new Map<string, number>();
+    const aliases = db ? aliasesOf(db, field) : new Map<string, string>();
     const merged = new Map<string, string>();
-    // Same letters, different case / accents / spacing → merge automatically.
-    const byKey = new Map<string, [string, number][]>();
+    const total = (n: string) => (counts.get(n) ?? 0) + (known.get(n) ?? 0);
+
+    // 0. Matches confirmed on an earlier import.
     for (const [name, n] of counts) {
+      const to = aliases.get(name.toLowerCase());
+      if (to && to !== name) {
+        merged.set(name, to);
+        out.push({
+          field,
+          kind: 'remembered',
+          from: name,
+          to,
+          fromCount: n,
+          toCount: total(to),
+          auto: true,
+          existing: known.has(to),
+        });
+      }
+    }
+    // 1. Same letters, different case / accents / spacing → merge automatically.
+    //    Prefer a name already in the workspace, then accents / Chinese, then the most used.
+    const byKey = new Map<string, string[]>();
+    for (const name of new Set([...counts.keys(), ...known.keys()])) {
+      if (merged.has(name)) continue;
       const k = norm(name);
-      byKey.set(k, [...(byKey.get(k) ?? []), [name, n]]);
+      byKey.set(k, [...(byKey.get(k) ?? []), name]);
     }
     for (const group of byKey.values()) {
       if (group.length < 2) continue;
-      // Prefer the spelling with accents / Chinese characters, then the most used one.
       group.sort(
-        (a, b) => Number(/[^\x00-\x7f]/.test(b[0])) - Number(/[^\x00-\x7f]/.test(a[0])) || b[1] - a[1],
+        (a, b) =>
+          Number(known.has(b)) - Number(known.has(a)) ||
+          Number(/[^\x00-\x7f]/.test(b)) - Number(/[^\x00-\x7f]/.test(a)) ||
+          total(b) - total(a),
       );
-      const to = group[0][0];
-      for (const [name, n] of group.slice(1)) {
+      const to = group[0];
+      for (const name of group.slice(1)) {
+        if (!counts.has(name)) continue;
         merged.set(name, to);
         out.push({
           field,
           kind: 'spelling',
           from: name,
           to,
-          fromCount: n,
-          toCount: counts.get(to)!,
+          fromCount: counts.get(name)!,
+          toCount: total(to),
           auto: true,
+          existing: known.has(to),
         });
       }
     }
@@ -600,54 +682,122 @@ export function suggestMerges(rows: Row[]): Suggestion[] {
             from: name,
             to: syn,
             fromCount: n,
-            toCount: counts.get(syn) ?? 0,
+            toCount: total(syn),
             auto: true,
+            existing: known.has(syn),
           });
         }
       }
-    // Near spellings → suggestion only, the user decides.
-    const reduced = new Map<string, number>();
-    for (const [name, n] of counts) {
-      const t = merged.get(name) ?? name;
-      reduced.set(t, (reduced.get(t) ?? 0) + n);
-    }
-    const names = [...reduced.keys()];
-    for (let i = 0; i < names.length; i++)
-      for (let j = i + 1; j < names.length; j++) {
-        const [a, b] = [names[i], names[j]];
-        const [ka, kb] = [norm(a), norm(b)];
-        if (!ka || !kb) continue;
-        const short = Math.min(ka.length, kb.length);
-        const contains = short >= 3 && (ka.startsWith(kb) || kb.startsWith(ka));
-        const dist = lev(ka, kb);
-        const near =
-          (short >= 3 && short < 6 && dist <= 1 && ka.length === kb.length && ka[0] === kb[0]) ||
-          (short >= 6 && dist <= 2);
-        if (contains || near) {
-          const [to, from] = reduced.get(a)! >= reduced.get(b)! ? [a, b] : [b, a];
-          out.push({
-            field,
-            kind: 'similar',
-            from,
-            to,
-            fromCount: reduced.get(from)!,
-            toCount: reduced.get(to)!,
-            auto: false,
-          });
-        }
+    // 2. Look-alikes → suggestion only; the user decides (and which spelling to keep).
+    const fileNames = [...new Set([...counts.keys()].map((n) => merged.get(n) ?? n))];
+    const candidates = [...new Set([...fileNames, ...known.keys()])];
+    const seen = new Set<string>();
+    for (const a of fileNames)
+      for (const b of candidates) {
+        if (a === b || !looksSame(a, b)) continue;
+        const pair = [a, b].sort().join('\u0000');
+        if (seen.has(pair)) continue;
+        seen.add(pair);
+        const [to, from] =
+          known.has(b) && !known.has(a)
+            ? [b, a]
+            : known.has(a) && !known.has(b)
+              ? [a, b]
+              : total(a) >= total(b)
+                ? [a, b]
+                : [b, a];
+        const fileCount = (n: string) =>
+          [...counts].filter(([x]) => (merged.get(x) ?? x) === n).reduce((s, [, c]) => s + c, 0);
+        out.push({
+          field,
+          kind: 'similar',
+          from,
+          to,
+          fromCount: fileCount(from) || total(from),
+          toCount: total(to),
+          auto: false,
+          existing: known.has(to),
+        });
       }
   }
   return out;
 }
 
 export type Merges = Partial<Record<'winery' | 'merchant' | 'region', Record<string, string>>>;
+/**
+ * Merges to apply: automatic ones, plus look-alikes the user confirmed as "field|from|to".
+ * The user may keep either spelling, so a confirmed pair may come in either direction.
+ */
 export function mergesFrom(s: Suggestion[], accepted: string[] = []): Merges {
   const m: Merges = {};
-  for (const x of s) {
-    const id = `${x.field}|${x.from}|${x.to}`;
-    if (x.auto || accepted.includes(id)) (m[x.field] ??= {})[x.from] = x.to;
+  for (const x of s) if (x.auto) (m[x.field] ??= {})[x.from] = x.to;
+  for (const id of accepted) {
+    const [field, from, to] = id.split('|') as [Field, string, string];
+    const sug = s.find(
+      (x) =>
+        !x.auto &&
+        x.field === field &&
+        ((x.from === from && x.to === to) || (x.from === to && x.to === from)),
+    );
+    if (!sug) continue;
+    // Reversed: keep the file's spelling instead of the existing one — only merchants can be renamed.
+    if (sug.existing && sug.to === from && field !== 'merchant') continue;
+    const fm = (m[field] ??= {});
+    fm[from] = to;
+    // Names that were already merged into `from` follow it.
+    for (const [k, v] of Object.entries(fm)) if (v === from) fm[k] = to;
   }
   return m;
+}
+
+/**
+ * When the user keeps the file's spelling for a merchant that already exists (安迪酒藏 → 安迪),
+ * rename the existing merchant (or fold it into the chosen one) so there is a single merchant.
+ */
+export function renameMerchants(db: DB, s: Suggestion[], accepted: string[], who: Actor) {
+  for (const id of accepted) {
+    const [field, from, to] = id.split('|');
+    if (field !== 'merchant') continue;
+    const sug = s.find(
+      (x) => !x.auto && x.field === 'merchant' && x.existing && x.from === to && x.to === from,
+    );
+    if (!sug) continue;
+    const old = db.prepare('SELECT id FROM merchants WHERE name = ?').get(from) as { id: number } | undefined;
+    if (!old) continue;
+    const target = db.prepare('SELECT id FROM merchants WHERE name = ?').get(to) as
+      { id: number } | undefined;
+    if (target) {
+      db.prepare('UPDATE lots SET merchant_id = ? WHERE merchant_id = ?').run(target.id, old.id);
+      db.prepare('DELETE FROM merchants WHERE id = ?').run(old.id);
+    } else db.prepare('UPDATE merchants SET name = ? WHERE id = ?').run(to, old.id);
+    audit(db, who, {
+      category: 'settings',
+      action: 'merchantRenamed',
+      objType: 'merchant',
+      objId: target?.id ?? old.id,
+      objLabel: to,
+      changes: { name: [from, to] },
+    });
+  }
+}
+
+/** Remember confirmed look-alike matches for later imports and typing. */
+export function rememberMerges(db: DB, s: Suggestion[], accepted: string[], userId: number | null) {
+  const ins = db.prepare(
+    'INSERT INTO name_aliases (field, alias, canonical, created_by, created_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(field, alias) DO UPDATE SET canonical = excluded.canonical',
+  );
+  for (const id of accepted) {
+    const [field, from, to] = id.split('|');
+    if (
+      s.some(
+        (x) =>
+          !x.auto &&
+          x.field === field &&
+          ((x.from === from && x.to === to) || (x.from === to && x.to === from)),
+      )
+    )
+      ins.run(field, from, to, userId, nowIso());
+  }
 }
 
 // ---------------------------------------------------------------- validation + commit

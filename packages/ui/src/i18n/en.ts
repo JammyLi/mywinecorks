@@ -489,7 +489,7 @@ export const en = {
   'imp.merges': 'Names that look the same',
   'imp.mergeAuto': 'Merged automatically',
   'imp.mergeAsk': 'Merge?',
-  'imp.mergeHint': 'Tick the ones that are the same.',
+  'imp.mergeHint': 'Tick the names that are the same, and choose which spelling to keep.',
   'imp.lvl.error': 'Error',
   'imp.lvl.warn': 'Check',
   'imp.lvl.info': 'Note',
@@ -575,6 +575,18 @@ export const en = {
   'users.resetPwLink': 'Reset password link',
   'users.resetLinkIntro':
     'Send this link to the user. It works once, expires in 7 days, and unlocks the account.',
+  'audit.act.aliasRemoved': 'Remembered name match removed',
+  'audit.act.merchantRenamed': 'Merchant renamed',
+  'imp.same': 'Same',
+  'imp.keep': 'Keep',
+  'imp.existingTag': 'in your data',
+  'imp.inFile': '{n} rows',
+  'imp.remember': 'Remember these matches for future imports and typing',
+  'imp.rememberedTag': 'Remembered',
+  'imp.aliasesTitle': 'Remembered name matches',
+  'imp.aliasesIntro': 'These spellings are changed automatically when importing or typing.',
+  'imp.aliasesNone': 'None yet. Matches you confirm in an import preview appear here.',
+  'imp.forget': 'Forget',
 };
 
 export type Dict = typeof en;

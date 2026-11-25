@@ -23,6 +23,7 @@ import {
   wineKey,
 } from '../services/inventory.ts';
 import { buildSearch, type SearchQuery } from '../services/search.ts';
+import { canonicalName } from '../services/importer.ts';
 import {
   addPrice,
   moveItems,
