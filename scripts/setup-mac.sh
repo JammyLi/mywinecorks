@@ -4,6 +4,12 @@
 # Installs Node 22 + pnpm if needed, installs packages, creates your workspace
 # (prints the Owner's one-time setup link), then starts the app.
 set -euo pipefail
+# Apple Silicon Mac running this Terminal under Rosetta (Intel mode)? Re-run natively,
+# so Homebrew, Node and the database module are all arm64.
+if [ "$(sysctl -n sysctl.proc_translated 2>/dev/null || echo 0)" = "1" ]; then
+  echo "Switching from Rosetta to native Apple Silicon…"
+  exec arch -arm64 /bin/bash "$0" "$@"
+fi
 cd "$(dirname "$0")/.."
 ROOT="$(pwd)"
 green() { printf '\033[32m%s\033[0m\n' "$*"; }
