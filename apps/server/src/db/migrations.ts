@@ -321,4 +321,101 @@ CREATE TABLE offline_ops (
 CREATE INDEX offline_ops_user ON offline_ops(user_id, status);
 `,
   },
+  {
+    id: 7,
+    name: 'm4_customers_orders',
+    sql: `
+CREATE TABLE customers (
+  id INTEGER PRIMARY KEY,
+  customer_no TEXT NOT NULL UNIQUE,       -- C-0001 (MyWines format)
+  name TEXT NOT NULL,
+  kind TEXT NOT NULL DEFAULT 'person',    -- person / company
+  tax_id TEXT,
+  contact TEXT,
+  phone TEXT,
+  email TEXT,
+  address TEXT,
+  lang TEXT NOT NULL DEFAULT 'zh-TW',     -- language of their order documents
+  discount REAL,                          -- default line discount, %
+  note TEXT,
+  active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL,
+  updated_at TEXT
+);
+CREATE TABLE customer_addresses (
+  id INTEGER PRIMARY KEY,
+  customer_id INTEGER NOT NULL REFERENCES customers(id),
+  label TEXT,
+  address TEXT NOT NULL,
+  is_default INTEGER NOT NULL DEFAULT 0
+);
+-- Order (SPEC §8). status = fulfilment: draft → confirmed (bottles reserved) → picked → shipped → closed,
+-- or cancelled. Invoicing and payment are tracked beside it (invoice_no, payments).
+CREATE TABLE orders (
+  id INTEGER PRIMARY KEY,
+  order_no TEXT NOT NULL UNIQUE,          -- SO-YYYYMMDD-NNN (MyWines format)
+  customer_id INTEGER REFERENCES customers(id),
+  order_date TEXT NOT NULL,
+  delivery_date TEXT,
+  delivery TEXT NOT NULL DEFAULT 'ship',  -- ship / pickup
+  lang TEXT NOT NULL DEFAULT 'zh-TW',
+  address TEXT,
+  status TEXT NOT NULL DEFAULT 'draft',
+  note TEXT,
+  currency TEXT NOT NULL,
+  shipping_fee INTEGER NOT NULL DEFAULT 0, -- minor units
+  tax_rate REAL NOT NULL DEFAULT 0,       -- %
+  from_list_id INTEGER,
+  invoice_no TEXT,
+  invoiced_at TEXT,
+  created_by INTEGER,
+  created_label TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT,
+  confirmed_by INTEGER, confirmed_at TEXT,
+  picked_by INTEGER, picked_at TEXT,
+  shipped_by INTEGER, shipped_at TEXT,
+  closed_at TEXT,
+  cancelled_by INTEGER, cancelled_at TEXT, cancel_reason TEXT
+);
+CREATE INDEX orders_customer ON orders(customer_id);
+CREATE INDEX orders_status ON orders(status, order_date);
+CREATE TABLE order_lines (
+  id INTEGER PRIMARY KEY,
+  order_id INTEGER NOT NULL REFERENCES orders(id),
+  wine_id INTEGER NOT NULL REFERENCES wines(id),
+  qty INTEGER NOT NULL,
+  unit_price INTEGER,                     -- ex-tax sale price per bottle, minor units
+  discount REAL NOT NULL DEFAULT 0,       -- %
+  pos INTEGER NOT NULL DEFAULT 0,
+  note TEXT
+);
+CREATE INDEX order_lines_order ON order_lines(order_id);
+CREATE INDEX order_lines_wine ON order_lines(wine_id);
+-- Bottles held for / picked for / shipped on an order.
+CREATE TABLE order_bottles (
+  order_id INTEGER NOT NULL REFERENCES orders(id),
+  line_id INTEGER NOT NULL REFERENCES order_lines(id),
+  bottle_id INTEGER NOT NULL REFERENCES bottles(id),
+  state TEXT NOT NULL DEFAULT 'reserved', -- reserved / picked / shipped
+  PRIMARY KEY (order_id, bottle_id)
+);
+CREATE INDEX order_bottles_bottle ON order_bottles(bottle_id);
+-- Payments happen offline (transfer, cash, card at the counter); partial payments allowed.
+CREATE TABLE payments (
+  id INTEGER PRIMARY KEY,
+  order_id INTEGER NOT NULL REFERENCES orders(id),
+  paid_on TEXT NOT NULL,                  -- YYYY-MM-DD
+  method TEXT NOT NULL,                   -- transfer / cash / card / cheque / other
+  amount INTEGER NOT NULL,                -- minor units; negative = refund
+  reference TEXT,
+  note TEXT,
+  voided INTEGER NOT NULL DEFAULT 0,
+  void_reason TEXT,
+  created_by INTEGER,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX payments_order ON payments(order_id);
+`,
+  },
 ];

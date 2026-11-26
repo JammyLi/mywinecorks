@@ -6,8 +6,8 @@
  *   (bottle no., CASE:no, LOCKER:id, RACK:id) keep scanning correctly.
  * - Everything runs in one transaction. A dry run does the full import and then rolls back,
  *   so the report is exactly what a real run would do.
- * - Customers, addresses and orders have no home until M4; the run keeps a copy of the source
- *   database in the workspace (legacy/) so M4 can bring them in, and reports their counts.
+ * - Customers, addresses and orders come over too; a copy of the source database is kept in the
+ *   workspace (legacy/) as a record of what was moved.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -52,7 +52,6 @@ export interface MigrateReport {
     result: 'created' | 'linked' | 'skipped';
     setupToken?: string;
   }[];
-  later: { customers: number; addresses: number; orders: number; orderLines: number };
   legacyCopy?: string;
 }
 
@@ -165,12 +164,6 @@ export function migrateMyWines(src: DB, db: DB, o: MigrateOptions): MigrateRepor
     counts,
     issues: [],
     users: [],
-    later: {
-      customers: count(src, 'customers'),
-      addresses: count(src, 'customer_addresses'),
-      orders: count(src, 'orders'),
-      orderLines: count(src, 'order_lines'),
-    },
   };
 
   const run = () => {
@@ -574,7 +567,7 @@ export function migrateMyWines(src: DB, db: DB, o: MigrateOptions): MigrateRepor
     );
     if (counters.customer) setCounter.run('customer', counters.customer);
 
-    // ---- settings: label sizes etc.; company details kept for orders (M4)
+    // ---- settings: label sizes etc.; company details go to the order documents
     const setSetting = db.prepare(
       'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
     );
@@ -586,6 +579,27 @@ export function migrateMyWines(src: DB, db: DB, o: MigrateOptions): MigrateRepor
       else if (k.startsWith('company.') || k.startsWith('price.') || k.startsWith('label.'))
         setSetting.run(`mywines.${k}`, v);
     }
+    const co = JSON.parse(
+      (db.prepare("SELECT value FROM settings WHERE key = 'company'").get() as { value: string } | undefined)
+        ?.value ?? '{}',
+    ) as Record<string, unknown>;
+    const s = (k: string) => srcSettings[k] || undefined;
+    const merged = {
+      ...co,
+      ...(s('company.name_zh') ? { name: s('company.name_zh') } : {}),
+      ...(s('company.name_en') ? { nameEn: s('company.name_en') } : {}),
+      ...(s('company.tax_id') ? { taxId: s('company.tax_id') } : {}),
+      ...(s('company.phone') ? { phone: s('company.phone') } : {}),
+      ...(s('company.email') ? { email: s('company.email') } : {}),
+      ...(s('company.address') ? { address: s('company.address') } : {}),
+      ...(s('company.tax_rate') && Number.isFinite(Number(s('company.tax_rate')))
+        ? { taxRate: Number(s('company.tax_rate')) }
+        : {}),
+      ...(s('price.order_markup') && Number.isFinite(Number(s('price.order_markup')))
+        ? { orderMarkup: Number(s('price.order_markup')) }
+        : {}),
+    };
+    setSetting.run('company', JSON.stringify(merged));
 
     // ---- change log: every MyWines entry, marked with its original action
     const logs = all(src, 'audit_log');
@@ -622,8 +636,119 @@ export function migrateMyWines(src: DB, db: DB, o: MigrateOptions): MigrateRepor
     }
     tally('audit_log', logs.length, logs.length);
 
-    if (report.later.customers || report.later.orders)
-      issue('ordersLater', 'info', `${report.later.customers} / ${report.later.orders}`);
+    // ---- customers, addresses and orders (ids and C- / SO- numbers kept)
+    const customers = all(src, 'customers');
+    const insCust = db.prepare(
+      `INSERT INTO customers (id, customer_no, name, kind, tax_id, contact, phone, email, address, lang, discount, note, active, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    );
+    for (const c of customers)
+      insCust.run(
+        c.id,
+        String(c.customer_no),
+        clean(c.name) || String(c.customer_no),
+        c.kind === '公司' || c.kind === 'company' ? 'company' : 'person',
+        c.tax_id ?? null,
+        c.contact ?? null,
+        c.phone ?? null,
+        c.email ?? null,
+        c.address ?? null,
+        c.lang === 'en' ? 'en' : 'zh-TW',
+        c.discount ?? null,
+        c.note ?? null,
+        c.active === 0 ? 0 : 1,
+        now,
+      );
+    tally('customers', customers.length, customers.length);
+    const addrs = all(src, 'customer_addresses');
+    for (const a of addrs)
+      db.prepare(
+        'INSERT INTO customer_addresses (id, customer_id, label, address, is_default) VALUES (?, ?, ?, ?, ?)',
+      ).run(a.id, a.customer_id, a.label ?? null, String(a.address ?? ''), a.is_default ? 1 : 0);
+    tally('customer_addresses', addrs.length, addrs.length);
+    const STATUS: Record<string, string> = {
+      draft: 'draft',
+      confirmed: 'confirmed',
+      shipped: 'shipped',
+      cancelled: 'cancelled',
+    };
+    const orders = all(src, 'orders');
+    const insOrder = db.prepare(
+      `INSERT INTO orders (id, order_no, customer_id, order_date, delivery_date, lang, address, status, note, currency, shipping_fee, tax_rate,
+         from_list_id, created_by, created_label, created_at, updated_at, confirmed_by, confirmed_at, shipped_by, shipped_at,
+         cancelled_by, cancelled_at, cancel_reason)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    );
+    for (const x of orders) {
+      const st = STATUS[String(x.status)];
+      if (!st) issue('statusUnknown', 'warn', `${x.order_no}: ${x.status}`);
+      insOrder.run(
+        x.id,
+        String(x.order_no),
+        x.customer_id ?? null,
+        isoDate(x.order_date) ?? now.slice(0, 10),
+        isoDate(x.delivery_date),
+        x.lang === 'en' ? 'en' : 'zh-TW',
+        x.address ?? null,
+        st ?? 'draft',
+        x.note ?? null,
+        ws.currency,
+        money(x.shipping_fee) ?? 0,
+        Number(x.tax_rate ?? 0),
+        x.from_list_id ?? null,
+        uid(x.created_by),
+        String(x.created_by ?? ''),
+        ts(x.created_at) ?? now,
+        ts(x.updated_at),
+        uid(x.confirmed_by),
+        ts(x.confirmed_at),
+        uid(x.shipped_by),
+        ts(x.shipped_at),
+        uid(x.cancelled_by),
+        ts(x.cancelled_at),
+        x.cancel_reason ?? null,
+      );
+    }
+    tally('orders', orders.length, orders.length);
+    const olines = all(src, 'order_lines');
+    for (const l of olines)
+      db.prepare(
+        'INSERT INTO order_lines (id, order_id, wine_id, qty, unit_price, discount, pos, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      ).run(
+        l.id,
+        l.order_id,
+        l.wine_id,
+        l.qty,
+        money(l.unit_price),
+        Number(l.discount ?? 0),
+        l.pos ?? 0,
+        l.note ?? null,
+      );
+    tally('order_lines', olines.length, olines.length);
+    const obs = all(src, 'order_bottles', 'order_id');
+    for (const b of obs)
+      db.prepare('INSERT INTO order_bottles (order_id, line_id, bottle_id, state) VALUES (?, ?, ?, ?)').run(
+        b.order_id,
+        b.line_id,
+        b.bottle_id,
+        b.state === 'shipped' ? 'shipped' : 'reserved',
+      );
+    // A bottle held in MyWines without an order holding it would stay stuck: put it back in stock.
+    const loose = db
+      .prepare(
+        "SELECT bottle_no FROM bottles WHERE status = 'reserved' AND id NOT IN (SELECT bottle_id FROM order_bottles WHERE state = 'reserved')",
+      )
+      .all() as { bottle_no: string }[];
+    for (const b of loose) issue('reservedWithoutOrder', 'warn', b.bottle_no);
+    db.prepare(
+      "UPDATE bottles SET status = 'in_stock' WHERE status = 'reserved' AND id NOT IN (SELECT bottle_id FROM order_bottles WHERE state = 'reserved')",
+    ).run();
+    // Shipped bottles left stock when their order shipped.
+    db.prepare(
+      `UPDATE bottles SET out_at = (SELECT o.shipped_at FROM order_bottles ob JOIN orders o ON o.id = ob.order_id WHERE ob.bottle_id = bottles.id AND ob.state = 'shipped')
+       WHERE status = 'shipped' AND out_at IS NULL`,
+    ).run();
+    tally('order_bottles', obs.length, obs.length);
 
     // ---- checks: every label code must resolve the same way it did in MyWines
     const bad = (

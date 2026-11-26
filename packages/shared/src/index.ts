@@ -17,3 +17,4 @@ export interface Me {
   permissions: import('./permissions.ts').Permissions;
   tenant: { slug: string; name: string; mode: 'cloud' | 'selfhost' };
 }
+export * from './orders.ts';

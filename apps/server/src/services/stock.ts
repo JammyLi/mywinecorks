@@ -316,7 +316,13 @@ export interface StockoutBody {
 }
 
 /** Pick bottles of a wine: loose first, then the emptiest case (MyWines). */
-function pickBottles(db: DB, p: Permissions, wineId: number, qty: number, exclude: Set<number>): number[] {
+export function pickBottles(
+  db: DB,
+  p: Permissions,
+  wineId: number,
+  qty: number,
+  exclude: Set<number>,
+): number[] {
   const rows = db
     .prepare(
       `SELECT b.id, l.cellar_id FROM bottles b JOIN racks k ON k.id = b.rack_id JOIN lockers l ON l.id = k.locker_id

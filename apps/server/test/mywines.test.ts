@@ -41,6 +41,11 @@ INSERT INTO stocktakes (locker_id, user_login, created_at, scanned, report, clos
 INSERT INTO settings (key, value) VALUES ('label.bottle_size', '50x30'), ('company.name_zh', '友捷酒業'), ('price.currency', 'TWD');
 INSERT INTO counters (name, value) VALUES ('wine', 9), ('bottle', 140), ('customer', 3);
 INSERT INTO customers (customer_no, name) VALUES ('C-0001', '王先生');
+INSERT INTO customer_addresses (customer_id, label, address, is_default) VALUES (1, '家', '台北市大安區 1 號', 1);
+INSERT INTO orders (id, order_no, customer_id, order_date, status, shipping_fee, tax_rate, created_by, created_at, confirmed_at)
+  VALUES (1, 'SO-20261124-001', 1, '2026-11-24', 'confirmed', 200, 5, 'jammy', '2026-11-24 10:00:00', '2026-11-24 10:05:00');
+INSERT INTO order_lines (id, order_id, wine_id, qty, unit_price, discount, pos) VALUES (1, 1, 8, 1, 3000, 0, 1);
+INSERT INTO order_bottles (order_id, line_id, bottle_id, state) VALUES (1, 1, 104, 'reserved');
 INSERT INTO audit_log (ts, user_login, category, action, obj_type, obj_id, obj_label, changes, batch_id) VALUES
   ('2026-11-22 14:42:22', 'jammy', '匯入', '匯入酒款清單', 'batch', 'b1', 'Inventory.xlsx', '{"酒款":3}', 'b1'),
   ('2026-11-24 20:30:00', 'larry', '庫存', '出庫', 'bottle', 'B-0000103', 'Leroy Bourgogne 2015', NULL, NULL);
@@ -91,7 +96,7 @@ describe('MyWines migration', () => {
     expect(r.ok).toBe(true);
     expect(r.counts.bottles).toEqual({ source: 5, imported: 5 });
     expect(r.counts.photos).toEqual({ source: 2, imported: 1 });
-    expect(r.later.customers).toBe(1);
+    expect(r.counts.customers).toEqual({ source: 1, imported: 1 });
     const codes = r.issues.map((i) => i.code);
     for (const c of [
       'wineDuplicate',
@@ -100,7 +105,6 @@ describe('MyWines migration', () => {
       'photoMissing',
       'userSkipped',
       'reservedByOrders',
-      'ordersLater',
     ])
       expect(codes).toContain(c);
     expect(r.users.find((u) => u.login === 'larry')).toMatchObject({ result: 'created' });
@@ -168,6 +172,14 @@ describe('MyWines migration', () => {
     expect(rep.found[0].caseNo).toBe('11-22-26-01');
     expect(rep.elsewhere[0]).toMatchObject({ code: 'B-0000103', status: 'out' });
 
+    // customers and orders came over with their numbers; the held bottle is still held by its order
+    const od = (await owner.get('/api/orders/SO-20261124-001').expect(200)).body;
+    expect(od.order.status).toBe('confirmed');
+    expect(od.customer.customerNo).toBe('C-0001');
+    expect(od.lines[0]).toMatchObject({ wineNo: 'W-000008', qty: 1, unitPrice: 3000 });
+    expect(od.lines[0].held[0].bottleNo).toBe('B-0000104');
+    expect(od.totals.total).toBe(3000 + 150 + 200);
+    expect((await owner.get('/api/settings/company')).body.name).toBe('友捷酒業');
     // settings: label size used; company details kept for orders
     expect((await owner.get('/api/settings/labels')).body.bottleSize).toBe('50x30');
     expect(s.db.prepare("SELECT value FROM settings WHERE key = 'mywines.company.name_zh'").get()).toEqual({

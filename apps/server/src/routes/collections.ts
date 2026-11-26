@@ -25,7 +25,7 @@ import { buildSearch, type SearchQuery } from '../services/search.ts';
 import { wineByNo } from '../services/stock.ts';
 
 // ---------------------------------------------------------------- choosing wines
-const WineSource = z.object({
+export const WineSource = z.object({
   wineNos: z.array(z.string()).max(5000).optional(),
   query: z.record(z.string(), z.unknown()).optional(),
   list: z.number().int().optional(),
@@ -33,7 +33,7 @@ const WineSource = z.object({
 type WineSource = z.infer<typeof WineSource>;
 
 /** Wine ids from explicit numbers, a saved list, or search conditions (in-scope stock only). */
-function wineIdsFrom(db: DB, p: Permissions, src: WineSource): number[] {
+export function wineIdsFrom(db: DB, p: Permissions, src: WineSource): number[] {
   if (src.wineNos?.length) {
     const one = db.prepare('SELECT id FROM wines WHERE wine_no = ?');
     return [

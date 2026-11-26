@@ -105,10 +105,6 @@ try {
             ? `\n               set password: ${setupUrl(cfg.publicUrl, slug!, u.setupToken)}`
             : ''),
       );
-    if (r.later.customers || r.later.orders)
-      console.log(
-        `\nKept for the orders release (M4): ${r.later.customers} customers, ${r.later.addresses} addresses, ${r.later.orders} orders.`,
-      );
     if (r.legacyCopy) console.log(`MyWines copy kept at ${r.legacyCopy}`);
     if (!values.commit) console.log('\nLooks right? Run again with --commit.');
   }
