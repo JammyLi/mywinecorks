@@ -81,4 +81,5 @@ Other commands: `pnpm test`, `pnpm typecheck`, `pnpm --filter @mwc/web build`
 | M6 Packaging (Windows installer, Docker, in-app updates, backups), cloud workspaces | ✅ done (installer not code-signed yet) |
 | M7 Catalogs + customer portal | ✅ done |
 | M8 AI features | ✅ done (with a stand-in for Claude until the API key exists) |
-| M9 Website | next |
+| M9 Website | ✅ done (not yet deployed to mywinecorks.com) |
+| M10 Hardening + beta | next |

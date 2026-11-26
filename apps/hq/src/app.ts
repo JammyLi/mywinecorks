@@ -10,6 +10,7 @@ import { mountLicenseApi } from './routes/licenseApi.ts';
 import { mountCloud } from './routes/cloudws.ts';
 import { mountAiUsage } from './routes/aiUsage.ts';
 import { mountUpdatesApi } from './routes/updatesApi.ts';
+import { mountWebsite, websiteCors } from './routes/website.ts';
 import { loadSigning, type Signing } from './signing.ts';
 
 export async function createHq(cfg: HqConfig, opts: { sql?: Sql; signing?: Signing } = {}) {
@@ -23,10 +24,17 @@ export async function createHq(cfg: HqConfig, opts: { sql?: Sql; signing?: Signi
   mountCloud(api, signing);
   mountAiUsage(api);
   mountUpdatesApi(api, cfg.releasesDir);
+  mountWebsite(api, signing, cfg.releasesDir);
 
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', 'loopback');
+  app.use((_req, res, next) => {
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+    next();
+  });
+  // The website may call /api/web from its own origin (leads, client account).
+  app.use('/api/web', websiteCors(cfg.websiteOrigins));
   app.use('/api', express.json({ limit: '1mb' }), cookieParser(), session(cfg, sql), (req, res, next) => {
     res.setHeader('Cache-Control', 'no-store');
     // Staff routes accept only same-origin JSON (cookies are SameSite=Strict too).

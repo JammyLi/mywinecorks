@@ -53,6 +53,8 @@ export function createApp(cfg: Config, registry = new Registry(cfg.dataDir)) {
   app.use(cookieParser());
   app.use((_req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
+    // The app, portals and services are never indexed (SPEC §22); only the website is.
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
     res.setHeader('Referrer-Policy', 'same-origin');
     res.setHeader('X-Frame-Options', 'DENY');
     next();

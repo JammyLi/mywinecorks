@@ -1,0 +1,96 @@
+---
+import Base from '../../layouts/Base.astro';
+import { href, langOf, langPaths, t as tr } from '../../i18n/index.ts';
+export const getStaticPaths = langPaths;
+const lang = langOf(Astro.params.lang);
+const t = tr(lang);
+const s = lang === 'en' ? 'en' : 'zh';
+
+type F = { id: string; tag: string; title: string; text: string; points: string[]; shot: string; phone?: boolean };
+const EN: F[] = [
+  { id: 'inventory', tag: 'INVENTORY', shot: 'search', title: 'Every bottle, exactly where it is',
+    text: 'Cellars, lockers, racks and cases — as many as you have. Each bottle carries its own number and QR label, so you always know which bottle is where, not just how many.',
+    points: ['Search by producer, vintage, region, type, price or location', 'Filters show how many bottles each choice has', 'Original cases and loose bottles; locations marked “not sure” until checked', 'Saved lists for tastings, insurance or a customer'] },
+  { id: 'phone', tag: 'PHONE APP', shot: 'phone', phone: true, title: 'Scan in the cellar — even with no signal',
+    text: 'Staff use their own phones. Scan a bottle, case or rack label to see what it is, move it, take it out or count it. Work done offline is kept on the phone and synced when it is back on the network.',
+    points: ['Move a whole case with two scans', 'Stock-out with a reason (sold, gift, tasting, broken…)', 'Stocktakes rack by rack, with a report of what is missing or extra', 'Labels printed from the app on standard label sheets'] },
+  { id: 'value', tag: 'PRICES & VALUE', shot: 'wine', title: 'The money story of each bottle',
+    text: 'Purchase cost and extra costs per bottle, in any currency, with the exchange rate of the day. Market prices over time. Reports show what the collection cost, what it is worth now and what you made on what you sold.',
+    points: ['Cost and margin hidden from roles that should not see them', 'Price list screen with batch entry and Excel upload', 'Alerts when a market price is out of date', 'Collection value, unrealised gain and profit by period, customer or wine'] },
+  { id: 'orders', tag: 'ORDERS', shot: 'order', title: 'From a customer’s message to a packed case',
+    text: 'Create an order from search results, a saved list or a customer’s message. Confirming holds the exact bottles; picking is scan-to-confirm, so the wrong bottle cannot leave the cellar.',
+    points: ['Prices from the customer’s last purchase, their catalog or your suggested price', 'Order documents for the customer as PDF, in Chinese or English', 'Payments and open balances', 'Limits per role: maximum order value, price changes, stock-outs'] },
+  { id: 'portal', tag: 'CUSTOMER PORTAL', shot: 'portal-phone', phone: true, title: 'A private catalog for the customers you choose',
+    text: 'Invite a customer by email. They see only the wines and prices you put in their catalogs, and send requests that arrive as draft orders. Payment stays between you. You can end someone’s access at once.',
+    points: ['Catalogs for groups (VIP, restaurants, friends) or single customers', 'Prices: fixed, from your suggested or market price, or “on request”', 'Show exact stock, “limited”, or nothing; limits per customer', 'Age confirmation (18+ Taiwan, 21+ US); never shows your cost, locations or other customers'] },
+  { id: 'ai', tag: 'AI', shot: 'label', title: 'AI that saves typing — and checks with you',
+    text: 'AI fills in forms and drafts; a person always saves. Every suggestion shows where it came from, and answers respect each user’s permissions.',
+    points: ['New wine from a label photo, with a check for wines you already have', 'Stock in from a merchant’s invoice', 'Search in your own words: “Champagne under 5,000 in Neihu”', 'Ask your cellar: “What did we spend on Burgundy this year?”', 'Drinking-window suggestions, price suggestions, orders from LINE messages'] },
+  { id: 'control', tag: 'CONTROL', shot: 'roles', title: 'You decide who sees and does what',
+    text: 'Build roles around how your team works: what each person may do, which cellars they see, and whether they see cost, profit, merchants or customer prices. Every change is in the change log — who, when, before and after.',
+    points: ['2-step sign-in for every user', 'Only the Owner can delete', 'Change log that cannot be edited', 'Export to Excel at any time; automatic database backups'] },
+  { id: 'move-in', tag: 'MOVING IN', shot: 'import', title: 'Bring your spreadsheets with you',
+    text: 'Import your existing inventory, storage and prices from Excel. The import shows every problem before anything is saved, and suggests matches for names spelled differently. Coming from MyWines? Everything moves over, and your printed labels keep working.',
+    points: ['Templates in Chinese and English', 'Merchant and producer name matching', 'Preview before saving'] },
+];
+const ZH: F[] = [
+  { id: 'inventory', tag: '庫存', shot: 'search', title: '每一瓶酒，確切的位置',
+    text: '酒窖、儲物櫃、架子、酒箱，有多少都可以。每一瓶酒都有自己的編號與 QR 標籤，您永遠知道哪一瓶在哪裡，而不只是有幾瓶。',
+    points: ['依酒莊、年份、產區、類型、價格或位置搜尋', '篩選條件會顯示每個選項有幾瓶', '原箱與散瓶都能管理；不確定的位置會標記，等待確認', '為品飲會、保險或客人儲存清單'] },
+  { id: 'phone', tag: '手機 App', shot: 'phone', phone: true, title: '在酒窖裡掃描——即使沒有訊號',
+    text: '員工用自己的手機就能工作。掃描酒瓶、酒箱或架子的標籤，就能查看、移動、出庫或盤點。離線時的操作會保存在手機上，回到網路後自動同步。',
+    points: ['掃兩次就能搬動整箱酒', '出庫時記錄原因（售出、贈送、品飲、破損…）', '逐架盤點，並產生短少與多出的報告', '從系統直接列印標準標籤紙'] },
+  { id: 'value', tag: '價格與價值', shot: 'wine', title: '每一瓶酒的金錢故事',
+    text: '每瓶酒的採購成本與額外費用，支援各種幣別與當日匯率；市價隨時間的變化。報表告訴您收藏花了多少、現在值多少、賣出的酒賺了多少。',
+    points: ['不該看到的角色看不到成本與毛利', '市價清單可批次輸入或上傳 Excel', '市價過舊時提醒', '收藏價值、未實現利得，以及依期間、客戶、酒款的利潤'] },
+  { id: 'orders', tag: '訂單', shot: 'order', title: '從客人的一則訊息到裝好的一箱酒',
+    text: '從搜尋結果、儲存的清單或客人的訊息建立訂單。確認後會保留確切的酒瓶；揀貨時掃描確認，錯的酒不會離開酒窖。',
+    points: ['售價自動帶入客人上次的價格、型錄價格或建議售價', '中文或英文的客戶版訂單 PDF', '收款與未收餘額', '依角色設定上限：訂單金額、價格調整幅度、出庫數量'] },
+  { id: 'portal', tag: '客戶入口', shot: 'portal-phone', phone: true, title: '只給您挑選的客人的私人型錄',
+    text: '用 Email 邀請客人。客人只看得到您放進他型錄裡的酒與價格，送出的需求會成為訂單草稿。付款仍由您們私下處理，您也能隨時立即終止任何人的存取。',
+    points: ['為群組（VIP、餐廳、朋友）或單一客人建立型錄', '價格：固定價、依建議售價或市價計算，或「價格另洽」', '顯示確切庫存、「數量有限」或不顯示；每位客人可設購買上限', '年齡確認（台灣 18 歲、美國 21 歲以上）；絕不顯示您的成本、位置或其他客人'] },
+  { id: 'ai', tag: 'AI', shot: 'label', title: '幫您少打字的 AI——而且會先跟您確認',
+    text: 'AI 負責填表與擬稿，儲存一定由人來做。每個建議都標示來源，回答也依每位使用者的權限。',
+    points: ['拍酒標新增酒款，並檢查是否已經有這款酒', '讀取酒商發票入庫', '用自己的話搜尋：「內湖的香檳，5000 以下」', '問酒窖：「今年布根地花了多少錢？」', '適飲期建議、售價建議、把 LINE 訊息轉成訂單'] },
+  { id: 'control', tag: '權限', shot: 'roles', title: '誰能看什麼、做什麼，由您決定',
+    text: '依團隊的工作方式設定角色：每個人能做什麼、看得到哪些酒窖，以及能否看到成本、利潤、酒商或客戶價格。每一項變更都記錄在異動紀錄中——誰、何時、改了什麼。',
+    points: ['每位使用者都使用兩步驟登入', '只有擁有者可以刪除', '異動紀錄無法修改', '隨時匯出到 Excel；資料庫自動備份'] },
+  { id: 'move-in', tag: '開始使用', shot: 'import', title: '帶著您的試算表一起搬進來',
+    text: '從 Excel 匯入現有的庫存、儲位與價格。匯入前會列出所有問題，並為拼法不同的名稱建議合併。從 MyWines 轉過來？所有資料都會搬過來，已印好的標籤也能繼續使用。',
+    points: ['中文與英文範本', '酒商與酒莊名稱比對', '儲存前先預覽'] },
+];
+const list = lang === 'en' ? EN : ZH;
+---
+<Base lang={lang} path="/features/" title={t('feat.title')}>
+  <section class="dark" style="padding-bottom:64px">
+    <div class="wrap">
+      <h1>{t('feat.title')}</h1>
+      <p class="lead">{t('feat.lead')}</p>
+      <div class="row small" style="margin-top:24px">
+        {list.map((f) => <a href={`#${f.id}`} style="color:var(--gold-lt)">{f.tag}</a>)}
+      </div>
+    </div>
+  </section>
+  <div class="wrap">
+    {list.map((f) => (
+      <div class="feature" id={f.id}>
+        <div>
+          <span class="tag">{f.tag}</span>
+          <h2>{f.title}</h2>
+          <p>{f.text}</p>
+          <ul class="check">{f.points.map((p) => <li>{p}</li>)}</ul>
+        </div>
+        <div class={'media' + (f.phone ? ' gallery' : '')}>
+          <div class={f.phone ? 'phone' : ''}><img src={`/img/shots/${s}/${f.shot}.webp`} alt={f.title} loading="lazy" width={f.phone ? 390 : 1360} height={f.phone ? 844 : 900} /></div>
+        </div>
+      </div>
+    ))}
+  </div>
+  <section class="center">
+    <div class="wrap">
+      <h2>{t('home.cta.t')}</h2>
+      <p class="lead">{t('home.cta.d')}</p>
+      <a class="btn" href={href(lang, '/demo/')}>{t('home.ctaDemo')}</a>
+    </div>
+  </section>
+</Base>

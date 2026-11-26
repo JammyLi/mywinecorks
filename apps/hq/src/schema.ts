@@ -181,4 +181,55 @@ CREATE TABLE cloud_workspaces (
 )
 `,
   },
+  {
+    id: 3,
+    name: 'm9_website',
+    sql: `
+-- Demo / trial requests from the website (SPEC §22); converted into clients by staff.
+CREATE TABLE leads (
+  id SERIAL PRIMARY KEY,
+  kind TEXT NOT NULL DEFAULT 'demo',          -- demo / trial / contact
+  name TEXT NOT NULL,
+  company TEXT,
+  email TEXT NOT NULL,
+  phone TEXT,
+  country TEXT NOT NULL DEFAULT 'TW',
+  lang TEXT NOT NULL DEFAULT 'zh-TW',
+  deployment TEXT,                            -- cloud / selfhost / unsure
+  bottles TEXT,                               -- rough size: <500 / 500-2000 / 2000-10000 / >10000
+  sells BOOLEAN,
+  message TEXT,
+  source TEXT,                                -- page it came from
+  ip TEXT,
+  status TEXT NOT NULL DEFAULT 'new',         -- new / contacted / converted / closed
+  note TEXT,
+  client_id INT REFERENCES clients(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ
+);
+CREATE INDEX leads_status ON leads(status, created_at);
+-- Client account on the website: one-time sign-in links by email, then a short session.
+CREATE TABLE account_tokens (
+  token_hash TEXT PRIMARY KEY,
+  kind TEXT NOT NULL,                         -- link / session / file
+  email TEXT NOT NULL,
+  ref TEXT,                                   -- file tickets: what to send
+  expires_at TIMESTAMPTZ NOT NULL,
+  used_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+-- Installers and other files clients download from their account (update packages stay in release_files).
+CREATE TABLE downloads (
+  id SERIAL PRIMARY KEY,
+  version TEXT NOT NULL,
+  kind TEXT NOT NULL,                         -- windows / docker / guide
+  file TEXT NOT NULL,                         -- under <data>/releases/<version>/
+  sha256 TEXT NOT NULL,
+  size BIGINT NOT NULL,
+  active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (version, kind)
+)
+`,
+  },
 ];

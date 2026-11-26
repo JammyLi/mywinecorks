@@ -27,6 +27,8 @@ export async function createPortal(cfg: PortalConfig, opts: { sql?: Sql; keys?: 
   app.set('trust proxy', 'loopback');
   app.use((_req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
+    // The app, portals and services are never indexed (SPEC §22); only the website is.
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
     res.setHeader('Referrer-Policy', 'same-origin');
     res.setHeader('X-Frame-Options', 'DENY');
     next();

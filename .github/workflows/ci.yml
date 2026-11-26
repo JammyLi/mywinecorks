@@ -14,3 +14,4 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm --filter web build
+      - run: pnpm --filter @mwc/website build

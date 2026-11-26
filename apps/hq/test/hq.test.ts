@@ -46,6 +46,12 @@ describe('HQ guards', () => {
       '/license/checkin',
       '/updates/download',
       '/updates/manifest',
+      '/web/account',
+      '/web/account/link',
+      '/web/account/session',
+      '/web/account/ticket',
+      '/web/file',
+      '/web/leads',
     ]);
     for (const r of hq.api.routes) {
       expect(['public', 'session', ...Object.keys(HQ_PERMS)]).toContain(r.guard);
@@ -310,5 +316,135 @@ describe('AI usage (M8)', () => {
     } finally {
       Object.assign(cfg, { aiUrl: null, aiAdminToken: null });
     }
+  });
+});
+
+describe('website (M9)', () => {
+  const site = { origin: 'http://localhost:4400' };
+  it('a demo request becomes a lead, then a client; bots and floods are refused', async () => {
+    const { resetLimits } = await import('../src/routes/website.ts');
+    resetLimits();
+    const pre = await request(hq.app).options('/api/web/leads').set(site);
+    expect(pre.status).toBe(204);
+    expect(pre.headers['access-control-allow-origin']).toBe('http://localhost:4400');
+    const evil = await request(hq.app).options('/api/web/leads').set({ origin: 'https://evil.example' });
+    expect(evil.headers['access-control-allow-origin']).toBeUndefined();
+    const lead = {
+      kind: 'trial',
+      name: '王小明',
+      company: '明酒窖',
+      email: 'Ming@Example.com',
+      country: 'TW',
+      lang: 'zh-TW',
+      deployment: 'selfhost',
+      bottles: '2000-10000',
+      sells: true,
+      message: '想試用',
+    };
+    await request(hq.app).post('/api/web/leads').set(site).send(lead).expect(200);
+    await request(hq.app)
+      .post('/api/web/leads')
+      .set(site)
+      .send({ ...lead, name: 'bot', website: 'http://spam' })
+      .expect(200);
+    const rows = (await admin.get('/api/leads?status=new').expect(200)).body as {
+      id: number;
+      name: string;
+      email: string;
+    }[];
+    expect(rows.map((r) => r.name)).toEqual(['王小明']);
+    expect(rows[0].email).toBe('ming@example.com');
+    const mails = await hq.sql.q<{ kind: string; to_addr: string }>(
+      "SELECT kind, to_addr FROM emails WHERE kind LIKE 'lead%' ORDER BY id",
+    );
+    expect(mails).toEqual([
+      { kind: 'leadThanks', to_addr: 'ming@example.com' },
+      { kind: 'leadNew', to_addr: cfg.firstAdmin },
+    ]);
+    for (let i = 0; i < 3; i++) await request(hq.app).post('/api/web/leads').set(site).send(lead);
+    expect((await request(hq.app).post('/api/web/leads').set(site).send(lead)).status).toBe(429);
+    const conv = await admin.post(`/api/leads/${rows[0].id}/convert`).send({ status: 'trial' }).expect(200);
+    const c = (await admin.get(`/api/clients/${conv.body.clientId}`).expect(200)).body;
+    expect(JSON.stringify(c)).toContain('明酒窖');
+    expect((await admin.post(`/api/leads/${rows[0].id}/convert`).send({})).body.error).toBe('leadConverted');
+    resetLimits();
+  });
+
+  it('client account: email link → session → license file and installer, nothing for strangers', async () => {
+    const { resetLimits } = await import('../src/routes/website.ts');
+    resetLimits();
+    const c = await admin
+      .post('/api/clients')
+      .send({ name: 'Account Cellar', email: 'acct@example.com', status: 'active' })
+      .expect(200);
+    const sub = await admin
+      .post(`/api/clients/${c.body.id}/subscriptions`)
+      .send({
+        plan: 'Home',
+        modules: ['inventory'],
+        limits: { bottles: null, ordersPerMonth: null, users: null },
+        startsOn: '2026-01-01',
+        renewsOn: '2027-12-20',
+      })
+      .expect(200);
+    const lic = await admin.post(`/api/subscriptions/${sub.body.id}/licenses`).send({}).expect(200);
+    // An installer published for clients.
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    fs.mkdirSync(path.join(cfg.releasesDir, '0.9.0'), { recursive: true });
+    fs.writeFileSync(path.join(cfg.releasesDir, '0.9.0', 'MyWineCorks-Setup-0.9.0.exe'), 'MZ fake installer');
+    await hq.sql.q(
+      "INSERT INTO downloads (version, kind, file, sha256, size) VALUES ('0.9.0', 'windows', 'MyWineCorks-Setup-0.9.0.exe', 'x', 17)",
+    );
+
+    await request(hq.app).post('/api/web/account/link').send({ email: 'nobody@example.com' }).expect(200);
+    await request(hq.app)
+      .post('/api/web/account/link')
+      .send({ email: 'ACCT@example.com', lang: 'en' })
+      .expect(200);
+    const m = await hq.sql.q<{ to_addr: string; body: string }>(
+      "SELECT to_addr, body FROM emails WHERE kind = 'accountLink'",
+    );
+    expect(m.map((x) => x.to_addr)).toEqual(['acct@example.com']); // the stranger gets nothing (and is told nothing)
+    const link = /http:\/\/localhost:4400\/en\/account\/\?t=(\S+)/.exec(m[0].body)!;
+    await request(hq.app).get('/api/web/account').expect(401);
+    const s = await request(hq.app).post('/api/web/account/session').send({ t: link[1] }).expect(200);
+    expect((await request(hq.app).post('/api/web/account/session').send({ t: link[1] })).body.error).toBe(
+      'linkInvalid',
+    );
+    const auth = { authorization: `Bearer ${s.body.token}` };
+    const a = (await request(hq.app).get('/api/web/account').set(auth).expect(200)).body;
+    expect(a.licenses).toHaveLength(1);
+    expect(a.licenses[0]).toMatchObject({ lid: lic.body.lid, plan: 'Home', activated: false });
+    expect(a.downloads[0]).toMatchObject({ kind: 'windows', version: '0.9.0' });
+    expect(JSON.stringify(a)).not.toContain(lic.body.key); // the key only comes as a file
+    const tk = (
+      await request(hq.app)
+        .post('/api/web/account/ticket')
+        .set(auth)
+        .send({ license: lic.body.lid })
+        .expect(200)
+    ).body.url as string;
+    const f = await request(hq.app)
+      .get(new URL(tk).pathname + new URL(tk).search)
+      .expect(200);
+    expect(f.headers['content-disposition']).toContain('.mwclicense');
+    expect(f.text ?? String(f.body)).toContain('MWC1.');
+    expect((await request(hq.app).get(new URL(tk).pathname + new URL(tk).search)).status).toBe(410);
+    const td = (
+      await request(hq.app)
+        .post('/api/web/account/ticket')
+        .set(auth)
+        .send({ download: a.downloads[0].id })
+        .expect(200)
+    ).body.url as string;
+    await request(hq.app)
+      .get(new URL(td).pathname + new URL(td).search)
+      .expect(200);
+    // Another client's license is not reachable.
+    expect(
+      (await request(hq.app).post('/api/web/account/ticket').set(auth).send({ license: 'L-NOTMINE' })).status,
+    ).toBe(404);
+    resetLimits();
   });
 });

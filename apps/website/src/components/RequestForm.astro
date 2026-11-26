@@ -1,0 +1,127 @@
+---
+/** Demo / trial / contact request → HQ lead (POST /api/web/leads). Works without cookies. */
+import { HQ_URL, href, t as tr, type Lang } from '../i18n/index.ts';
+interface Props { lang: Lang; kind?: 'demo' | 'trial' | 'contact' }
+const { lang, kind = 'demo' } = Astro.props;
+const t = tr(lang);
+const msg = { error: t('demo.error'), tooMany: t('demo.tooMany'), sending: t('demo.sending'), send: t('demo.send') };
+---
+<form class="f" data-lead data-hq={HQ_URL} data-lang={lang} data-msg={JSON.stringify(msg)} novalidate>
+  {kind !== 'contact' ? (
+    <fieldset class="field">
+      <legend>{t('demo.kind')}</legend>
+      <div class="choices">
+        <label><input type="radio" name="kind" value="demo" checked={kind === 'demo'} /> {t('demo.kind.demo')}</label>
+        <label><input type="radio" name="kind" value="trial" checked={kind === 'trial'} /> {t('demo.kind.trial')}</label>
+        <label><input type="radio" name="kind" value="contact" /> {t('demo.kind.contact')}</label>
+      </div>
+    </fieldset>
+  ) : <input type="hidden" name="kind" value="contact" />}
+  <div class="grid g2" style="gap:18px">
+    <div class="field"><label for="f-name">{t('demo.name')}</label><input id="f-name" name="name" type="text" required maxlength="120" autocomplete="name" /></div>
+    <div class="field"><label for="f-company">{t('demo.company')}</label><input id="f-company" name="company" type="text" maxlength="160" autocomplete="organization" /></div>
+    <div class="field"><label for="f-email">{t('demo.email')}</label><input id="f-email" name="email" type="email" required maxlength="200" autocomplete="email" /></div>
+    <div class="field"><label for="f-phone">{t('demo.phone')}</label><input id="f-phone" name="phone" type="tel" maxlength="40" autocomplete="tel" /></div>
+  </div>
+  <fieldset class="field">
+    <legend>{t('demo.country')}</legend>
+    <div class="choices">
+      {(['TW', 'US', 'other'] as const).map((c, i) => <label><input type="radio" name="country" value={c} checked={i === (lang === 'en' ? 1 : 0)} /> {t(`demo.country.${c}`)}</label>)}
+    </div>
+  </fieldset>
+  {kind !== 'contact' && (
+    <>
+      <fieldset class="field" data-only="demo trial">
+        <legend>{t('demo.deployment')}</legend>
+        <div class="choices">
+          {(['cloud', 'selfhost', 'unsure'] as const).map((d) => <label><input type="radio" name="deployment" value={d} /> {t(`demo.dep.${d}`)}</label>)}
+        </div>
+      </fieldset>
+      <fieldset class="field" data-only="demo trial">
+        <legend>{t('demo.bottles')}</legend>
+        <div class="choices">
+          {['<500', '500-2000', '2000-10000', '>10000'].map((b) => <label><input type="radio" name="bottles" value={b} /> {b.replace('-', '–')}</label>)}
+        </div>
+      </fieldset>
+      <fieldset class="field" data-only="demo trial">
+        <legend>{t('demo.sells')}</legend>
+        <div class="choices">
+          <label><input type="radio" name="sells" value="yes" /> {t('demo.sells.yes')}</label>
+          <label><input type="radio" name="sells" value="no" /> {t('demo.sells.no')}</label>
+        </div>
+      </fieldset>
+    </>
+  )}
+  <div class="field"><label for="f-message">{t('demo.message')}</label><textarea id="f-message" name="message" maxlength="3000"></textarea></div>
+  <div class="hp" aria-hidden="true"><label>Website <input name="website" type="text" tabindex="-1" autocomplete="off" /></label></div>
+  <div class="alert" data-error hidden role="alert"></div>
+  <div class="row">
+    <button class="btn" type="submit">{t('demo.send')}</button>
+    <span class="small muted">{t('demo.privacy')} <a href={href(lang, '/legal/privacy/')}>{t('foot.privacy')}</a></span>
+  </div>
+</form>
+<div class="alert ok" data-thanks hidden role="status">
+  <h3 style="margin:0 0 6px">{t('demo.thanks.t')}</h3>
+  <p style="margin:0">{t('demo.thanks.d')}</p>
+</div>
+
+<script>
+  for (const form of document.querySelectorAll<HTMLFormElement>('form[data-lead]')) {
+    const msg = JSON.parse(form.dataset.msg!);
+    const err = form.querySelector<HTMLElement>('[data-error]')!;
+    const btn = form.querySelector<HTMLButtonElement>('button[type=submit]')!;
+    const qs = new URLSearchParams(location.search);
+    const preset = qs.get('kind');
+    if (preset) form.querySelector<HTMLInputElement>(`input[name=kind][value="${CSS.escape(preset)}"]`)?.click();
+    const sync = () => {
+      const k = (form.querySelector<HTMLInputElement>('input[name=kind]:checked') ?? form.querySelector<HTMLInputElement>('input[name=kind]'))!.value;
+      for (const el of form.querySelectorAll<HTMLElement>('[data-only]')) el.hidden = !el.dataset.only!.split(' ').includes(k);
+    };
+    form.addEventListener('change', sync);
+    sync();
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      err.hidden = true;
+      if (!form.reportValidity()) return;
+      const d = new FormData(form);
+      const v = (n: string) => (d.get(n) as string | null)?.trim() || null;
+      const plan = qs.get('plan');
+      const body = {
+        kind: v('kind') ?? 'demo',
+        name: v('name'),
+        company: v('company'),
+        email: v('email'),
+        phone: v('phone'),
+        country: v('country') ?? 'TW',
+        lang: form.dataset.lang,
+        deployment: v('deployment'),
+        bottles: v('bottles'),
+        sells: v('sells') === null ? null : v('sells') === 'yes',
+        message: [plan ? `[${plan}]` : '', v('message') ?? ''].join(' ').trim() || null,
+        source: location.pathname,
+        website: v('website') ?? undefined,
+      };
+      btn.disabled = true;
+      btn.textContent = msg.sending;
+      try {
+        const r = await fetch(form.dataset.hq + '/api/web/leads', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (r.status === 429) throw new Error('tooMany');
+        if (!r.ok) throw new Error('error');
+        form.hidden = true;
+        const thanks = form.nextElementSibling as HTMLElement;
+        thanks.hidden = false;
+        thanks.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } catch (x) {
+        err.textContent = (x as Error).message === 'tooMany' ? msg.tooMany : msg.error;
+        err.hidden = false;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = msg.send;
+      }
+    });
+  }
+</script>

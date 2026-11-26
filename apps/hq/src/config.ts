@@ -17,6 +17,9 @@ export interface HqConfig {
   /** AI gateway admin API (usage, caps): AI_URL + AI_ADMIN_TOKEN. */
   aiUrl: string | null;
   aiAdminToken: string | null;
+  /** The public website (WEBSITE_URL): sign-in links point there; its origin(s) may call /api/web. */
+  websiteUrl: string;
+  websiteOrigins: string[];
   /** Update packages: <data>/releases/<version>/<file>. */
   releasesDir: string;
 }
@@ -39,6 +42,19 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): HqConfig {
     cloudToken: env.CLOUD_PROVISION_TOKEN || null,
     aiUrl: env.AI_URL?.replace(/\/$/, '') || null,
     aiAdminToken: env.AI_ADMIN_TOKEN || null,
+    websiteUrl: (
+      env.WEBSITE_URL || (env.NODE_ENV === 'production' ? 'https://mywinecorks.com' : 'http://localhost:4400')
+    ).replace(/\/$/, ''),
+    websiteOrigins: [
+      (
+        env.WEBSITE_URL ||
+        (env.NODE_ENV === 'production' ? 'https://mywinecorks.com' : 'http://localhost:4400')
+      ).replace(/\/$/, ''),
+      ...(env.WEBSITE_ORIGINS ?? '')
+        .split(',')
+        .map((s) => s.trim().replace(/\/$/, ''))
+        .filter(Boolean),
+    ],
     releasesDir: path.resolve(env.RELEASES_DIR || path.join(dataDir, 'releases')),
   };
 }

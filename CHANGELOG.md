@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.9.0 — M9 Website (2026-11-26)
+- **Website** (`apps/website`, Astro, static): home, features, pricing, request a demo / trial,
+  FAQ, about, contact, client account, terms, privacy notice, software licence agreement — in
+  Traditional Chinese (`/`) and English (`/en/`), with real screenshots of the app in each
+  language, phone layout, sitemap, hreflang, social previews and no cookies or trackers.
+- **Requests → HQ leads:** the demo / trial / contact form sends a lead to HQ (new
+  *HQ › Website requests*: mark contacted, close, or create the client in one click), emails the
+  requester a confirmation and tells HQ. Bots and floods are refused.
+- **Client account:** sign in with a one-time email link, see your licences, download the licence
+  file and the newest installer (published with `pnpm --filter @mwc/hq publish-download`), with
+  install steps. Downloads use one-time links and are logged in HQ.
+- The app, customer portals, HQ and the AI gateway now ask search engines not to index them.
+
 ## 0.8.0 — M8 AI features (2026-11-26)
 - **AI gateway** (`apps/ai-gateway`, cloud): the only place with the Claude API key. Servers
   register with their license (needs the *AI* module) and sign each call; usage is counted per

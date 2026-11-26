@@ -142,6 +142,8 @@ export async function createGateway(cfg: AiConfig, opts: { sql?: Sql; provider?:
   app.use('/api', express.raw({ type: () => true, limit: '40mb' }), (req, res, next) => {
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
+    // The app, portals and services are never indexed (SPEC §22); only the website is.
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
     if (!Buffer.isBuffer(req.body)) req.body = Buffer.alloc(0);
     next();
   });

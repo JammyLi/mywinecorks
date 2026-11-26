@@ -1,0 +1,22 @@
+---
+import Base from '../../layouts/Base.astro';
+import RequestForm from '../../components/RequestForm.astro';
+import { CONTACT_EMAIL, langOf, langPaths, t as tr } from '../../i18n/index.ts';
+export const getStaticPaths = langPaths;
+const lang = langOf(Astro.params.lang);
+const t = tr(lang);
+---
+<Base lang={lang} path="/contact/" title={t('contact.title')}>
+  <section class="dark" style="padding-bottom:64px">
+    <div class="wrap">
+      <h1>{t('contact.title')}</h1>
+      <p class="lead">{t('contact.lead')}</p>
+      {CONTACT_EMAIL && <p>{t('contact.email')} <a style="color:var(--gold-lt)" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a></p>}
+    </div>
+  </section>
+  <section>
+    <div class="wrap" style="max-width:760px">
+      <div class="card"><RequestForm lang={lang} kind="contact" /></div>
+    </div>
+  </section>
+</Base>

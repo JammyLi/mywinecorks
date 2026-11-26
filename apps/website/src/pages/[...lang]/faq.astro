@@ -1,0 +1,43 @@
+---
+import Base from '../../layouts/Base.astro';
+import { href, langOf, langPaths, t as tr } from '../../i18n/index.ts';
+export const getStaticPaths = langPaths;
+const lang = langOf(Astro.params.lang);
+const t = tr(lang);
+const EN: [string, string][] = [
+  ['Is my inventory visible to anyone else?', 'No. MyWineCorks is not a shop. Your cellar is private to the people you add as users, with the permissions you give them. Customers only see what you put in their own catalog — never your cost, locations or other customers — and only if you invite them.'],
+  ['Can I keep my data on my own server?', 'Yes. The self-hosted version runs on a Windows PC, a Mac, a Linux machine or a NAS in your office. Your collection stays in your building; the server only connects out to us to check its licence and offer updates.'],
+  ['Does it work without internet?', 'On your own server, the app works on your office network without internet. The phone app also works offline in a cellar with no signal and syncs when it is back on the network.'],
+  ['Can customers pay online?', 'No. Customers send requests; you confirm the order and arrange payment and delivery the way you do today. MyWineCorks records payments and open balances.'],
+  ['I keep my inventory in Excel. Can I bring it?', 'Yes. Import your inventory, storage and prices from Excel with our templates. Problems are listed before anything is saved, and names spelled differently can be matched.'],
+  ['We use MyWines today. What happens to our labels?', 'All your data moves over, and MyWineCorks keeps the same bottle, case and wine numbers, so labels you have already printed keep working.'],
+  ['How does the AI handle my data?', 'Only what a request needs is sent — a label photo, or wine names for a search — through MyWineCorks to the AI service, and it is not stored there. Cost and customer prices are only used for users allowed to see them. Each AI feature can be switched off.'],
+  ['Which languages are supported?', 'Traditional Chinese and English, for staff, for customers in the portal and for the documents you send.'],
+  ['Can I take my data out?', 'Yes, at any time: export to Excel, and on your own server the database file is yours. Even if a licence expires, the Owner can still sign in and export — nothing is deleted.'],
+  ['What labels and printers do I need?', 'Standard self-adhesive label sheets on an ordinary printer work. We help you choose sizes for bottles, cases and racks during setup.'],
+];
+const ZH: [string, string][] = [
+  ['我的庫存會被其他人看到嗎？', '不會。MyWineCorks 不是網路商店。您的酒窖只有您加入的使用者看得到，而且依您給的權限。客人只看得到您放進他型錄裡的酒——絕不會看到您的成本、位置或其他客人——而且必須由您邀請。'],
+  ['可以把資料放在自己的伺服器嗎？', '可以。自有伺服器版本可以裝在辦公室的 Windows 電腦、Mac、Linux 主機或 NAS 上。收藏資料留在您的公司裡；伺服器只會主動連線到我們確認授權與提供更新。'],
+  ['沒有網路也能用嗎？', '自有伺服器版本在辦公室內部網路中不需上網也能使用。手機 App 在沒有訊號的酒窖裡也能離線操作，回到網路後自動同步。'],
+  ['客人可以線上付款嗎？', '不行。客人送出需求，由您確認訂單，並照您現在的方式處理付款與出貨。MyWineCorks 會記錄收款與未收餘額。'],
+  ['我的庫存現在用 Excel，可以匯入嗎？', '可以。用我們的範本從 Excel 匯入庫存、儲位與價格。儲存前會列出所有問題，拼法不同的名稱也可以合併。'],
+  ['我們現在用 MyWines，已經印好的標籤怎麼辦？', '所有資料都會搬過來，而且 MyWineCorks 沿用相同的酒瓶、酒箱與酒款編號，已印好的標籤可以繼續使用。'],
+  ['AI 怎麼處理我的資料？', '每次只傳送該功能需要的資料——例如一張酒標照片，或搜尋用的酒名——經由 MyWineCorks 傳給 AI 服務，而且不會被保存。成本與客戶價格只用於有權查看的使用者。每項 AI 功能都可以關閉。'],
+  ['支援哪些語言？', '繁體中文與英文，員工介面、客戶入口以及您寄出的文件都支援。'],
+  ['資料可以帶走嗎？', '可以，隨時都行：匯出到 Excel；自有伺服器的資料庫檔案也屬於您。即使授權到期，擁有者仍能登入並匯出——資料不會被刪除。'],
+  ['需要什麼標籤和印表機？', '一般印表機加上標準的自黏標籤紙就可以。導入時我們會協助您選擇酒瓶、酒箱與架子的標籤尺寸。'],
+];
+const list = lang === 'en' ? EN : ZH;
+const ld = { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: list.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) };
+---
+<Base lang={lang} path="/faq/" title={t('faq.title')}>
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  <section class="dark" style="padding-bottom:64px"><div class="wrap"><h1>{t('faq.title')}</h1></div></section>
+  <section>
+    <div class="wrap prose">
+      {list.map(([q, a], i) => <details open={i === 0}><summary>{q}</summary><p>{a}</p></details>)}
+      <p style="margin-top:40px"><a class="btn" href={href(lang, '/contact/')}>{t('nav.contact')}</a></p>
+    </div>
+  </section>
+</Base>

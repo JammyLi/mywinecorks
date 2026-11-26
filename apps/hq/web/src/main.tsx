@@ -12,6 +12,7 @@ import {
   ClientPage,
   Clients,
   CloudPage,
+  LeadsPage,
   AiUsagePage,
   Dashboard,
   Installations,
@@ -34,6 +35,7 @@ function Shell() {
   const nav = useNavigate();
   const items = [
     { to: '/', key: 'hq.nav.dashboard', end: true },
+    { to: '/leads', key: 'hq.nav.leads' },
     { to: '/clients', key: 'hq.nav.clients' },
     { to: '/installations', key: 'hq.nav.installations' },
     { to: '/cloud', key: 'hq.nav.cloud' },
@@ -109,6 +111,7 @@ createRoot(document.getElementById('root')!).render(
                 }
               >
                 <Route index element={<Dashboard />} />
+                <Route path="leads" element={<LeadsPage />} />
                 <Route path="clients" element={<Clients />} />
                 <Route path="clients/:id" element={<ClientPage />} />
                 <Route path="installations" element={<Installations />} />

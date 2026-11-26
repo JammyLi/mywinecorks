@@ -1,0 +1,80 @@
+---
+import Base from '../../layouts/Base.astro';
+import { href, langOf, langPaths, t as tr } from '../../i18n/index.ts';
+export const getStaticPaths = langPaths;
+const lang = langOf(Astro.params.lang);
+const t = tr(lang);
+const s = lang === 'en' ? 'en' : 'zh';
+const pillars = ['p1', 'p2', 'p3', 'p4'] as const;
+---
+<Base lang={lang} path="/">
+  <section class="hero dark">
+    <div class="wrap">
+      <div class="eyebrow">MyWineCorks</div>
+      <h1>{t('home.title')}</h1>
+      <p class="lead">{t('home.lead')}</p>
+      <div class="row">
+        <a class="btn gold" href={href(lang, '/demo/')}>{t('home.ctaDemo')}</a>
+        <a class="btn ghost" href={href(lang, '/features/')}>{t('home.ctaFeatures')}</a>
+      </div>
+      <p class="trust">{t('home.trust')}</p>
+      <div class="shot"><img src={`/img/shots/${s}/search.webp`} alt={t('home.shot.search')} width="1360" height="900" loading="eager" /></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap grid g4">
+      {pillars.map((p) => (
+        <div class="pillar">
+          <h3>{t(`home.${p}.t`)}</h3>
+          <p>{t(`home.${p}.d`)}</p>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <section class="cork">
+    <div class="wrap">
+      <h2 class="center">{t('home.shots')}</h2>
+      <div class="grid g3 gallery" style="margin-top:40px">
+        <figure><img src={`/img/shots/${s}/order.webp`} alt={t('home.shot.order')} loading="lazy" width="1360" height="900" /><figcaption>{t('home.shot.order')}</figcaption></figure>
+        <figure><img src={`/img/shots/${s}/ask.webp`} alt={t('home.shot.ask')} loading="lazy" width="1360" height="900" /><figcaption>{t('home.shot.ask')}</figcaption></figure>
+        <figure class="phone"><img src={`/img/shots/${s}/portal-phone.webp`} alt={t('home.shot.phone')} loading="lazy" width="390" height="844" /><figcaption class="center">{t('home.shot.phone')}</figcaption></figure>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="center">
+        <h2>{t('home.deploy.t')}</h2>
+        <p class="lead">{t('home.deploy.d')}</p>
+      </div>
+      <div class="grid g2" style="margin-top:40px">
+        <div class="card">
+          <h3>{t('home.cloud.t')}</h3>
+          <ul class="check"><li>{t('home.cloud.1')}</li><li>{t('home.cloud.2')}</li><li>{t('home.cloud.3')}</li></ul>
+        </div>
+        <div class="card">
+          <h3>{t('home.self.t')}</h3>
+          <ul class="check"><li>{t('home.self.1')}</li><li>{t('home.self.2')}</li><li>{t('home.self.3')}</li></ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="dark">
+    <div class="wrap grid g2" style="align-items:center">
+      <div>
+        <div class="eyebrow">{lang === 'en' ? 'Our story' : '我們的故事'}</div>
+        <h2>{t('home.origin.t')}</h2>
+        <p class="lead">{t('home.origin.d')}</p>
+      </div>
+      <div class="card">
+        <h3>{t('home.cta.t')}</h3>
+        <p>{t('home.cta.d')}</p>
+        <a class="btn gold" href={href(lang, '/demo/')}>{t('home.ctaDemo')}</a>
+      </div>
+    </div>
+  </section>
+</Base>

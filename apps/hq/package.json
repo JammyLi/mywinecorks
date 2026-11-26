@@ -11,6 +11,7 @@
     "test": "vitest run",
     "typecheck": "tsc -p .",
     "publish-release": "tsx src/cli/publish-release.ts",
+    "publish-download": "tsx src/cli/publish-download.ts",
     "gen-signing-key": "tsx src/cli/gen-signing-key.ts"
   },
   "dependencies": {

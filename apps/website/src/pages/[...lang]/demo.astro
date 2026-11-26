@@ -1,0 +1,21 @@
+---
+import Base from '../../layouts/Base.astro';
+import RequestForm from '../../components/RequestForm.astro';
+import { langOf, langPaths, t as tr } from '../../i18n/index.ts';
+export const getStaticPaths = langPaths;
+const lang = langOf(Astro.params.lang);
+const t = tr(lang);
+---
+<Base lang={lang} path="/demo/" title={t('demo.title')}>
+  <section class="dark" style="padding-bottom:64px">
+    <div class="wrap">
+      <h1>{t('demo.title')}</h1>
+      <p class="lead">{t('demo.lead')}</p>
+    </div>
+  </section>
+  <section>
+    <div class="wrap" style="max-width:760px">
+      <div class="card"><RequestForm lang={lang} /></div>
+    </div>
+  </section>
+</Base>

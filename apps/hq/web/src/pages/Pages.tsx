@@ -1430,6 +1430,7 @@ export function Releases() {
           </div>
         </Dialog>
       )}
+      <DownloadsCard />
     </div>
   );
 }
@@ -1824,6 +1825,253 @@ export function AiUsagePage() {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- leads (website requests)
+interface LeadRow {
+  id: number;
+  kind: 'demo' | 'trial' | 'contact';
+  name: string;
+  company: string | null;
+  email: string;
+  phone: string | null;
+  country: string;
+  lang: string;
+  deployment: string | null;
+  bottles: string | null;
+  sells: boolean | null;
+  message: string | null;
+  status: 'new' | 'contacted' | 'converted' | 'closed';
+  note: string | null;
+  client_id: number | null;
+  client_no: string | null;
+  created_at: string;
+}
+const LEAD_STATUSES = ['new', 'contacted', 'converted', 'closed'] as const;
+export function LeadsPage() {
+  const { t, lang } = useHqT();
+  const { can } = useHq();
+  const toast = useToast();
+  const nav = useNavigate();
+  const [status, setStatus] = useState('new');
+  const [rows, reload] = useLoad<LeadRow[]>(`/leads?status=${status}`);
+  const [open, setOpen] = useState<LeadRow | null>(null);
+  const [note, setNote] = useState('');
+  const act = async (fn: () => Promise<unknown>) => {
+    try {
+      await fn();
+      reload();
+      toast(t('hq.saved'));
+    } catch (e) {
+      toast(t(`err.${(e as { code?: string }).code ?? 'server'}`));
+    }
+  };
+  return (
+    <div className="page">
+      <h1>{t('hq.nav.leads')}</h1>
+      <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
+        {['', ...LEAD_STATUSES].map((s) => (
+          <button
+            key={s}
+            className={'btn sm' + (status === s ? ' primary' : '')}
+            onClick={() => setStatus(s)}
+          >
+            {s ? t(`hq.lead.st.${s}`) : t('hq.all')}
+          </button>
+        ))}
+      </div>
+      <div className="card" style={{ padding: 0 }}>
+        <table className="t">
+          <thead>
+            <tr>
+              <th>{t('hq.created')}</th>
+              <th>{t('hq.lead.kind')}</th>
+              <th>{t('hq.lead.who')}</th>
+              <th>{t('hq.lead.about')}</th>
+              <th>{t('hq.status')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows?.map((l) => (
+              <tr key={l.id} className="click" onClick={() => (setOpen(l), setNote(l.note ?? ''))}>
+                <td>{dt(l.created_at, lang)}</td>
+                <td>{t(`hq.lead.k.${l.kind}`)}</td>
+                <td>
+                  {l.name}
+                  {l.company ? ` · ${l.company}` : ''}
+                  <div className="muted small">
+                    {l.email}
+                    {l.phone ? ` · ${l.phone}` : ''}
+                  </div>
+                </td>
+                <td className="small">
+                  {[
+                    l.country,
+                    l.deployment && t(`hq.lead.dep.${l.deployment}`),
+                    l.bottles && `${l.bottles} ${t('hq.lead.bottles')}`,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                  {l.message && <div className="muted">{l.message.slice(0, 120)}</div>}
+                </td>
+                <td>
+                  <span className="tag">{t(`hq.lead.st.${l.status}`)}</span>
+                  {l.client_no && <div className="small mono">{l.client_no}</div>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {rows && !rows.length && (
+          <p className="muted" style={{ padding: 16 }}>
+            {t('hq.none')}
+          </p>
+        )}
+      </div>
+      {open && (
+        <Dialog
+          title={`${t(`hq.lead.k.${open.kind}`)} · ${open.name}`}
+          onClose={() => setOpen(null)}
+          footer={
+            can('clients.edit') && open.status !== 'converted' ? (
+              <>
+                {open.status === 'new' && (
+                  <button
+                    className="btn"
+                    onClick={() =>
+                      act(() =>
+                        api(`/leads/${open.id}`, { method: 'PATCH', body: { status: 'contacted', note } }),
+                      ).then(() => setOpen(null))
+                    }
+                  >
+                    {t('hq.lead.markContacted')}
+                  </button>
+                )}
+                <button
+                  className="btn"
+                  onClick={() =>
+                    act(() =>
+                      api(`/leads/${open.id}`, { method: 'PATCH', body: { status: 'closed', note } }),
+                    ).then(() => setOpen(null))
+                  }
+                >
+                  {t('hq.lead.close')}
+                </button>
+                <button
+                  className="btn primary"
+                  onClick={async () => {
+                    try {
+                      const r = await api<{ clientId: number }>(`/leads/${open.id}/convert`, {
+                        body: { status: open.kind === 'trial' ? 'trial' : 'lead' },
+                      });
+                      nav(`/clients/${r.clientId}`);
+                    } catch (e) {
+                      toast(t(`err.${(e as { code?: string }).code ?? 'server'}`));
+                    }
+                  }}
+                >
+                  {t('hq.lead.convert')}
+                </button>
+              </>
+            ) : null
+          }
+        >
+          <dl className="kv">
+            <dt>{t('hq.email')}</dt>
+            <dd>
+              <a href={`mailto:${open.email}`}>{open.email}</a>
+            </dd>
+            {open.phone && (
+              <>
+                <dt>{t('hq.phone')}</dt>
+                <dd>{open.phone}</dd>
+              </>
+            )}
+            <dt>{t('hq.lead.about')}</dt>
+            <dd>
+              {[
+                open.company,
+                open.country,
+                open.lang,
+                open.deployment && t(`hq.lead.dep.${open.deployment}`),
+                open.bottles && `${open.bottles} ${t('hq.lead.bottles')}`,
+                open.sells == null ? null : open.sells ? t('hq.lead.sells') : t('hq.lead.own'),
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+            </dd>
+          </dl>
+          {open.message && <p style={{ whiteSpace: 'pre-wrap' }}>{open.message}</p>}
+          <Field label={t('hq.notes')}>
+            <textarea
+              className="input"
+              rows={3}
+              value={note}
+              disabled={!can('clients.edit')}
+              onChange={(e) => setNote(e.target.value)}
+              onBlur={() =>
+                note !== (open.note ?? '') &&
+                act(() => api(`/leads/${open.id}`, { method: 'PATCH', body: { note } }))
+              }
+            />
+          </Field>
+          {open.client_id && <Link to={`/clients/${open.client_id}`}>{open.client_no}</Link>}
+        </Dialog>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- downloads for the client account
+export function DownloadsCard() {
+  const { t, lang } = useHqT();
+  const { can } = useHq();
+  const [rows, reload] =
+    useLoad<
+      {
+        id: number;
+        version: string;
+        kind: string;
+        file: string;
+        size: string;
+        sha256: string;
+        active: boolean;
+        created_at: string;
+      }[]
+    >('/downloads');
+  return (
+    <div className="card stack">
+      <b>{t('hq.dl.title')}</b>
+      <p className="muted small">{t('hq.dl.intro')}</p>
+      <table className="t">
+        <tbody>
+          {rows?.map((d) => (
+            <tr key={d.id}>
+              <td className="mono">{d.version}</td>
+              <td>{t(`hq.dl.k.${d.kind}`)}</td>
+              <td className="small">
+                {d.file} · {(Number(d.size) / 1e6).toFixed(1)} MB
+              </td>
+              <td>{dt(d.created_at, lang)}</td>
+              <td>
+                {can('releases.edit') && (
+                  <button
+                    className="btn sm"
+                    onClick={() =>
+                      api(`/downloads/${d.id}`, { method: 'PATCH', body: { active: !d.active } }).then(reload)
+                    }
+                  >
+                    {d.active ? t('hq.dl.hide') : t('hq.dl.show')}
+                  </button>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {rows && !rows.length && <p className="muted small">{t('hq.none')}</p>}
     </div>
   );
 }

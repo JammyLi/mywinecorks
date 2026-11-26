@@ -1,0 +1,42 @@
+---
+import Base from '../../layouts/Base.astro';
+import { href, langOf, langPaths, t as tr } from '../../i18n/index.ts';
+export const getStaticPaths = langPaths;
+const lang = langOf(Astro.params.lang);
+const t = tr(lang);
+const plans = ['plan1', 'plan2', 'plan3'] as const;
+---
+<Base lang={lang} path="/pricing/" title={t('price.title')}>
+  <section class="dark" style="padding-bottom:64px">
+    <div class="wrap">
+      <h1>{t('price.title')}</h1>
+      <p class="lead">{t('price.lead')}</p>
+    </div>
+  </section>
+  <section>
+    <div class="wrap">
+      <div class="grid g3">
+        {plans.map((p, i) => (
+          <div class={'card plan' + (i === 1 ? ' featured' : '')}>
+            <h3>{t(`price.${p}.t`)}</h3>
+            <p class="muted">{t(`price.${p}.d`)}</p>
+            <ul class="check">{t(`price.${p}.f`).split('|').map((x) => <li>{x}</li>)}</ul>
+            <div class="price">{t('price.contact')}</div>
+            <a class={'btn' + (i === 1 ? '' : ' ghost')} style={i === 1 ? '' : 'color:var(--burgundy)'} href={href(lang, '/demo/') + '?kind=contact&plan=' + p}>{t('price.contact')}</a>
+          </div>
+        ))}
+      </div>
+      <p class="center muted" style="margin-top:24px">✦ {t('price.ai')}</p>
+      <div class="grid g2" style="margin-top:56px">
+        <div>
+          <h2>{t('price.sized')}</h2>
+          <ul class="check"><li>{t('price.s1')}</li><li>{t('price.s2')}</li><li>{t('price.s3')}</li><li>{t('price.s4')}</li></ul>
+        </div>
+        <div>
+          <h2>{t('price.all')}</h2>
+          <ul class="check">{t('price.all.f').split('|').map((x) => <li>{x}</li>)}</ul>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>

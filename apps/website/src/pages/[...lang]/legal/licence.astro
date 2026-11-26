@@ -1,0 +1,12 @@
+---
+import Base from '../../../layouts/Base.astro';
+import Legal from '../../../components/Legal.astro';
+import { langOf, langPaths, t as tr } from '../../../i18n/index.ts';
+export const getStaticPaths = langPaths;
+const lang = langOf(Astro.params.lang);
+const t = tr(lang);
+const title = { terms: t('foot.terms'), privacy: t('foot.privacy'), licence: t('foot.licence') }['licence'];
+---
+<Base lang={lang} path="/legal/licence/" title={title}>
+  <Legal lang={lang} page="licence" />
+</Base>

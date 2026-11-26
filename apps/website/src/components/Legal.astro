@@ -1,0 +1,146 @@
+---
+/** Terms, privacy notice and software licence agreement (drafts until reviewed — LEGAL_DRAFT). */
+import { LEGAL_DRAFT, t as tr, type Lang } from '../i18n/index.ts';
+interface Props { lang: Lang; page: 'terms' | 'privacy' | 'licence' }
+const { lang, page } = Astro.props;
+const t = tr(lang);
+const UPDATED = '2026-11-26';
+type Doc = { title: string; intro: string; parts: [string, string[]][] };
+const EN: Record<Props['page'], Doc> = {
+  privacy: {
+    title: 'Privacy notice',
+    intro: 'This notice explains what personal information MyWineCorks (“we”) collects through this website and our services, why, and what you can do about it.',
+    parts: [
+      ['This website', [
+        'When you send a demo, trial or contact request we keep the details you enter (name, company, email, phone, country, your answers and message) to reply to you and, if you become a client, to set up your account.',
+        'When you sign in to the client account we keep your email address and the time of sign-in and downloads.',
+        'This website does not use cookies, analytics or advertising trackers. The client account keeps its sign-in only in your browser tab until you close it.',
+      ]],
+      ['Our cloud service', [
+        'If you use MyWineCorks in our cloud, we store and process your cellar, customer and order data on your behalf, only to provide the service. You decide what is in it and who can see it.',
+        'Your workspace is kept separate from every other client and backed up continuously.',
+      ]],
+      ['Self-hosted servers', [
+        'If MyWineCorks runs on your own server, your data stays there. Once a day the server sends us only its licence id, installation id, software version and three counts (bottles in stock, orders this month, active users) to check the licence and offer updates.',
+      ]],
+      ['The customer portal', [
+        'If you invite customers to your portal, we process their name, email, addresses and requests on your behalf so they can sign in and send requests to you. They never see your cost, locations or other customers.',
+      ]],
+      ['AI features', [
+        'When someone uses an AI feature, only the information that request needs (for example a label photo, or wine names for a search) is sent through our AI gateway to our AI provider, Anthropic, to produce the answer. We do not store the request or the answer — only how much was used.',
+        'Each AI feature can be switched off by the client.',
+      ]],
+      ['Who else receives data', [
+        'Only providers we need to run the service: hosting and backup storage, email delivery and the AI provider above. We do not sell personal information.',
+      ]],
+      ['How long we keep it', [
+        'Requests from this website: up to two years after our last contact, unless you become a client. Client records: for as long as you are a client and as required for accounting afterwards. Data in a cloud workspace: until you close the workspace and ask us to delete it.',
+      ]],
+      ['Your choices', [
+        'You can ask to see, correct or delete your personal information, or to stop being contacted, by replying to any email from us or using the contact form.',
+      ]],
+    ],
+  },
+  terms: {
+    title: 'Terms of service',
+    intro: 'These terms apply to the MyWineCorks website, cloud service, customer portal and AI features. Self-hosted software is also covered by the software licence agreement.',
+    parts: [
+      ['The service', ['MyWineCorks is software for managing a wine collection and selling privately to customers you invite. We do not sell alcohol and are not a party to any sale between you and your customers.']],
+      ['Your account', ['You are responsible for the users you create, the permissions you give them and keeping sign-in details safe. Every user signs in with 2-step verification.']],
+      ['Selling wine', ['If you sell wine you are responsible for holding any licence required where you and your customers are, for checking age, and for not selling or shipping where it is not allowed. The portal’s age confirmation and shipping restrictions help but do not replace these duties.']],
+      ['Your data', ['Your data belongs to you. You can export it at any time. If a subscription ends, the Owner can still sign in and export; we do not delete a cloud workspace until you ask us to or after a notice period.']],
+      ['AI suggestions', ['AI features suggest; a person decides. Suggestions (for example wine details, prices or drinking windows) can be wrong — check them before you save.']],
+      ['Fees', ['Fees are set in your quote or subscription. When a subscription expires there is a 14-day grace period before the app locks to the Owner.']],
+      ['Availability and changes', ['We work to keep the cloud service available and backed up, and may improve the service over time. We will tell you in advance about changes that reduce what you have paid for.']],
+      ['Liability', ['To the extent the law allows, our total liability is limited to the fees you paid in the twelve months before the claim, and we are not liable for indirect losses.']],
+      ['Law', ['These terms are governed by the laws of Taiwan (Republic of China), unless the law where you are requires otherwise.']],
+    ],
+  },
+  licence: {
+    title: 'Software licence agreement',
+    intro: 'This agreement applies when you install MyWineCorks on your own server.',
+    parts: [
+      ['What you may do', ['Your licence key lets you install and use MyWineCorks on one server for your own business, within the plan’s limits (bottles in stock, orders per month, users and modules) and until the key expires.']],
+      ['What you may not do', ['You may not copy the software to another server without moving the licence, share or resell it, remove licence checks, or reverse engineer it except where the law allows.']],
+      ['Licence checks', ['The server checks its licence with us once a day (licence id, installation id, version and three counts — see the privacy notice). Without a check for 7 days it warns; after 30 days it locks until it can check again.']],
+      ['Moving to a new server', ['Ask us to move the licence. We can move it up to twice a year.']],
+      ['Updates', ['Updates are offered in the app while your licence is valid. The database is backed up automatically before each update.']],
+      ['When a licence ends', ['After expiry there is a 14-day grace period; then only the Owner can sign in, to renew and to export. Your data is never deleted by the software.']],
+      ['Ownership and warranty', ['MyWineCorks remains our property; your data remains yours. The software is provided as described on this website, without other warranties to the extent the law allows. The terms of service also apply.']],
+    ],
+  },
+};
+const ZH: Record<Props['page'], Doc> = {
+  privacy: {
+    title: '隱私權政策',
+    intro: '本政策說明 MyWineCorks（以下稱「我們」）透過本網站與服務蒐集哪些個人資料、用途為何，以及您可以如何行使權利。',
+    parts: [
+      ['本網站', [
+        '當您送出示範、試用或聯絡申請時，我們會保存您填寫的資料（姓名、公司、Email、電話、所在地、您的回答與訊息），用來回覆您；如果您成為客戶，也用來建立帳號。',
+        '當您登入客戶專區時，我們會保存您的 Email 以及登入與下載的時間。',
+        '本網站不使用 Cookie、分析或廣告追蹤工具。客戶專區的登入狀態只保存在您瀏覽器的分頁中，關閉後即消失。',
+      ]],
+      ['雲端服務', [
+        '如果您使用 MyWineCorks 雲端版，我們會代您保存並處理酒窖、客戶與訂單資料，僅用於提供服務。資料內容與誰能看到，都由您決定。',
+        '您的工作區與其他客戶完全分開，並持續備份。',
+      ]],
+      ['自有伺服器', [
+        '如果 MyWineCorks 安裝在您自己的伺服器上，資料就留在那裡。伺服器每天只會傳送授權編號、安裝編號、軟體版本與三個數字（庫存瓶數、本月訂單數、啟用中的使用者數）給我們，用來確認授權與提供更新。',
+      ]],
+      ['客戶入口', [
+        '如果您邀請客人使用您的入口，我們會代您處理他們的姓名、Email、地址與需求，讓他們能登入並向您送出需求。他們絕不會看到您的成本、位置或其他客人。',
+      ]],
+      ['AI 功能', [
+        '使用 AI 功能時，只有該次請求需要的資料（例如一張酒標照片，或搜尋用的酒名）會經由我們的 AI 閘道傳給我們的 AI 服務供應商 Anthropic 以產生回答。我們不保存請求或回答的內容，只記錄使用量。',
+        '每項 AI 功能都可以由客戶自行關閉。',
+      ]],
+      ['資料會提供給誰', [
+        '只提供給維持服務所必需的供應商：主機與備份儲存、Email 寄送，以及上述的 AI 服務供應商。我們不販售個人資料。',
+      ]],
+      ['保存期間', [
+        '網站申請資料：最後一次聯絡後最多保存兩年，除非您成為客戶。客戶資料：在您仍是客戶期間，以及之後會計法規要求的期間。雲端工作區的資料：直到您關閉工作區並要求刪除為止。',
+      ]],
+      ['您的權利', [
+        '您可以要求查閱、更正或刪除您的個人資料，或要求我們停止聯絡您——回覆我們寄出的任何一封信，或使用聯絡表單即可。',
+      ]],
+    ],
+  },
+  terms: {
+    title: '服務條款',
+    intro: '本條款適用於 MyWineCorks 網站、雲端服務、客戶入口與 AI 功能。自有伺服器版本另適用軟體授權合約。',
+    parts: [
+      ['服務內容', ['MyWineCorks 是用來管理葡萄酒收藏，並對您邀請的客人私下銷售的軟體。我們不販售酒類，也不是您與客人之間任何交易的當事人。']],
+      ['您的帳號', ['您須對您建立的使用者、給予的權限以及登入資料的安全負責。每位使用者都以兩步驟驗證登入。']],
+      ['銷售酒類', ['如果您販售葡萄酒，您須自行取得您與客人所在地要求的執照、確認購買者年齡，並且不在禁止的地區販售或寄送。客戶入口的年齡確認與寄送限制可以協助您，但不能取代這些義務。']],
+      ['您的資料', ['資料屬於您，您可以隨時匯出。訂閱結束後，擁有者仍可登入並匯出；除非您要求或經過通知期間，我們不會刪除雲端工作區。']],
+      ['AI 建議', ['AI 功能只提供建議，由人做決定。建議內容（例如酒款資料、價格或適飲期）可能有誤，儲存前請核對。']],
+      ['費用', ['費用依您的報價或訂閱內容而定。訂閱到期後有 14 天寬限期，之後系統只開放擁有者登入。']],
+      ['服務提供與變更', ['我們會盡力維持雲端服務的可用性與備份，並可能隨時間改善服務。若變更會減少您已付費的內容，我們會事先通知。']],
+      ['責任限制', ['在法律允許的範圍內，我們的總責任以您在請求發生前十二個月內支付的費用為上限，且不負間接損失的責任。']],
+      ['準據法', ['本條款以中華民國（台灣）法律為準據法，但您所在地法律另有強制規定者除外。']],
+    ],
+  },
+  licence: {
+    title: '軟體授權合約',
+    intro: '當您將 MyWineCorks 安裝在自己的伺服器上時，適用本合約。',
+    parts: [
+      ['您可以', ['您的授權金鑰允許您在一台伺服器上安裝並使用 MyWineCorks，供您自己的業務使用，在方案的限制內（庫存瓶數、每月訂單數、使用者數與模組），直到金鑰到期。']],
+      ['您不可以', ['未轉移授權前，您不得將軟體複製到另一台伺服器，不得分享或轉售，不得移除授權檢查，亦不得進行反向工程（法律另有允許者除外）。']],
+      ['授權檢查', ['伺服器每天會向我們確認一次授權（授權編號、安裝編號、版本與三個數字——詳見隱私權政策）。連續 7 天未確認會出現警告；30 天後系統會鎖定，直到再次確認為止。']],
+      ['更換伺服器', ['請與我們聯絡轉移授權，每年最多可轉移兩次。']],
+      ['更新', ['授權有效期間，系統內會提供更新。每次更新前都會自動備份資料庫。']],
+      ['授權結束時', ['到期後有 14 天寬限期；之後只有擁有者可以登入，用來續約與匯出資料。軟體絕不會刪除您的資料。']],
+      ['所有權與保證', ['MyWineCorks 軟體仍屬我們所有；您的資料屬於您。軟體依本網站的說明提供，在法律允許的範圍內不提供其他保證。服務條款同樣適用。']],
+    ],
+  },
+};
+const d = (lang === 'en' ? EN : ZH)[page];
+---
+<section class="dark" style="padding-bottom:64px"><div class="wrap"><h1>{d.title}</h1><p class="muted">{t('legal.updated', { date: UPDATED })}</p></div></section>
+<section>
+  <div class="wrap prose">
+    {LEGAL_DRAFT && <div class="alert" style="margin-bottom:24px">{t('legal.draft')}</div>}
+    <p class="lead">{d.intro}</p>
+    {d.parts.map(([h, ps]) => (<><h2>{h}</h2>{ps.map((p) => <p>{p}</p>)}</>))}
+  </div>
+</section>

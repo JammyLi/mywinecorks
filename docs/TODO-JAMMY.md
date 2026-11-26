@@ -49,6 +49,26 @@ purchase, a decision, a test on real hardware). Tick items off here when done.
 - [ ] **Check the alcohol-sale wording** in the portal (age confirmation, licence confirmation,
       "request, not a purchase") with someone who knows Taiwan / US rules.
 
+## Website (M9)
+
+- [ ] **Read the website copy** (both languages) and tell me what to change — especially the
+      claims on the home, features, pricing and about pages, and the plan names (Collector /
+      Merchant / Merchant + Portal).
+- [ ] **Legal pages:** have the terms, privacy notice and software licence agreement checked by a
+      lawyer (Taiwan and US); tell me the company's legal name and address to put in them. Until
+      then they show a "draft" note (build with `PUBLIC_LEGAL_REVIEWED=1` to remove it).
+- [ ] **Contact email:** create e.g. hello@mywinecorks.com and set `PUBLIC_CONTACT_EMAIL`; replies to
+      website requests come from `MAIL_FROM` in HQ, so that mailbox should exist too.
+- [ ] **Publish the site** (needs the domain, decision 3): a static host such as Cloudflare Pages
+      (build `pnpm --filter @mwc/website build`, folder `apps/website/dist`, env `SITE`,
+      `PUBLIC_HQ_URL=https://hq.mywinecorks.com`). In HQ set `WEBSITE_URL=https://mywinecorks.com`.
+- [ ] **Publish the Windows installer for clients** once it is code-signed:
+      `pnpm --filter @mwc/hq publish-download MyWineCorks-Setup-<ver>.exe --kind windows --version <ver>`.
+      Docker for Mac / NAS clients needs an image registry first (e.g. Docker Hub or GitHub Packages —
+      decide which).
+- [ ] **Real photos (optional):** the site uses app screenshots; a few photos of a real cellar or
+      labels would help the home page.
+
 ## AI (M8)
 
 - [ ] **Claude API key:** in the Claude Console (console.anthropic.com, Getfocus organisation; a

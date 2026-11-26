@@ -1,0 +1,114 @@
+---
+import '@fontsource/cormorant-garamond/500.css';
+import '@fontsource/cormorant-garamond/600.css';
+import '@fontsource/cormorant-garamond/500-italic.css';
+import '@fontsource/lora/400.css';
+import '@fontsource/lora/600.css';
+import '../styles/site.css';
+import { href, t as tr, type Lang } from '../i18n/index.ts';
+import Logo from '../components/Logo.astro';
+
+interface Props {
+  lang: Lang;
+  /** Path without the language prefix, e.g. "/features/". */
+  path: string;
+  title?: string;
+  description?: string;
+  noindex?: boolean;
+  dark?: boolean;
+}
+const { lang, path, title, description, noindex, dark } = Astro.props;
+const t = tr(lang);
+const site = Astro.site!.toString().replace(/\/$/, '');
+const zhUrl = site + href('zh-TW', path);
+const enUrl = site + href('en', path);
+const canonical = lang === 'en' ? enUrl : zhUrl;
+const fullTitle = title ? `${title} · MyWineCorks` : `MyWineCorks — ${t('site.tagline')}`;
+const desc = description ?? t('site.description');
+const other: Lang = lang === 'en' ? 'zh-TW' : 'en';
+const nav = [
+  ['/features/', 'nav.features'],
+  ['/pricing/', 'nav.pricing'],
+  ['/faq/', 'nav.faq'],
+  ['/about/', 'nav.about'],
+] as const;
+const here = (p: string) => path === p;
+const year = new Date().getFullYear();
+---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={desc} />
+    {noindex ? <meta name="robots" content="noindex" /> : <link rel="canonical" href={canonical} />}
+    <link rel="alternate" hreflang="zh-Hant-TW" href={zhUrl} />
+    <link rel="alternate" hreflang="en" href={enUrl} />
+    <link rel="alternate" hreflang="x-default" href={zhUrl} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#1b1a18" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="MyWineCorks" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={desc} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={site + '/img/og.png'} />
+    <meta property="og:locale" content={lang === 'en' ? 'en_US' : 'zh_TW'} />
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+  <body class={dark ? 'dark-top' : ''}>
+    <a class="skip" href="#main">{lang === 'en' ? 'Skip to content' : '跳到主要內容'}</a>
+    <header class="top">
+      <div class="wrap bar">
+        <a class="brand" href={href(lang, '/')} aria-label="MyWineCorks">
+          <Logo size={38} />
+        </a>
+        <input type="checkbox" id="menu" class="menu-toggle" />
+        <label for="menu" class="menu-btn" aria-label={t('nav.menu')}><span></span><span></span><span></span></label>
+        <nav class="nav" aria-label={t('nav.menu')}>
+          {nav.map(([p, k]) => <a href={href(lang, p)} aria-current={here(p) ? 'page' : undefined}>{t(k)}</a>)}
+          <a href={href(lang, '/account/')} class="quiet" aria-current={here('/account/') ? 'page' : undefined}>{t('nav.account')}</a>
+          <a href={href(other, path)} class="lang" hreflang={other === 'en' ? 'en' : 'zh-Hant-TW'} lang={other} aria-label={t('nav.langLabel')}>{t('nav.lang')}</a>
+          <a href={href(lang, '/demo/')} class="btn gold sm">{t('nav.demo')}</a>
+        </nav>
+      </div>
+    </header>
+    <main id="main">
+      <slot />
+    </main>
+    <footer class="foot">
+      <div class="wrap cols">
+        <div>
+          <Logo size={34} />
+          <p class="small">{t('site.tagline')}</p>
+        </div>
+        <div>
+          <b>{t('foot.product')}</b>
+          <a href={href(lang, '/features/')}>{t('nav.features')}</a>
+          <a href={href(lang, '/pricing/')}>{t('nav.pricing')}</a>
+          <a href={href(lang, '/demo/')}>{t('nav.demo')}</a>
+          <a href={href(lang, '/account/')}>{t('nav.account')}</a>
+        </div>
+        <div>
+          <b>{t('foot.company')}</b>
+          <a href={href(lang, '/about/')}>{t('nav.about')}</a>
+          <a href={href(lang, '/faq/')}>{t('nav.faq')}</a>
+          <a href={href(lang, '/contact/')}>{t('nav.contact')}</a>
+        </div>
+        <div>
+          <b>{t('foot.legal')}</b>
+          <a href={href(lang, '/legal/terms/')}>{t('foot.terms')}</a>
+          <a href={href(lang, '/legal/privacy/')}>{t('foot.privacy')}</a>
+          <a href={href(lang, '/legal/licence/')}>{t('foot.licence')}</a>
+        </div>
+      </div>
+      <div class="wrap fine small">
+        <span>{t('foot.rights', { year })}</span>
+        <span>{t('foot.alcohol')}</span>
+      </div>
+    </footer>
+  </body>
+</html>

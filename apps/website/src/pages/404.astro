@@ -1,0 +1,19 @@
+---
+import Base from '../layouts/Base.astro';
+import { href, t as tr } from '../i18n/index.ts';
+const t = tr('zh-TW');
+const e = tr('en');
+---
+<Base lang="zh-TW" path="/404/" title={t('nf.title')} noindex>
+  <section class="center">
+    <div class="wrap">
+      <h1>{t('nf.title')}</h1>
+      <p class="lead">{t('nf.d')}</p>
+      <p class="muted">{e('nf.title')} — {e('nf.d')}</p>
+      <div class="row" style="justify-content:center">
+        <a class="btn" href={href('zh-TW', '/')}>{t('nf.home')}</a>
+        <a class="btn ghost" style="color:var(--burgundy)" href={href('en', '/')}>{e('nf.home')}</a>
+      </div>
+    </div>
+  </section>
+</Base>

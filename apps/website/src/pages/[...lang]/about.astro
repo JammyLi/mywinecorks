@@ -1,0 +1,42 @@
+---
+import Base from '../../layouts/Base.astro';
+import { href, langOf, langPaths, t as tr } from '../../i18n/index.ts';
+export const getStaticPaths = langPaths;
+const lang = langOf(Astro.params.lang);
+const t = tr(lang);
+---
+<Base lang={lang} path="/about/" title={t('about.title')}>
+  <section class="dark" style="padding-bottom:64px"><div class="wrap"><h1>{t('about.title')}</h1><p class="lead">{t('site.tagline')}</p></div></section>
+  <section>
+    <div class="wrap prose">
+      {lang === 'en' ? (
+        <>
+          <p class="lead">MyWineCorks began as MyWines, an app we wrote for one collector in Taipei whose cellar had outgrown spreadsheets: thousands of bottles across several locations, original cases and loose bottles, and a small circle of customers who asked for wines by LINE message.</p>
+          <p>It had to answer simple questions quickly and correctly — where is this bottle, what did it cost, what is it worth, who bought the last case — and make packing an order impossible to get wrong. It has been used every day since.</p>
+          <p>MyWineCorks is that app rebuilt for other collectors and small wine businesses in Taiwan and the United States: in Traditional Chinese and English, in the cloud or on your own server, with a private portal for your customers and AI where it saves real time.</p>
+          <h2>What we believe</h2>
+          <ul class="check">
+            <li>Your cellar is private. Nothing is public unless you invite someone.</li>
+            <li>Your data is yours. Export it any time; keep it on your own server if you prefer.</li>
+            <li>Software should fit the way a cellar actually works — scan, move, count, pack.</li>
+            <li>AI should save typing, never make decisions for you.</li>
+          </ul>
+        </>
+      ) : (
+        <>
+          <p class="lead">MyWineCorks 的前身是 MyWines——我們為台北一位收藏家寫的系統。他的酒窖早已超出試算表能處理的程度：數千瓶酒分散在好幾個地點，有原箱也有散瓶，還有一群習慣用 LINE 訊息訂酒的客人。</p>
+          <p>這套系統必須快速而正確地回答一些簡單的問題——這瓶酒在哪裡、多少錢買的、現在值多少、上一箱賣給了誰——並讓揀貨裝箱不可能出錯。從那天起，它每天都在使用。</p>
+          <p>MyWineCorks 是把這套系統重新打造，提供給台灣與美國的其他收藏家和小型酒商：繁體中文與英文、雲端或自有伺服器、給客人的私人入口，以及真正省時間的 AI。</p>
+          <h2>我們相信</h2>
+          <ul class="check">
+            <li>您的酒窖是私人的。除非您邀請，否則什麼都不公開。</li>
+            <li>資料屬於您。隨時可以匯出；也可以放在自己的伺服器上。</li>
+            <li>軟體應該配合酒窖實際的工作方式——掃描、搬動、盤點、裝箱。</li>
+            <li>AI 應該幫您少打字，而不是替您做決定。</li>
+          </ul>
+        </>
+      )}
+      <p style="margin-top:32px"><a class="btn" href={href(lang, '/demo/')}>{t('home.ctaDemo')}</a></p>
+    </div>
+  </section>
+</Base>

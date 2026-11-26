@@ -1,0 +1,169 @@
+---
+/** Client account: email sign-in link → licences and downloads (all through HQ /api/web/account). */
+import Base from '../../layouts/Base.astro';
+import { HQ_URL, langOf, langPaths, t as tr, dict } from '../../i18n/index.ts';
+export const getStaticPaths = langPaths;
+const lang = langOf(Astro.params.lang);
+const t = tr(lang);
+const keys = Object.keys(dict[lang]).filter((k) => k.startsWith('acct.'));
+const strings = Object.fromEntries(keys.map((k) => [k, dict[lang][k as keyof (typeof dict)['en']]]));
+---
+<Base lang={lang} path="/account/" title={t('acct.title')} noindex>
+  <section class="dark" style="padding-bottom:64px">
+    <div class="wrap"><h1>{t('acct.title')}</h1><p class="lead">{t('acct.lead')}</p></div>
+  </section>
+  <section>
+    <div class="wrap" style="max-width:820px" id="acct" data-hq={HQ_URL} data-lang={lang} data-s={JSON.stringify(strings)}>
+      <div class="card" data-view="signin" hidden>
+        <div class="alert" data-msg hidden></div>
+        <form class="f" data-signin>
+          <div class="field"><label for="a-email">{t('acct.email')}</label><input id="a-email" type="email" name="email" required autocomplete="email" /></div>
+          <div><button class="btn" type="submit">{t('acct.send')}</button></div>
+        </form>
+        <div class="alert ok" data-sent hidden>{t('acct.sent')}</div>
+      </div>
+      <div class="card" data-view="busy" hidden>{t('acct.signingIn')}</div>
+      <div data-view="account" hidden>
+        <div class="row" style="justify-content:space-between;margin-bottom:16px">
+          <span class="muted" data-email></span>
+          <button class="btn ghost sm" style="color:var(--burgundy)" data-signout>{t('acct.signOut')}</button>
+        </div>
+        <div class="card">
+          <h2 style="font-size:1.8rem">{t('acct.licenses')}</h2>
+          <div data-licenses></div>
+        </div>
+        <div class="card" style="margin-top:24px" data-dl-card>
+          <h2 style="font-size:1.8rem">{t('acct.downloads')}</h2>
+          <div data-downloads></div>
+          <h3 style="margin-top:28px">{t('acct.howto')}</h3>
+          <ol>
+            <li>{t('acct.howto.1')}</li>
+            <li>{t('acct.howto.2')}</li>
+            <li>{t('acct.howto.3')}</li>
+            <li>{t('acct.howto.4')}</li>
+          </ol>
+        </div>
+        <p class="muted small" style="margin-top:16px" data-cloud hidden>{t('acct.cloud')}</p>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<script>
+  const root = document.getElementById('acct')!;
+  const HQ = root.dataset.hq!;
+  const S = JSON.parse(root.dataset.s!) as Record<string, string>;
+  const lang = root.dataset.lang!;
+  const KEY = 'mwc.account';
+  const view = (v: string) => root.querySelectorAll<HTMLElement>('[data-view]').forEach((el) => (el.hidden = el.dataset.view !== v));
+  const $ = <T extends HTMLElement>(sel: string) => root.querySelector<T>(sel)!;
+  const el = (tag: string, attrs: Record<string, string> = {}, ...kids: (Node | string)[]) => {
+    const e = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+    e.append(...kids);
+    return e;
+  };
+  const store = {
+    get: () => { try { return sessionStorage.getItem(KEY); } catch { return null; } },
+    set: (v: string | null) => { try { v ? sessionStorage.setItem(KEY, v) : sessionStorage.removeItem(KEY); } catch { /* private mode */ } },
+  };
+  const call = async (path: string, body?: unknown) => {
+    const tok = store.get();
+    const r = await fetch(HQ + path, {
+      method: body === undefined ? 'GET' : 'POST',
+      headers: { ...(body === undefined ? {} : { 'content-type': 'application/json' }), ...(tok ? { authorization: `Bearer ${tok}` } : {}) },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw Object.assign(new Error(d.error ?? 'error'), { status: r.status });
+    return d;
+  };
+  const day = (iso: string) => new Date(iso).toLocaleDateString(lang === 'en' ? 'en-US' : 'zh-TW', { year: 'numeric', month: 'short', day: 'numeric' });
+  const mb = (n: number) => `${(n / 1e6).toFixed(1)} MB`;
+  const fetchFile = async (b: unknown) => {
+    const { url } = await call('/api/web/account/ticket', b);
+    location.href = url;
+  };
+
+  function signIn(message?: string) {
+    view('signin');
+    const m = $('[data-msg]');
+    m.hidden = !message;
+    m.textContent = message ?? '';
+  }
+
+  async function load() {
+    view('busy');
+    try {
+      const a = await call('/api/web/account');
+      $('[data-email]').textContent = a.email;
+      const lic = $('[data-licenses]');
+      lic.replaceChildren();
+      if (!a.licenses.length) lic.append(el('p', { class: 'muted' }, S['acct.noLicenses']));
+      for (const l of a.licenses) {
+        const info = el('div', {},
+          el('b', {}, `${l.client} · ${S['acct.plan']} ${l.plan}`),
+          el('div', { class: 'small muted' }, [S['acct.kind.' + l.kind], `${S['acct.validUntil']} ${day(l.expiresAt)}`, l.workspace ? `${S['acct.workspace']} ${l.workspace}` : l.activated ? S['acct.activated'] : S['acct.notActivated']].join(' · ')),
+          el('div', { class: 'mono muted' }, l.lid),
+        );
+        const btn = el('button', { class: 'btn sm' }, S['acct.downloadLicense']);
+        btn.addEventListener('click', () => fetchFile({ license: l.lid }).catch(() => alertErr()));
+        lic.append(el('div', { class: 'lic' }, info, l.kind === 'selfhost' ? btn : el('span')));
+      }
+      const selfhost = a.licenses.some((l: { kind: string }) => l.kind === 'selfhost');
+      $('[data-dl-card]').hidden = !selfhost;
+      $('[data-cloud]').hidden = !a.licenses.some((l: { kind: string }) => l.kind === 'cloud');
+      const dl = $('[data-downloads]');
+      dl.replaceChildren();
+      if (!a.downloads.length) dl.append(el('p', { class: 'muted' }, S['acct.noDownloads']));
+      for (const d of a.downloads) {
+        const btn = el('button', { class: 'btn sm' }, S['acct.download']);
+        btn.addEventListener('click', () => fetchFile({ download: d.id }).catch(() => alertErr()));
+        dl.append(el('div', { class: 'lic' },
+          el('div', {}, el('b', {}, `${S['acct.dl.' + d.kind] ?? d.kind} ${d.version}`), el('div', { class: 'small muted' }, `${d.name} · ${mb(d.size)}`), el('div', { class: 'mono muted' }, `${S['acct.checksum']} ${d.sha256}`)),
+          btn));
+      }
+      view('account');
+    } catch (e) {
+      if ((e as { status?: number }).status === 401) {
+        store.set(null);
+        signIn();
+      } else signIn(S['acct.error']);
+    }
+  }
+  const alertErr = () => window.alert(S['acct.error']);
+
+  $('[data-signin]').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const f = e.target as HTMLFormElement;
+    const email = (new FormData(f).get('email') as string).trim();
+    if (!email) return;
+    try {
+      await call('/api/web/account/link', { email, lang });
+    } catch {
+      /* the answer is the same either way */
+    }
+    f.hidden = true;
+    $('[data-sent]').hidden = false;
+  });
+  $('[data-signout]').addEventListener('click', () => {
+    store.set(null);
+    signIn();
+  });
+
+  (async () => {
+    const t = new URLSearchParams(location.search).get('t');
+    if (t) {
+      history.replaceState(null, '', location.pathname); // the link works once; do not keep it in history
+      view('busy');
+      try {
+        const r = await call('/api/web/account/session', { t });
+        store.set(r.token);
+      } catch {
+        return signIn(S['acct.linkInvalid']);
+      }
+    }
+    if (store.get()) load();
+    else signIn();
+  })();
+</script>

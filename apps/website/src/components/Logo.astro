@@ -1,0 +1,16 @@
+---
+/** Brand lockup (logo set 1d): bottle mark + "My Wine Corks" wordmark, set in the site fonts. */
+interface Props { size?: number; tagline?: string }
+const { size = 40, tagline } = Astro.props;
+---
+<span class="logo">
+  <svg width={size} height={size} viewBox="0 0 170 170" aria-hidden="true">
+    <g transform="translate(85,85) rotate(45) translate(-35,-88)">
+      <path d="M30,34 L30,57 C30,67 16,71 16,85 L16,160 Q16,164 20,164 L50,164 Q54,164 54,160 L54,85 C54,71 40,67 40,57 L40,34 Z" fill="#5e1a24" stroke="#d4a560" stroke-width="6" stroke-linejoin="round" />
+      <rect x="28.5" y="30" width="13" height="5" rx="1" fill="#5e1a24" stroke="#d4a560" stroke-width="6" />
+      <rect x="31" y="10" width="8" height="20" rx="1.5" fill="#e6d2ac" stroke="#d4a560" stroke-width="6" />
+      <rect x="16" y="104" width="38" height="30" fill="#e6e0d6" stroke="#d4a560" stroke-width="4" />
+    </g>
+  </svg>
+  <span class="word"><i>My Wine</i> Corks{tagline && <small>{tagline}</small>}</span>
+</span>

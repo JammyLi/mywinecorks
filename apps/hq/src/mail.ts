@@ -35,6 +35,36 @@ const T: Record<string, Record<Lang, (v: Record<string, string>) => { subject: s
       body: `Hello ${v.name},\n\nYour MyWineCorks cloud workspace is ready. Workspace ID: ${v.slug}\n\nSet the Owner password with this link (valid 7 days, works once):\n${v.link}\n\nAfter that, sign in at ${v.app}.\nMyWineCorks`,
     }),
   },
+  leadThanks: {
+    'zh-TW': (v) => ({
+      subject: '已收到您的 MyWineCorks 申請',
+      body: `${v.name} 您好：\n\n謝謝您申請${v.what}。我們會在 1 個工作天內與您聯絡，安排時間。\n\n如有任何問題，直接回覆這封信即可。\nMyWineCorks`,
+    }),
+    en: (v) => ({
+      subject: 'We received your MyWineCorks request',
+      body: `Hello ${v.name},\n\nThank you for asking for ${v.what}. We will contact you within one working day to arrange a time.\n\nReply to this email if you have any questions.\nMyWineCorks`,
+    }),
+  },
+  leadNew: {
+    'zh-TW': (v) => ({
+      subject: `新的網站申請：${v.kind} — ${v.name}${v.company ? '（' + v.company + '）' : ''}`,
+      body: `${v.summary}\n\n在 HQ 查看：${v.link}`,
+    }),
+    en: (v) => ({
+      subject: `New website request: ${v.kind} — ${v.name}${v.company ? ' (' + v.company + ')' : ''}`,
+      body: `${v.summary}\n\nOpen in HQ: ${v.link}`,
+    }),
+  },
+  accountLink: {
+    'zh-TW': (v) => ({
+      subject: '登入 MyWineCorks 客戶專區',
+      body: `您好：\n\n請用這個連結登入 MyWineCorks 客戶專區，下載安裝程式與授權檔（30 分鐘內有效，只能使用一次）：\n${v.link}\n\n如果不是您本人申請，請忽略這封信。\nMyWineCorks`,
+    }),
+    en: (v) => ({
+      subject: 'Sign in to your MyWineCorks account',
+      body: `Hello,\n\nUse this link to sign in to your MyWineCorks account and download the installer and your license file (valid 30 minutes, works once):\n${v.link}\n\nIf you did not ask for this, ignore this email.\nMyWineCorks`,
+    }),
+  },
   setupLink: {
     'zh-TW': (v) => ({
       subject: 'MyWineCorks HQ 帳號設定',
