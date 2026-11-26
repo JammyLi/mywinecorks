@@ -1,7 +1,7 @@
 # Beta with the first client (M10)
 
-Goal (BUILD-PLAN M10 exit): **the first client runs on MyWineCorks and MyWines is retired.**
-The first client is the cellar MyWines was built for. Version: **1.0.0-beta.1**.
+Goal (BUILD-PLAN M10 exit): **the first client runs on MyWineCorks.**
+The first client is the cellar MyWines was built for (MyWines itself was only a test, never live). Version: **1.0.0-beta.1**.
 
 Everything below that needs a person on site, accounts or a decision is marked **(Jammy)** and is
 also in `docs/TODO-JAMMY.md`.
@@ -12,25 +12,20 @@ also in `docs/TODO-JAMMY.md`.
   or the unsigned beta installer from CI with a SmartScreen warning explained in person.
 - **Cloud** — needs HQ, the cloud server and portal service deployed (TODO-JAMMY › Cloud).
 
-## 2. Rehearsal (no risk to MyWines)
+## 2. Rehearsal with their Excel
 
-MyWines is only ever read; the migration takes a snapshot of its database first.
+MyWines was only ever used for testing, so there is nothing to move from it: the first client's
+data comes from their **Excel inventory**.
 
-1. Copy MyWines' `data` folder (database and photos) to a USB drive or your Mac.
-2. Dry run — imports everything, checks it, and rolls back:
-   ```bash
-   pnpm --filter @mwc/server migrate-mywines --from /path/to/mywines/data \
-     --user jammy=<email>:owner --user <name>=<email>:employee
-   ```
-   It prints counts (wines, bottles, cases, storage, customers, orders, prices) and every problem.
-3. Fix or accept each problem, then run it with `--commit` into a test workspace.
-4. Check side by side with MyWines (both open):
-   - totals on the Overview (bottles, value) and in Reports › Collection value;
-   - 20 random bottles: scan the printed label → same wine, same place;
-   - 5 cases: same bottles;
-   - 5 customers: same history and open balance;
-   - the newest 10 orders.
-5. Delete the test workspace.
+1. Import the Excel into a **test workspace** (Import › wines and stock; storage and market prices
+   if they are separate sheets). The import lists every problem before anything is saved —
+   missing vintages, unknown racks, prices that are not numbers, names spelled two ways.
+2. Fix the problems in a copy of the Excel (or map them in the import) until the preview is clean,
+   then save.
+3. Check against the Excel: total bottles and value on the Overview; 20 random rows → same wine,
+   quantity and place; every cellar / locker / rack present.
+4. Print labels for one locker and try scanning them on a phone.
+5. Delete the test workspace (or keep it for training).
 
 ## 3. Training (about 2 hours, on site)
 
@@ -42,11 +37,11 @@ Use the manual (mywinecorks.com/manual) and their own data in the test workspace
 
 ## 4. Cut-over day
 
-1. Evening before: stop using MyWines for changes (it stays open for looking things up).
-2. Final migration with `--commit` into the real workspace; repeat the checks in step 2.4.
+1. Evening before: freeze the Excel (no more changes in it).
+2. Import the final Excel into the real workspace; repeat the checks in step 2.3; print labels.
 3. Owner sets the second backup copy and makes a manual backup.
 4. Phones: run Phone setup on each staff phone.
-5. MyWines stays installed, read-only, for 30 days.
+5. Keep the final Excel as the record of the starting stock.
 
 ## 5. Beta period (4 weeks)
 
@@ -62,6 +57,6 @@ Use the manual (mywinecorks.com/manual) and their own data in the test workspace
 - a stocktake of at least one locker matches;
 - a backup has been restored once on a spare PC (the drill in the manual, *Running your own
   server › Restoring*);
-- the client agrees MyWines can be retired → MyWines folder archived (kept, not deleted).
+- the client is happy to keep working in MyWineCorks (and stops using the Excel).
 
 Then: version 1.0.0, and Release 1 for new clients.
