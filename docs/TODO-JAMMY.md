@@ -104,4 +104,4 @@ purchase, a decision, a test on real hardware). Tick items off here when done.
 
 - [ ] **Optional: a GitHub token for Claude** so it can open pull requests and read CI logs itself
       (`gh auth` currently fails in Claude's workspace; pushing works).
-- [ ] **Move your brother's real MyWines data** when MyWineCorks replaces MyWines (M10 beta).
+- [x] ~~Move your brother's MyWines data~~ — not needed: MyWines was only a test; he starts from his Excel (see Beta).
