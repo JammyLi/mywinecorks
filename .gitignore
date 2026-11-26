@@ -10,3 +10,5 @@ coverage/
 playwright-report/
 setup-link.txt
 *.tsbuildinfo
+release/
+installer/windows/.stage/

@@ -49,9 +49,13 @@ export function Login() {
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
 
+  const [fresh, setFresh] = useState(false);
   useEffect(() => {
     api<typeof info>('/public/info')
       .then(setInfo)
+      .catch(() => {});
+    api<{ needed: boolean }>('/public/first-run')
+      .then((r) => setFresh(r.needed))
       .catch(() => {});
   }, []);
 
@@ -103,6 +107,11 @@ export function Login() {
     <AuthFrame>
       <h1>{t('signIn')}</h1>
       {info?.company && <div className="muted">{info.company}</div>}
+      {fresh && (
+        <div className="alert warn" role="status">
+          {t('welcome.notYet')}
+        </div>
+      )}
       <form className="stack" onSubmit={submit}>
         {info?.mode === 'cloud' && (
           <Field label={t('workspace')}>
@@ -379,6 +388,86 @@ export function Forgot() {
       <Link to="/login" className="small" style={{ alignSelf: 'center' }}>
         ‹ {t('signIn')}
       </Link>
+    </AuthFrame>
+  );
+}
+
+/** First start of a new server: company and Owner, then the normal Owner setup (password). */
+export function Welcome() {
+  const { t, lang } = useI18n();
+  const nav = useNavigate();
+  const [q] = useSearchParams();
+  const tok = q.get('t') ?? '';
+  const [ok, setOk] = useState<boolean | null>(null);
+  const [f, setF] = useState({ company: '', ownerName: '', ownerEmail: '' });
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    api<{ needed: boolean; valid: boolean }>(`/public/first-run?t=${encodeURIComponent(tok)}`)
+      .then((r) => (r.needed ? setOk(r.valid) : nav('/login', { replace: true })))
+      .catch(() => setOk(false));
+  }, [tok]);
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setErr('');
+    try {
+      const r = await api<{ setup: string }>('/public/first-run', { body: { t: tok, ...f, lang } });
+      nav(r.setup, { replace: true });
+    } catch (ex) {
+      setErr(errText(t, ex));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <AuthFrame>
+      <h1>{t('welcome.title')}</h1>
+      {ok === false && (
+        <div className="alert err" role="alert">
+          {t('welcome.badLink')}
+        </div>
+      )}
+      {ok && (
+        <form className="stack" onSubmit={submit}>
+          <p className="muted">{t('welcome.intro')}</p>
+          <Field label={t('welcome.company')}>
+            <input
+              className="input"
+              value={f.company}
+              onChange={(e) => setF({ ...f, company: e.target.value })}
+              autoFocus
+              required
+            />
+          </Field>
+          <Field label={t('welcome.ownerName')}>
+            <input
+              className="input"
+              value={f.ownerName}
+              onChange={(e) => setF({ ...f, ownerName: e.target.value })}
+              autoComplete="name"
+            />
+          </Field>
+          <Field label={t('welcome.ownerEmail')} hint={t('welcome.ownerEmailHint')}>
+            <input
+              className="input"
+              type="email"
+              value={f.ownerEmail}
+              onChange={(e) => setF({ ...f, ownerEmail: e.target.value })}
+              autoComplete="email"
+              required
+            />
+          </Field>
+          {err && (
+            <div className="alert err" role="alert">
+              {err}
+            </div>
+          )}
+          <button className="btn primary" disabled={busy}>
+            {t('welcome.continue')}
+          </button>
+        </form>
+      )}
     </AuthFrame>
   );
 }

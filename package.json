@@ -1,7 +1,7 @@
 {
   "name": "mywinecorks",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.6.0",
   "type": "module",
   "packageManager": "pnpm@10.28.0",
   "engines": {
@@ -13,9 +13,11 @@
     "test": "pnpm --filter \"./**\" --if-present test",
     "typecheck": "pnpm --filter \"./**\" --if-present typecheck",
     "lint": "prettier --check \"**/*.{ts,tsx,json,md,css}\"",
-    "format": "prettier --write \"**/*.{ts,tsx,json,css}\""
+    "format": "prettier --write \"**/*.{ts,tsx,json,css}\"",
+    "release": "node scripts/release/build.mjs"
   },
   "devDependencies": {
+    "esbuild": "^0.25.12",
     "prettier": "^3.4.0",
     "typescript": "^5.7.0"
   }

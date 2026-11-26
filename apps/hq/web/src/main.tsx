@@ -7,7 +7,16 @@ import { api } from './api.ts';
 import { useHqT } from './i18n.ts';
 import { HqSession, useHq } from './session.tsx';
 import { Login, Setup, Totp } from './pages/Auth.tsx';
-import { Audit, ClientPage, Clients, Dashboard, Installations, Releases, Staff } from './pages/Pages.tsx';
+import {
+  Audit,
+  ClientPage,
+  Clients,
+  CloudPage,
+  Dashboard,
+  Installations,
+  Releases,
+  Staff,
+} from './pages/Pages.tsx';
 
 function RequireStaff({ children }: { children: ReactNode }) {
   const { me, loading } = useHq();
@@ -26,6 +35,7 @@ function Shell() {
     { to: '/', key: 'hq.nav.dashboard', end: true },
     { to: '/clients', key: 'hq.nav.clients' },
     { to: '/installations', key: 'hq.nav.installations' },
+    { to: '/cloud', key: 'hq.nav.cloud' },
     { to: '/releases', key: 'hq.nav.releases' },
     can('staff.manage') && { to: '/staff', key: 'hq.nav.staff' },
     can('audit.view') && { to: '/audit', key: 'hq.nav.audit' },
@@ -100,6 +110,7 @@ createRoot(document.getElementById('root')!).render(
                 <Route path="clients" element={<Clients />} />
                 <Route path="clients/:id" element={<ClientPage />} />
                 <Route path="installations" element={<Installations />} />
+                <Route path="cloud" element={<CloudPage />} />
                 <Route path="releases" element={<Releases />} />
                 <Route path="staff" element={<Staff />} />
                 <Route path="audit" element={<Audit />} />

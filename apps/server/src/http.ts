@@ -9,7 +9,8 @@ import { ApiError, forbidden, unauthorized } from './errors.ts';
 import { sha256 } from './services/crypto.ts';
 import { getRole } from './services/roles.ts';
 import type { Actor } from './services/audit.ts';
-import type { Licensing } from './services/licensing.ts';
+import type { LicenseView, Licensing } from './services/licensing.ts';
+import type { Updater } from './services/updates.ts';
 
 export const SESSION_COOKIE = 'mwc_s';
 export const SESSION_DAYS = 14;
@@ -44,7 +45,11 @@ export interface Ctx {
   user?: UserRow;
   role?: Role;
   session?: SessionInfo;
-  licensing?: Licensing;
+  /** The license for this request's workspace (cloud) or installation (self-hosted). */
+  licensing?: LicenseView;
+  /** The installation (updates, provisioning). */
+  install?: Licensing;
+  updater?: Updater;
 }
 
 declare global {
@@ -132,9 +137,9 @@ export function actor(req: Request): Actor {
 }
 
 /** Resolve tenant + session from the cookie `<slug>.<token>`. */
-export function sessionMiddleware(cfg: Config, registry: Registry, licensing?: Licensing) {
+export function sessionMiddleware(cfg: Config, registry: Registry, licensing?: Licensing, updater?: Updater) {
   return (req: Request, _res: Response, next: NextFunction) => {
-    req.ctx = { cfg, registry, licensing };
+    req.ctx = { cfg, registry, licensing, install: licensing, updater };
     const raw = req.cookies?.[SESSION_COOKIE] as string | undefined;
     if (raw && raw.includes('.')) {
       const dot = raw.indexOf('.');
@@ -162,6 +167,7 @@ export function sessionMiddleware(cfg: Config, registry: Registry, licensing?: L
               ...req.ctx,
               tenant,
               db,
+              licensing: licensing?.scope(slug),
               user,
               role,
               session: {

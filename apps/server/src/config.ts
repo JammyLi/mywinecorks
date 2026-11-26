@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { IS_RELEASE } from '@mwc/shared';
 
 export type Mode = 'cloud' | 'selfhost';
 
@@ -24,14 +25,25 @@ export interface Config {
    * Ignored in production builds (NODE_ENV=production), which trust only the embedded key.
    */
   devLicenseKeys: () => string[];
+  /** Cloud only: bearer token HQ uses to create workspaces and push their licenses (PROVISION_TOKEN). */
+  provisionToken: string | null;
+  /** win-x64, linux-x64, linux-arm64, darwin-arm64 — which update package fits this server. */
+  platform: string;
+  /** Started by the launcher (installer / Docker image): in-app updates can restart into a new version. */
+  launched: boolean;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const mode: Mode = env.MODE === 'cloud' ? 'cloud' : 'selfhost';
-  const publicUrl = env.PUBLIC_URL || 'http://localhost:5500';
+  const production = IS_RELEASE || env.NODE_ENV === 'production';
+  const port = Number(env.PORT || 3500);
+  // Development: pages come from Vite on :5500. Packaged builds serve the pages themselves.
+  const publicUrl = (
+    env.PUBLIC_URL || (IS_RELEASE ? `http://localhost:${port}` : 'http://localhost:5500')
+  ).replace(/\/$/, '');
   return {
     mode,
-    port: Number(env.PORT || 3500),
+    port,
     dataDir: path.resolve(env.DATA_DIR || './data'),
     publicUrl,
     require2faAdmins: env.REQUIRE_2FA_ADMINS ? env.REQUIRE_2FA_ADMINS === 'true' : mode === 'cloud',
@@ -41,10 +53,15 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     httpsPort: env.HTTPS_PORT !== undefined ? Number(env.HTTPS_PORT) : mode === 'selfhost' ? 5543 : 0,
     webDevUrl: env.WEB_DEV_URL || 'http://localhost:5500',
     // Development talks to the local HQ (pnpm dev runs it on :3700).
-    hqUrl: (
-      env.HQ_URL || (env.NODE_ENV === 'production' ? 'https://hq.mywinecorks.com' : 'http://localhost:3700')
-    ).replace(/\/$/, ''),
-    devLicenseKeys: env.NODE_ENV === 'production' ? () => [] : () => devKeys(env),
+    hqUrl: (env.HQ_URL || (production ? 'https://hq.mywinecorks.com' : 'http://localhost:3700')).replace(
+      /\/$/,
+      '',
+    ),
+    devLicenseKeys: production ? () => [] : () => devKeys(env),
+    provisionToken: mode === 'cloud' ? env.PROVISION_TOKEN || null : null,
+    platform:
+      env.MWC_PLATFORM || `${process.platform === 'win32' ? 'win' : process.platform}-${process.arch}`,
+    launched: env.MWC_LAUNCHED === '1',
   };
 }
 

@@ -44,6 +44,8 @@ describe('HQ guards', () => {
       '/auth/setup',
       '/license/activate',
       '/license/checkin',
+      '/updates/download',
+      '/updates/manifest',
     ]);
     for (const r of hq.api.routes) {
       expect(['public', 'session', ...Object.keys(HQ_PERMS)]).toContain(r.guard);

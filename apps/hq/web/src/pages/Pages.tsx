@@ -354,8 +354,20 @@ interface Lic {
   key?: string;
   transfers: string[];
 }
+interface CloudWs {
+  id: number;
+  slug: string;
+  name: string;
+  owner_email: string;
+  status: string;
+  lid: string | null;
+  last_push: string | null;
+  push_error: string | null;
+  created_at: string;
+}
 interface Detail {
   client: ClientRow;
+  cloud: CloudWs[];
   subscriptions: Sub[];
   licenses: Lic[];
   installations: {
@@ -402,7 +414,15 @@ export function ClientPage() {
   const toast = useToast();
   const [d, reload] = useLoad<Detail>(`/clients/${id}`);
   const [dlg, setDlg] = useState<
-    null | 'edit' | 'sub' | 'pay' | { renew: Lic } | { revoke: Lic } | { key: string }
+    | null
+    | 'edit'
+    | 'sub'
+    | 'pay'
+    | 'cloud'
+    | { renew: Lic }
+    | { revoke: Lic }
+    | { key: string }
+    | { link: string }
   >(null);
   if (!d) return <div className="page muted">{t('hq.loading')}</div>;
   const run = async (fn: () => Promise<unknown>, ok: string) => {
@@ -587,6 +607,62 @@ export function ClientPage() {
         {!d.licenses.length && <p className="muted">{t('hq.none')}</p>}
       </div>
 
+      {(d.cloud.length > 0 || d.subscriptions.some((x) => x.kind === 'cloud')) && (
+        <div className="card stack">
+          <div className="row between">
+            <h2 style={{ margin: 0 }}>{t('hq.cloudWorkspaces')}</h2>
+            {can('licenses.issue') &&
+              d.subscriptions.some((x) => x.kind === 'cloud' && x.status === 'active') && (
+                <button className="btn sm" onClick={() => setDlg('cloud')}>
+                  {t('hq.newCloud')}
+                </button>
+              )}
+          </div>
+          <table className="t">
+            <tbody>
+              {d.cloud.map((w) => (
+                <tr key={w.id}>
+                  <td className="mono">{w.slug}</td>
+                  <td>{w.name}</td>
+                  <td>{w.owner_email}</td>
+                  <td className="mono">{w.lid ?? '—'}</td>
+                  <td>
+                    {w.push_error ? (
+                      <span className="tag warn">{t(`err.${w.push_error}`)}</span>
+                    ) : (
+                      dt(w.last_push, lang)
+                    )}
+                  </td>
+                  <td>
+                    {can('licenses.issue') && (
+                      <button
+                        className="btn sm ghost"
+                        onClick={() =>
+                          run(
+                            async () =>
+                              setDlg({
+                                link: (
+                                  await api<{ setupUrl: string }>(`/cloud-workspaces/${w.id}/owner-link`, {
+                                    body: {},
+                                  })
+                                ).setupUrl,
+                              }),
+                            'hq.saved',
+                          )
+                        }
+                      >
+                        {t('hq.ownerLink')}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {!d.cloud.length && <p className="muted">{t('hq.none')}</p>}
+        </div>
+      )}
+
       <div className="card stack">
         <h2 style={{ margin: 0 }}>{t('hq.nav.installations')}</h2>
         <table className="t">
@@ -685,6 +761,28 @@ export function ClientPage() {
       )}
       {dlg === 'sub' && (
         <SubDialog clientId={c.id} onClose={() => setDlg(null)} onSaved={() => (setDlg(null), reload())} />
+      )}
+      {dlg === 'cloud' && (
+        <CloudDialog
+          clientId={c.id}
+          subs={d.subscriptions.filter((x) => x.kind === 'cloud' && x.status === 'active')}
+          defEmail={c.email ?? ''}
+          defName={c.contact_name ?? ''}
+          onClose={() => setDlg(null)}
+          onSaved={(link) => (setDlg({ link }), reload())}
+        />
+      )}
+      {dlg && typeof dlg === 'object' && 'link' in dlg && (
+        <Dialog title={t('hq.ownerLink')} onClose={() => setDlg(null)}>
+          <p>{t('hq.ownerLinkHint')}</p>
+          <input
+            className="input mono"
+            readOnly
+            value={dlg.link}
+            onFocus={(e) => e.target.select()}
+            aria-label={t('hq.ownerLink')}
+          />
+        </Dialog>
       )}
       {dlg === 'pay' && (
         <PayDialog
@@ -857,6 +955,101 @@ function SubDialog(p: { clientId: number; onClose: () => void; onSaved: () => vo
             </Field>
           </div>
         </div>
+        {msg && <div className="alert err">{msg}</div>}
+      </div>
+    </Dialog>
+  );
+}
+
+function CloudDialog(p: {
+  clientId: number;
+  subs: Sub[];
+  defEmail: string;
+  defName: string;
+  onClose: () => void;
+  onSaved: (link: string) => void;
+}) {
+  const { t, err } = useHqT();
+  const [f, setF] = useState({
+    subscriptionId: String(p.subs[0]?.id ?? ''),
+    slug: '',
+    ownerEmail: p.defEmail,
+    ownerName: p.defName,
+  });
+  const [msg, setMsg] = useState('');
+  const [busy, setBusy] = useState(false);
+  const save = async () => {
+    setBusy(true);
+    try {
+      const r = await api<{ setupUrl: string }>(`/clients/${p.clientId}/cloud-workspaces`, {
+        body: { ...f, subscriptionId: Number(f.subscriptionId) },
+      });
+      p.onSaved(r.setupUrl);
+    } catch (e) {
+      setMsg(err(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Dialog
+      title={t('hq.newCloud')}
+      onClose={p.onClose}
+      footer={
+        <>
+          <button className="btn ghost" onClick={p.onClose}>
+            {t('hq.cancel')}
+          </button>
+          <button
+            className="btn primary"
+            disabled={busy || !/^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(f.slug) || !f.ownerEmail.includes('@')}
+            onClick={save}
+          >
+            {t('hq.create')}
+          </button>
+        </>
+      }
+    >
+      <div className="stack">
+        <Field label={t('hq.subscription')}>
+          <select
+            className="input"
+            value={f.subscriptionId}
+            onChange={(e) => setF({ ...f, subscriptionId: e.target.value })}
+          >
+            {p.subs.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.plan} ({day(s.starts_on)} → {day(s.renews_on)})
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label={t('hq.slug')} hint={t('hq.slugHint')}>
+          <input
+            className="input mono"
+            value={f.slug}
+            onChange={(e) => setF({ ...f, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
+            autoFocus
+          />
+        </Field>
+        <div className="grid g2">
+          <Field label={t('hq.ownerEmail')}>
+            <input
+              className="input"
+              type="email"
+              value={f.ownerEmail}
+              onChange={(e) => setF({ ...f, ownerEmail: e.target.value })}
+            />
+          </Field>
+          <Field label={t('hq.ownerName')}>
+            <input
+              className="input"
+              value={f.ownerName}
+              onChange={(e) => setF({ ...f, ownerName: e.target.value })}
+            />
+          </Field>
+        </div>
+        <p className="muted small">{t('hq.newCloudHint')}</p>
         {msg && <div className="alert err">{msg}</div>}
       </div>
     </Dialog>
@@ -1097,6 +1290,7 @@ export function Releases() {
       notes_zh: string;
       notes_en: string;
       min_supported: boolean;
+      files: { platform: string; size: number }[];
     }[]
   >('/releases');
   const [f, setF] = useState<null | {
@@ -1139,6 +1333,7 @@ export function Releases() {
           </button>
         )}
       </div>
+      <p className="muted small">{t('hq.publishHint')}</p>
       {rows?.map((r) => (
         <div key={r.id} className="card stack" style={{ gap: 6 }}>
           <div className="row">
@@ -1146,6 +1341,16 @@ export function Releases() {
             <span className="tag">{t(`hq.ch.${r.channel}`)}</span>
             {r.min_supported && <span className="tag warn">{t('hq.minSupported')}</span>}
             <span className="muted">{day(r.released_on)}</span>
+            <span className="sp" />
+            {r.files.length ? (
+              r.files.map((f) => (
+                <span key={f.platform} className="tag ok" title={`${(f.size / 1e6).toFixed(1)} MB`}>
+                  {f.platform}
+                </span>
+              ))
+            ) : (
+              <span className="tag">{t('hq.noPackages')}</span>
+            )}
           </div>
           <div style={{ whiteSpace: 'pre-wrap' }}>
             {lang === 'en' ? r.notes_en || r.notes_zh : r.notes_zh || r.notes_en}
@@ -1445,6 +1650,69 @@ export function Audit() {
             ))}
           </tbody>
         </table>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- cloud workspaces
+export function CloudPage() {
+  const { t, lang } = useHqT();
+  const [d] = useLoad<{
+    rows: (CloudWs & {
+      client: string;
+      client_id: number;
+      expires_at: string | null;
+      license_status: string | null;
+      live: {
+        counts: { bottles: number; ordersThisMonth: number; users: number };
+        license: { state: string };
+      } | null;
+    })[];
+    error: string | null;
+    configured: boolean;
+  }>('/cloud-workspaces');
+  return (
+    <div className="page">
+      <h1>{t('hq.nav.cloud')}</h1>
+      {d && !d.configured && <div className="alert warn">{t('hq.cloudNotConfigured')}</div>}
+      {d?.error && d.configured && <div className="alert warn">{t(`err.${d.error}`)}</div>}
+      <div className="card" style={{ padding: 0 }}>
+        <table className="t">
+          <thead>
+            <tr>
+              <th>{t('hq.slug')}</th>
+              <th>{t('hq.client')}</th>
+              <th>{t('hq.expires')}</th>
+              <th>{t('hq.status')}</th>
+              <th>{t('hq.usage')}</th>
+              <th>{t('hq.created')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {d?.rows.map((w) => (
+              <tr key={w.id}>
+                <td className="mono">{w.slug}</td>
+                <td>
+                  <Link to={`/clients/${w.client_id}`}>{w.client}</Link>
+                </td>
+                <td>{day(w.expires_at)}</td>
+                <td>{w.live ? <span className="tag">{t(`hq.ls.${w.live.license.state}`)}</span> : '—'}</td>
+                <td className="small">
+                  {w.live
+                    ? `${t('hq.lim.bottles')} ${w.live.counts.bottles} · ${t('hq.lim.users')} ${w.live.counts.users}`
+                    : '—'}
+                </td>
+                <td>{dt(w.created_at, lang)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {d && !d.rows.length && (
+          <p className="muted" style={{ padding: 16 }}>
+            {t('hq.none')}
+          </p>
+        )}
       </div>
     </div>
   );

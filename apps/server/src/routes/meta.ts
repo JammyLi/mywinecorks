@@ -1,3 +1,4 @@
+import { APP_VERSION } from '@mwc/shared';
 import { MODULES, ROLE_TEMPLATES, VISIBILITY } from '@mwc/shared';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -5,7 +6,7 @@ import { Api, PUBLIC, perm } from '../http.ts';
 import { notFound } from '../errors.ts';
 import { lanAddresses } from '../services/tls.ts';
 
-export const VERSION = '0.0.1';
+export const VERSION = APP_VERSION;
 
 export function mountMeta(api: Api) {
   /** Phone setup page (self-hosted): office-network addresses and whether the local CA exists. */

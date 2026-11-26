@@ -5,6 +5,7 @@ import { LICENSE_MODULES, licenseFile, signLicense, type LicensePayload } from '
 import type { Sql } from '../db.ts';
 import { Api, allowed, bad, clash, denied, hqAudit, missing } from '../http.ts';
 import { sendMail } from '../mail.ts';
+import { pushCloudLicense } from '../cloud.ts';
 import type { Signing } from '../signing.ts';
 
 export const CLIENT_STATUSES = ['lead', 'trial', 'active', 'past_due', 'locked', 'cancelled'] as const;
@@ -170,6 +171,10 @@ export function mountClients(api: Api, signing: Signing) {
         id,
       ]),
       licenses,
+      cloud: await sql.q(
+        'SELECT w.*, l.lid FROM cloud_workspaces w LEFT JOIN licenses l ON l.id = w.license_id WHERE w.client_id = $1 ORDER BY w.created_at',
+        [id],
+      ),
       installations: await sql.q(
         'SELECT * FROM installations WHERE client_id = $1 ORDER BY last_checkin DESC NULLS LAST',
         [id],
@@ -384,7 +389,7 @@ export function mountClients(api: Api, signing: Signing) {
         : undefined;
     }
     if (!to) throw bad('badDates');
-    return sql.tx(async (t) => {
+    const out = await sql.tx(async (t) => {
       const s = (await t.one<{ limits: object; modules: string[]; plan: string }>(
         'SELECT * FROM subscriptions WHERE id = $1',
         [l.subscription_id],
@@ -418,13 +423,15 @@ export function mountClients(api: Api, signing: Signing) {
       );
       return { key: r.key, expiresAt: r.payload.expiresAt };
     });
+    await pushCloudLicense(req.hq.cfg, req.hq.sql, l.id);
+    return out;
   });
 
   api.post('/licenses/:id/grace', 'licenses.issue', async (req) => {
     const b = z.object({ days: z.number().int().min(0).max(90) }).parse(req.body);
     const { sql } = req.hq;
     const l = await lic(sql, Number(req.params.id));
-    return sql.tx(async (t) => {
+    const out = await sql.tx(async (t) => {
       await t.q('UPDATE licenses SET grace_days = $2, serial = serial + 1 WHERE id = $1', [l.id, b.days]);
       await resign(t, signing, l.id);
       await hqAudit(
@@ -439,13 +446,15 @@ export function mountClients(api: Api, signing: Signing) {
         t,
       );
     });
+    await pushCloudLicense(req.hq.cfg, req.hq.sql, l.id);
+    return out;
   });
 
   api.post('/licenses/:id/revoke', 'licenses.revoke', async (req) => {
     const b = z.object({ reason: z.string().trim().min(1).max(500) }).parse(req.body);
     const { sql } = req.hq;
     const l = await lic(sql, Number(req.params.id));
-    await sql.tx(async (t) => {
+    const out = await sql.tx(async (t) => {
       await t.q(
         "UPDATE licenses SET status = 'revoked', revoked_at = now(), revoke_reason = $2 WHERE id = $1",
         [l.id, b.reason],
@@ -462,12 +471,15 @@ export function mountClients(api: Api, signing: Signing) {
         t,
       );
     });
+    await pushCloudLicense(req.hq.cfg, req.hq.sql, l.id);
+    return out;
   });
 
   /** Move to a new server: unbind, so the next activation binds the new installation. Max 2 per year. */
   api.post('/licenses/:id/transfer', 'licenses.transfer', async (req) => {
     const { sql } = req.hq;
     const l = await lic(sql, Number(req.params.id));
+    if (l.kind === 'cloud') throw bad('cloudNoTransfer');
     const yearAgo = Date.now() - 365 * 86400_000;
     const recent = (l.transfers ?? []).filter((d) => new Date(d).getTime() > yearAgo);
     if (recent.length >= 2 && req.hq.staff!.role !== 'superadmin') throw denied('transferLimit');

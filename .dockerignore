@@ -1,0 +1,8 @@
+**/node_modules
+**/data
+release
+.git
+**/dist
+playwright-report
+coverage
+*.log

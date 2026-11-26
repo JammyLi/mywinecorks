@@ -26,6 +26,7 @@ export function SettingsLayout() {
     { to: 'company', label: t('set.company') },
     isOwner && { to: 'data', label: t('set.data') },
     (isOwner || can('users', 'manage')) && { to: 'license', label: t('set.license') },
+    isOwner && { to: 'updates', label: t('set.updates') },
   ].filter(Boolean) as { to: string; label: string }[];
   return (
     <div className="page">

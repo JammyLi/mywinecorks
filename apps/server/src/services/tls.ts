@@ -14,6 +14,12 @@ import forge from 'node-forge';
 const VIRTUAL =
   /^(bridge|vmnet|vboxnet|docker|br-|veth|virbr|utun|tun|tap|awdl|llw|anpi|ap\d|vEthernet|VirtualBox|VMware|Hyper-V|ZeroTier|tailscale|wg)/i;
 export function lanAddresses(): string[] {
+  // Docker and other containers see their own address; PUBLIC_IP names the host's office-network address(es).
+  const fixed = (process.env.PUBLIC_IP ?? '')
+    .split(',')
+    .map((x) => x.trim())
+    .filter((x) => /^\d{1,3}(\.\d{1,3}){3}$/.test(x));
+  if (fixed.length) return fixed;
   const all: string[] = [];
   const real: string[] = [];
   for (const [name, list] of Object.entries(os.networkInterfaces()))

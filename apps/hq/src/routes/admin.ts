@@ -94,7 +94,11 @@ export function mountAdmin(api: Api) {
 
   // ---------------- releases ----------------
   api.get('/releases', 'view', async (req) =>
-    req.hq.sql.q('SELECT * FROM releases ORDER BY released_on DESC, id DESC'),
+    req.hq.sql.q(
+      `SELECT r.*, COALESCE((SELECT json_agg(json_build_object('platform', f.platform, 'size', f.size, 'sha256', f.sha256) ORDER BY f.platform)
+         FROM release_files f WHERE f.release_id = r.id), '[]') files
+       FROM releases r ORDER BY released_on DESC, id DESC`,
+    ),
   );
   const RelBody = z.object({
     version: z.string().regex(/^\d+\.\d+\.\d+(-[\w.]+)?$/),

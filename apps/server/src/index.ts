@@ -8,13 +8,24 @@ import { createApp } from './app.ts';
 import { express } from './http.ts';
 import { startLogPurger } from './routes/admin.ts';
 import { ensureTls, lanAddresses, type Tls } from './services/tls.ts';
+import { versionCheck } from './services/maintenance.ts';
+import { ensureFirstRun } from './routes/firstrun.ts';
+import { APP_VERSION } from '@mwc/shared';
 
 const cfg = loadConfig();
+// Data last used by another version: back up every database before anything is migrated.
+const preUpdate = versionCheck(cfg.dataDir);
+if (preUpdate) console.log(`Backed up all data before starting version ${APP_VERSION}: ${preUpdate}`);
 const { app, registry, licensing } = createApp(cfg);
+const firstRun = ensureFirstRun(cfg, registry);
 
 // Pages: the built web app (apps/web/dist) when present; otherwise (development) forward to Vite,
 // so phones on the HTTPS port get the same app. API requests never reach this.
-const webDist = path.resolve(import.meta.dirname, '../../web/dist');
+// Packaged builds keep the pages in ./web next to server.mjs.
+const webDist =
+  [path.join(import.meta.dirname, 'web'), path.resolve(import.meta.dirname, '../../web/dist')].find((d) =>
+    fs.existsSync(path.join(d, 'index.html')),
+  ) ?? path.resolve(import.meta.dirname, '../../web/dist');
 const dev = !fs.existsSync(path.join(webDist, 'index.html'));
 const proxy = dev
   ? httpProxy.createProxyServer({ target: cfg.webDevUrl, ws: true, changeOrigin: false })
@@ -60,7 +71,13 @@ plain.listen(cfg.port, () => {
   console.log(
     `MyWineCorks server (${cfg.mode}) on http://localhost:${cfg.port} — ${n} workspace(s), data in ${cfg.dataDir}`,
   );
-  if (n === 0) console.log('No workspace yet. Create one with: pnpm --filter @mwc/server create-tenant');
+  if (firstRun)
+    console.log(
+      `\nNew server — finish setting up here (on this computer):\n  ${firstRun}\n(also saved in ${path.join(cfg.dataDir, 'first-run.txt')})\n`,
+    );
+  else if (n === 0) console.log('No workspace yet. Create one with: pnpm --filter @mwc/server create-tenant');
+  // Tell the launcher this version started (so it will not roll back).
+  process.send?.({ mwc: 'ready', version: APP_VERSION });
   if (!tls) return;
   const srv = https.createServer({ key: tls.key, cert: tls.cert }, pages).on('error', busy(cfg.httpsPort));
   if (proxy) srv.on('upgrade', (req, socket, head) => proxy.ws(req, socket, head));

@@ -61,10 +61,20 @@ export function fingerprint() {
     .slice(0, 32);
 }
 
-export class Licensing {
+export interface LicenseView {
+  status(): LicenseStatus;
+  locked(): boolean;
+  info(): LicenseInfo;
+  assertRoom(kind: 'bottles' | 'ordersPerMonth' | 'users', adding?: number): void;
+  hasModule(m: string): boolean;
+  activate(text: string): Promise<LicenseInfo>;
+  checkin(): Promise<LicenseInfo>;
+}
+
+export class Licensing implements LicenseView {
   private keyCache = { at: 0, keys: [] as string[] };
   /** Trusted public keys; development keys are re-read now and then (the dev HQ creates its key on first start). */
-  private get keys() {
+  get keys() {
     const now = Date.now();
     if (now - this.keyCache.at > 30_000)
       this.keyCache = { at: now, keys: [...TRUSTED_LICENSE_KEYS, ...this.cfg.devLicenseKeys()] };
@@ -122,13 +132,14 @@ export class Licensing {
     }
   }
 
-  /** Counts across every workspace on this installation. */
-  counts() {
+  /** Counts across every workspace on this installation (cloud: one workspace). */
+  counts(only?: string) {
     let bottles = 0;
     let orders = 0;
     let users = 0;
     const month = this.now().toISOString().slice(0, 7);
     for (const t of this.registry.list()) {
+      if (only && t.slug !== only) continue;
       const db = this.registry.tenantDb(t.slug);
       bottles += (
         db.prepare("SELECT COUNT(*) n FROM bottles WHERE status IN ('in_stock','reserved')").get() as {
@@ -162,6 +173,16 @@ export class Licensing {
   }
   locked() {
     return this.status().state === 'locked';
+  }
+
+  /** License id + installation id: what HQ needs to hand out update packages. */
+  identity() {
+    return { licenseId: this.payload().p?.lid ?? null, installId: this.install().install_id };
+  }
+
+  /** The license that applies to one workspace: the installation's (self-hosted) or the workspace's own (cloud). */
+  scope(slug: string): LicenseView {
+    return this.cfg.mode === 'cloud' ? new CloudWorkspaceLicense(this, this.registry, slug) : this;
   }
 
   info(): LicenseInfo {
@@ -247,10 +268,13 @@ export class Licensing {
         )
         .run(this.now().toISOString(), this.now().toISOString());
     } else this.save(key);
+    // Pick up update notices right away (the daily check-in would otherwise do it tomorrow).
+    if (this.payload().p) await this.checkin().catch(() => undefined);
     return this.info();
   }
 
-  private async call(
+  /** POST to HQ (license check-in, updates). Never throws: network errors come back as hqUnreachable. */
+  async call(
     path: string,
     body: object,
   ): Promise<{
@@ -331,5 +355,96 @@ export class Licensing {
     timer = setTimeout(run, 5000);
     timer.unref();
     return () => clearTimeout(timer);
+  }
+}
+
+/**
+ * Cloud workspaces (M6): HQ creates the workspace and pushes its signed license (bound to
+ * "cloud:<slug>") through the provisioning API whenever it is issued, renewed or revoked. No
+ * check-in is needed; expiry, grace, strict lock and limits work as on a self-hosted server.
+ */
+export class CloudWorkspaceLicense implements LicenseView {
+  constructor(
+    private parent: Licensing,
+    private registry: Registry,
+    private slug: string,
+  ) {}
+  private row() {
+    return this.registry.db
+      .prepare('SELECT created_at, license_key, license_revoked FROM tenants WHERE slug = ?')
+      .get(this.slug) as
+      { created_at: string; license_key: string | null; license_revoked: number } | undefined;
+  }
+  private payload(): { p: LicensePayload | null; invalid: boolean } {
+    const k = this.row()?.license_key;
+    if (!k) return { p: null, invalid: false };
+    try {
+      const p = verifyLicense(k, this.parent.keys);
+      return { p, invalid: p.kind !== 'cloud' };
+    } catch {
+      return { p: null, invalid: true };
+    }
+  }
+  status(): LicenseStatus {
+    const r = this.row();
+    const { p, invalid } = this.payload();
+    // Workspaces made before cloud licensing (or by the CLI in development) have no key: not limited.
+    if (!r?.license_key) return { state: 'active', daysLeft: null, warnings: [] };
+    const now = this.parent.now();
+    return licenseState({
+      payload: p,
+      invalid,
+      installId: `cloud:${this.slug}`,
+      installedAt: r.created_at,
+      lastCheckinOk: now.toISOString(),
+      revoked: !!r.license_revoked,
+      now,
+    });
+  }
+  locked() {
+    return this.status().state === 'locked';
+  }
+  info(): LicenseInfo {
+    const base = this.parent.info();
+    const { p } = this.payload();
+    const c = this.parent.counts(this.slug);
+    const lim = p?.limits ?? { bottles: null, ordersPerMonth: null, users: null };
+    let lic: LicenseInfo['license'] = null;
+    if (p) {
+      const { v, ...rest } = p;
+      void v;
+      lic = rest;
+    }
+    return {
+      ...base,
+      ...this.status(),
+      license: lic,
+      installId: `cloud:${this.slug}`,
+      installedAt: this.row()?.created_at ?? base.installedAt,
+      checkin: { lastAt: null, lastOk: null, error: null },
+      usage: {
+        bottles: usage(lim.bottles, c.bottles),
+        ordersPerMonth: usage(lim.ordersPerMonth, c.ordersThisMonth),
+        users: usage(lim.users, c.users),
+      },
+      modules: p?.modules ?? ['inventory', 'portal', 'ai'],
+    };
+  }
+  assertRoom(kind: 'bottles' | 'ordersPerMonth' | 'users', adding = 1) {
+    const limit = this.payload().p?.limits[kind] ?? null;
+    if (limit == null) return;
+    const c = this.parent.counts(this.slug);
+    const used = kind === 'bottles' ? c.bottles : kind === 'users' ? c.users : c.ordersThisMonth;
+    if (used + adding > limit) throw new ApiError(403, 'licenseLimit', { kind, limit, used, adding });
+  }
+  hasModule(m: string) {
+    const p = this.payload().p;
+    return !p || p.modules.includes(m as never);
+  }
+  async activate(): Promise<LicenseInfo> {
+    throw badRequest('licenseCloudManaged');
+  }
+  async checkin() {
+    return this.info();
   }
 }

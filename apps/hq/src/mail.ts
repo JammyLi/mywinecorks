@@ -25,6 +25,16 @@ const T: Record<string, Record<Lang, (v: Record<string, string>) => { subject: s
       body: `Hello ${v.name},\n\nThe MyWineCorks license for ${v.client} expires on ${v.expires}. After a 14-day grace period the app locks (no data is deleted and the Owner can still export).\n\nPlease contact us to renew.\nMyWineCorks`,
     }),
   },
+  cloudWelcome: {
+    'zh-TW': (v) => ({
+      subject: `歡迎使用 MyWineCorks（${v.client}）`,
+      body: `${v.name} 您好：\n\n您的 MyWineCorks 雲端工作區已建立。工作區代號：${v.slug}\n\n請用這個連結設定擁有者密碼（7 天內有效，只能使用一次）：\n${v.link}\n\n之後從 ${v.app} 登入。\nMyWineCorks`,
+    }),
+    en: (v) => ({
+      subject: `Welcome to MyWineCorks (${v.client})`,
+      body: `Hello ${v.name},\n\nYour MyWineCorks cloud workspace is ready. Workspace ID: ${v.slug}\n\nSet the Owner password with this link (valid 7 days, works once):\n${v.link}\n\nAfter that, sign in at ${v.app}.\nMyWineCorks`,
+    }),
+  },
   setupLink: {
     'zh-TW': (v) => ({
       subject: 'MyWineCorks HQ 帳號設定',

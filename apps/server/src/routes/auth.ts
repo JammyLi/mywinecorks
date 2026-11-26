@@ -137,7 +137,8 @@ export function mountAuth(api: Api) {
     }
     const role = getRole(db, user.role_id)!;
     // License locked: only the Owner may sign in, to renew or export (SPEC §20.4).
-    if (req.ctx.licensing?.locked() && !role.isOwner) throw new ApiError(423, 'licenseLocked');
+    if (req.ctx.install?.scope(tenant.slug).locked() && !role.isOwner)
+      throw new ApiError(423, 'licenseLocked');
     if (body.client === 'web' && !role.permissions.access.backOffice) throw forbidden('noBackOffice');
     if (body.client === 'mobile' && !role.permissions.access.mobile) throw forbidden('noMobile');
 

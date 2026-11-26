@@ -1,0 +1,17 @@
+# MyWineCorks on a Mac, Linux server or NAS.
+#   docker compose up -d        then open the setup link:  docker compose logs mywinecorks
+# Phones on the office Wi-Fi need PUBLIC_IP set to this computer's address (for the HTTPS certificate).
+services:
+  mywinecorks:
+    image: mywinecorks/server:latest
+    restart: unless-stopped
+    ports:
+      - "3500:3500"   # browsers
+      - "5543:5543"   # phones (HTTPS, scanning, offline)
+    environment:
+      PUBLIC_URL: http://localhost:3500
+      # PUBLIC_IP: 192.168.1.20
+    volumes:
+      - mywinecorks-data:/data
+volumes:
+  mywinecorks-data:

@@ -152,4 +152,33 @@ BEGIN RAISE EXCEPTION 'hq_audit is append-only'; END; $$ LANGUAGE plpgsql;
 CREATE TRIGGER hq_audit_no_update BEFORE UPDATE OR DELETE ON hq_audit FOR EACH ROW EXECUTE FUNCTION hq_audit_append_only()
 `,
   },
+  {
+    id: 2,
+    name: 'm6_packages_cloud',
+    sql: `
+CREATE TABLE release_files (
+  id SERIAL PRIMARY KEY,
+  release_id INT NOT NULL REFERENCES releases(id),
+  platform TEXT NOT NULL,                 -- win-x64 / linux-x64 / linux-arm64 / darwin-arm64
+  file TEXT NOT NULL,                     -- under <data>/releases/<version>/
+  sha256 TEXT NOT NULL,
+  size INT NOT NULL,
+  signature TEXT NOT NULL,                -- HQ signature of version/platform/sha256/size
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (release_id, platform)
+);
+CREATE TABLE cloud_workspaces (
+  id SERIAL PRIMARY KEY,
+  client_id INT NOT NULL REFERENCES clients(id),
+  license_id INT REFERENCES licenses(id),
+  slug TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  owner_email TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active',
+  last_push TIMESTAMPTZ,
+  push_error TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+)
+`,
+  },
 ];

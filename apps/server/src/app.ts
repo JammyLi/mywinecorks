@@ -15,10 +15,15 @@ import { mountOffline } from './routes/offline.ts';
 import { mountOrders } from './routes/orders.ts';
 import { mountReports } from './routes/reports.ts';
 import { mountLicense } from './routes/license.ts';
+import { mountFirstRun } from './routes/firstrun.ts';
+import { mountUpdates } from './routes/updates.ts';
+import { mountProvision } from './routes/provision.ts';
 import { Licensing } from './services/licensing.ts';
+import { Updater } from './services/updates.ts';
 
 export function createApp(cfg: Config, registry = new Registry(cfg.dataDir)) {
   const licensing = new Licensing(cfg, registry);
+  const updater = new Updater(cfg, licensing);
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', 'loopback');
@@ -48,11 +53,14 @@ export function createApp(cfg: Config, registry = new Registry(cfg.dataDir)) {
   mountOrders(api);
   mountReports(api);
   mountLicense(api);
+  mountFirstRun(api);
+  mountUpdates(api);
+  mountProvision(api);
 
-  app.use('/api', sessionMiddleware(cfg, registry, licensing), api.router);
+  app.use('/api', sessionMiddleware(cfg, registry, licensing, updater), api.router);
   app.use('/api', () => {
     throw notFound();
   });
   app.use(errorHandler);
-  return { app, api, registry, licensing };
+  return { app, api, registry, licensing, updater };
 }

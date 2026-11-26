@@ -1,0 +1,16 @@
+# Continuous backup of every cloud database to S3-compatible storage (Litestream 0.5).
+# New workspaces are picked up within seconds (watch: true). Point-in-time restore: see README.md.
+dbs:
+  - path: /data/registry.db
+    replica:
+      url: s3://${LITESTREAM_BUCKET}/registry.db
+      region: ${LITESTREAM_REGION}
+      endpoint: ${LITESTREAM_ENDPOINT}
+  - dir: /data/tenants
+    pattern: "app.db"
+    recursive: true
+    watch: true
+    replica:
+      url: s3://${LITESTREAM_BUCKET}/tenants
+      region: ${LITESTREAM_REGION}
+      endpoint: ${LITESTREAM_ENDPOINT}

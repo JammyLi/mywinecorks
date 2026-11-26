@@ -7,6 +7,8 @@ import { mountAdmin } from './routes/admin.ts';
 import { issueSetup, mountAuth } from './routes/auth.ts';
 import { mountClients } from './routes/clients.ts';
 import { mountLicenseApi } from './routes/licenseApi.ts';
+import { mountCloud } from './routes/cloudws.ts';
+import { mountUpdatesApi } from './routes/updatesApi.ts';
 import { loadSigning, type Signing } from './signing.ts';
 
 export async function createHq(cfg: HqConfig, opts: { sql?: Sql; signing?: Signing } = {}) {
@@ -17,6 +19,8 @@ export async function createHq(cfg: HqConfig, opts: { sql?: Sql; signing?: Signi
   mountClients(api, signing);
   mountAdmin(api);
   mountLicenseApi(api, signing);
+  mountCloud(api, signing);
+  mountUpdatesApi(api, cfg.releasesDir);
 
   const app = express();
   app.disable('x-powered-by');

@@ -1,0 +1,100 @@
+name: Packages
+# Builds the Windows installer, the Docker image and the update packages, then checks a clean
+# install on Windows (service) and in Docker, and an upgrade over an existing installation.
+on:
+  workflow_dispatch:
+    inputs:
+      trust_key:
+        description: 'HQ license public key file in the repo (blank = a throw-away test key)'
+        required: false
+  push:
+    paths: ['installer/**', 'scripts/release/**', 'apps/server/**', 'apps/web/**', 'packages/**', '.github/workflows/release.yml']
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq nsis
+      - name: License key the build trusts
+        run: |
+          if [ -n "${{ inputs.trust_key }}" ]; then cp "${{ inputs.trust_key }}" trust.pem;
+          else node -e "const c=require('crypto');const k=c.generateKeyPairSync('ed25519');require('fs').writeFileSync('trust.pem',k.publicKey.export({type:'spki',format:'pem'}))"; fi
+      - run: installer/windows/build.sh --trust trust.pem
+      - run: node scripts/release/build.mjs --platform linux-x64 --trust trust.pem --skip-web
+      - run: node scripts/release/build.mjs --platform linux-arm64 --trust trust.pem --skip-web
+      - name: Packaged Linux server starts clean
+        run: |
+          (cd release/linux-x64 && DATA_DIR=/tmp/mwc PORT=3600 HTTPS_PORT=0 node launcher.mjs > /tmp/mwc.log 2>&1 &)
+          node scripts/release/smoke.mjs http://localhost:3600 /tmp/mwc/first-run.txt || (cat /tmp/mwc.log; exit 1)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packages
+          path: |
+            release/MyWineCorks-Setup-*.exe
+            release/*/MyWineCorks-*.tar.gz
+            release/*/release.json
+            trust.pem
+          retention-days: 14
+
+  windows:
+    needs: build
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: actions/download-artifact@v4
+        with: { name: packages, path: pkg }
+      - name: Clean install (silent)
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem pkg -Recurse -Filter 'MyWineCorks-Setup-*.exe' | Select-Object -First 1
+          Start-Process -Wait -FilePath $exe.FullName -ArgumentList '/S'
+          Get-Service MyWineCorks | Format-List Name, Status, StartType
+          if ((Get-Service MyWineCorks).Status -ne 'Running') { throw 'service not running' }
+      - name: First run, Owner, sign in
+        run: node scripts/release/smoke.mjs http://localhost:3500 C:\ProgramData\MyWineCorks\first-run.txt
+      - name: Install again over it (upgrade keeps the data)
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem pkg -Recurse -Filter 'MyWineCorks-Setup-*.exe' | Select-Object -First 1
+          Start-Process -Wait -FilePath $exe.FullName -ArgumentList '/S'
+          node scripts/release/smoke.mjs http://localhost:3500 --existing
+          Get-ChildItem C:\ProgramData\MyWineCorks
+      - name: Logs
+        if: always()
+        shell: pwsh
+        run: Get-ChildItem C:\ProgramData\MyWineCorks\logs -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "== $($_.Name)"; Get-Content $_.FullName -Tail 40 }
+      - name: Uninstall keeps the data
+        shell: pwsh
+        run: |
+          Start-Process -Wait -FilePath 'C:\Program Files\MyWineCorks\Uninstall.exe' -ArgumentList '/S'
+          Start-Sleep 5
+          if (Get-Service MyWineCorks -ErrorAction SilentlyContinue) { throw 'service still there' }
+          if (-not (Test-Path C:\ProgramData\MyWineCorks\registry.db)) { throw 'data was deleted' }
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: node -e "const c=require('crypto');const k=c.generateKeyPairSync('ed25519');require('fs').writeFileSync('installer/keys/ci-test.pem',k.publicKey.export({type:'spki',format:'pem'}))"
+      - run: docker build -f installer/docker/Dockerfile --build-arg TRUST_KEY=installer/keys/ci-test.pem -t mywinecorks:test .
+      - name: Clean install
+        run: |
+          docker run -d --name mwc -p 3500:3500 -v mwcdata:/data mywinecorks:test
+          for i in $(seq 1 30); do docker exec mwc test -f /data/first-run.txt && break; sleep 1; done
+          docker exec mwc cat /data/first-run.txt > first-run.txt
+          node scripts/release/smoke.mjs http://localhost:3500 first-run.txt || (docker logs mwc; exit 1)
+      - name: New container, same data
+        run: |
+          docker rm -f mwc
+          docker run -d --name mwc -p 3500:3500 -v mwcdata:/data mywinecorks:test
+          node scripts/release/smoke.mjs http://localhost:3500 --existing || (docker logs mwc; exit 1)
+          docker logs mwc | tail -20

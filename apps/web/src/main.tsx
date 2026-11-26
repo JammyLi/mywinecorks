@@ -20,7 +20,7 @@ import { I18nProvider, ToastProvider, useI18n } from '@mwc/ui';
 import '@mwc/ui/styles.css';
 import { SessionProvider, useSession, useTheme } from './session.tsx';
 import { Layout, More } from './Layout.tsx';
-import { Enroll, Forgot, Login, Setup } from './pages/Auth.tsx';
+import { Enroll, Forgot, Login, Setup, Welcome } from './pages/Auth.tsx';
 import { ComingSoon, Overview } from './pages/Overview.tsx';
 import { RoleEditor, Roles, Security, SettingsIndex, SettingsLayout, Users } from './pages/Settings.tsx';
 import { Audit } from './pages/Audit.tsx';
@@ -28,6 +28,7 @@ import { ImportPage } from './pages/Import.tsx';
 import { DataSettings } from './pages/Data.tsx';
 import { CompanySettings } from './pages/Company.tsx';
 import { LicensePage } from './pages/License.tsx';
+import { UpdatesPage } from './pages/Updates.tsx';
 import { OrderPage, OrderShipPage, OrdersPage } from './pages/Orders.tsx';
 import { CustomerPage, CustomersPage } from './pages/Customers.tsx';
 import { ReportsPage } from './pages/Reports.tsx';
@@ -71,6 +72,7 @@ function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/setup" element={<Setup />} />
+      <Route path="/welcome" element={<Welcome />} />
       <Route path="/forgot" element={<Forgot />} />
       <Route path="/enroll" element={<Enroll />} />
       <Route path="/phone" element={<PhoneSetup />} />
@@ -126,6 +128,7 @@ function App() {
           <Route path="data" element={<DataSettings />} />
           <Route path="company" element={<CompanySettings />} />
           <Route path="license" element={<LicensePage />} />
+          <Route path="updates" element={<UpdatesPage />} />
         </Route>
         <Route path="more" element={<More />} />
         <Route path="orders" element={<OrdersPage />} />

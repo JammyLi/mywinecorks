@@ -37,6 +37,13 @@ export class Registry {
       status TEXT NOT NULL DEFAULT 'active',
       created_at TEXT NOT NULL
     )`);
+    // Cloud: each workspace's own signed license, pushed by HQ (M6).
+    const cols = (this.db.prepare('PRAGMA table_info(tenants)').all() as { name: string }[]).map(
+      (c) => c.name,
+    );
+    if (!cols.includes('license_key')) this.db.exec('ALTER TABLE tenants ADD COLUMN license_key TEXT');
+    if (!cols.includes('license_revoked'))
+      this.db.exec('ALTER TABLE tenants ADD COLUMN license_revoked INTEGER NOT NULL DEFAULT 0');
   }
 
   list(): TenantRow[] {

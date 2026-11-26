@@ -9,7 +9,9 @@
     "build": "vite build",
     "create-admin": "tsx --env-file-if-exists=.env src/cli/create-admin.ts",
     "test": "vitest run",
-    "typecheck": "tsc -p ."
+    "typecheck": "tsc -p .",
+    "publish-release": "tsx src/cli/publish-release.ts",
+    "gen-signing-key": "tsx src/cli/gen-signing-key.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.3.0",
