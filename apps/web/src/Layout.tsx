@@ -1,9 +1,10 @@
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { BottleMark, Seg, useI18n } from '@mwc/ui';
 import type { Module } from '@mwc/shared';
 import { api } from './api.ts';
 import { forgetDevice, useSession, useTheme } from './session.tsx';
 import { Icon } from './icons.tsx';
+import { LicenseBanner, LockScreen } from './pages/License.tsx';
 
 /** Navigation mirrors MyWines; items appear only when the role can view them. */
 const NAV: { to: string; icon: string; key: string; module?: Module; action?: string; end?: boolean }[] = [
@@ -31,7 +32,15 @@ export function Layout() {
   const nav = useNavigate();
   const loc = useLocation();
   if (!me) return null;
-  const items = NAV.filter((i) => !i.module || can(i.module, i.action ?? 'view'));
+  // Locked license: staff see the lock screen; the Owner only the License screen (and its export).
+  if (me.license.state === 'locked') {
+    if (!me.role.isOwner) return <LockScreen />;
+    if (loc.pathname !== '/settings/license') return <Navigate to="/settings/license" replace />;
+  }
+  const locked = me.license.state === 'locked';
+  const items = NAV.filter(
+    (i) => (!locked || i.to === '/settings') && (!i.module || can(i.module, i.action ?? 'view')),
+  );
   const changeLang = (l: 'zh-TW' | 'en') => {
     setLang(l);
     api('/me', { method: 'PATCH', body: { lang: l } }).catch(() => {});
@@ -107,6 +116,7 @@ export function Layout() {
             <span className="desk">{t('signOut')}</span>
           </button>
         </header>
+        <LicenseBanner />
         <Outlet />
       </div>
       <nav className="mbar" aria-label="Main">

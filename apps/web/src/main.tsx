@@ -27,6 +27,7 @@ import { Audit } from './pages/Audit.tsx';
 import { ImportPage } from './pages/Import.tsx';
 import { DataSettings } from './pages/Data.tsx';
 import { CompanySettings } from './pages/Company.tsx';
+import { LicensePage } from './pages/License.tsx';
 import { OrderPage, OrderShipPage, OrdersPage } from './pages/Orders.tsx';
 import { CustomerPage, CustomersPage } from './pages/Customers.tsx';
 import { ReportsPage } from './pages/Reports.tsx';
@@ -124,6 +125,7 @@ function App() {
           <Route path="merchants" element={<MerchantsSettings />} />
           <Route path="data" element={<DataSettings />} />
           <Route path="company" element={<CompanySettings />} />
+          <Route path="license" element={<LicensePage />} />
         </Route>
         <Route path="more" element={<More />} />
         <Route path="orders" element={<OrdersPage />} />

@@ -12,7 +12,7 @@ export const PW = 'correct-horse-9';
 export function makeServer(mode: Mode = 'selfhost', extra: Record<string, string> = {}) {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mwc-test-'));
   const cfg = loadConfig({ MODE: mode, DATA_DIR: dataDir, PUBLIC_URL: 'http://localhost:5500', ...extra });
-  const { app, api, registry } = createApp(cfg);
+  const { app, api, registry, licensing } = createApp(cfg);
   const ws = createWorkspace(registry, {
     slug: 'demo',
     name: 'Demo Cellar',
@@ -25,7 +25,7 @@ export function makeServer(mode: Mode = 'selfhost', extra: Record<string, string
     registry.close();
     fs.rmSync(dataDir, { recursive: true, force: true });
   };
-  return { app, api, registry, cfg, db: ws.db, ownerToken: ws.token, cleanup };
+  return { app, api, registry, licensing, cfg, db: ws.db, ownerToken: ws.token, cleanup };
 }
 
 export type Server = ReturnType<typeof makeServer>;

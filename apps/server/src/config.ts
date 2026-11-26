@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import path from 'node:path';
 
 export type Mode = 'cloud' | 'selfhost';
@@ -16,6 +17,13 @@ export interface Config {
   httpsPort: number;
   /** Where the web app runs in development (the HTTPS listener forwards pages there). */
   webDevUrl: string;
+  /** MyWineCorks HQ (license check-in, activation). Self-hosted servers only call out to it. */
+  hqUrl: string;
+  /**
+   * Extra trusted license public keys (PEM), development only: the dev HQ signs with its own key.
+   * Ignored in production builds (NODE_ENV=production), which trust only the embedded key.
+   */
+  devLicenseKeys: () => string[];
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -32,5 +40,26 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     mailFrom: env.MAIL_FROM || 'MyWineCorks <no-reply@mywinecorks.com>',
     httpsPort: env.HTTPS_PORT !== undefined ? Number(env.HTTPS_PORT) : mode === 'selfhost' ? 5543 : 0,
     webDevUrl: env.WEB_DEV_URL || 'http://localhost:5500',
+    // Development talks to the local HQ (pnpm dev runs it on :3700).
+    hqUrl: (
+      env.HQ_URL || (env.NODE_ENV === 'production' ? 'https://hq.mywinecorks.com' : 'http://localhost:3700')
+    ).replace(/\/$/, ''),
+    devLicenseKeys: env.NODE_ENV === 'production' ? () => [] : () => devKeys(env),
   };
 }
+
+/** Dev: LICENSE_PUBLIC_KEY (PEM or file path), else the dev HQ's key at apps/hq/data/license-public.pem. */
+function devKeys(env: NodeJS.ProcessEnv): string[] {
+  const out: string[] = [];
+  const v = env.LICENSE_PUBLIC_KEY?.trim();
+  if (v) out.push(v.includes('BEGIN') ? v.replace(/\\n/g, '\n') : safeRead(v));
+  out.push(safeRead(path.resolve(import.meta.dirname, '../../hq/data/license-public.pem')));
+  return out.filter(Boolean);
+}
+const safeRead = (f: string) => {
+  try {
+    return fs.readFileSync(f, 'utf8');
+  } catch {
+    return '';
+  }
+};

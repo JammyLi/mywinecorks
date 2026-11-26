@@ -16,5 +16,14 @@ export interface Me {
   role: { id: number; name: string; isOwner: boolean; template: string | null };
   permissions: import('./permissions.ts').Permissions;
   tenant: { slug: string; name: string; mode: 'cloud' | 'selfhost' };
+  /** License of the installation (SPEC §20): drives banners, the lock screen and hidden modules. */
+  license: {
+    state: 'unlicensed' | 'trial' | 'active' | 'grace' | 'locked';
+    reason?: string;
+    daysLeft: number | null;
+    warnings: string[];
+    modules: string[];
+  };
 }
 export * from './orders.ts';
+export * from './version.ts';

@@ -73,6 +73,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
   }, [setMe]);
   useEffect(() => {
+    // The license locked while signed in: reload "me" so the lock screen shows.
+    const onLocked = () => void refresh();
+    window.addEventListener('mwc:locked', onLocked);
+    return () => window.removeEventListener('mwc:locked', onLocked);
+  }, [refresh]);
+  useEffect(() => {
     refresh();
   }, []);
   const value: SessionCtx = {

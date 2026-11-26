@@ -14,8 +14,11 @@ import { mountAdmin } from './routes/admin.ts';
 import { mountOffline } from './routes/offline.ts';
 import { mountOrders } from './routes/orders.ts';
 import { mountReports } from './routes/reports.ts';
+import { mountLicense } from './routes/license.ts';
+import { Licensing } from './services/licensing.ts';
 
 export function createApp(cfg: Config, registry = new Registry(cfg.dataDir)) {
+  const licensing = new Licensing(cfg, registry);
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', 'loopback');
@@ -44,11 +47,12 @@ export function createApp(cfg: Config, registry = new Registry(cfg.dataDir)) {
   mountOffline(api);
   mountOrders(api);
   mountReports(api);
+  mountLicense(api);
 
-  app.use('/api', sessionMiddleware(cfg, registry), api.router);
+  app.use('/api', sessionMiddleware(cfg, registry, licensing), api.router);
   app.use('/api', () => {
     throw notFound();
   });
   app.use(errorHandler);
-  return { app, api, registry };
+  return { app, api, registry, licensing };
 }

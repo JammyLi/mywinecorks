@@ -68,6 +68,7 @@ export function mountUsers(api: Api) {
         lang: z.enum(['zh-TW', 'en']).default('zh-TW'),
       })
       .parse(req.body);
+    req.ctx.licensing?.assertRoom('users', 1);
     const db = req.ctx.db!;
     const role = getRole(db, body.roleId);
     if (!role) throw badRequest();
@@ -119,6 +120,7 @@ export function mountUsers(api: Api) {
     if (!newRole) throw badRequest();
     if (body.roleId !== undefined && body.roleId !== u.role_id) checkAssignable(myRole, newRole);
     if (body.active === false && u.id === me.id) throw badRequest('cannotDeactivateSelf');
+    if (body.active === true && !u.active) req.ctx.licensing?.assertRoom('users', 1);
     const losingOwner = curRole.isOwner && (body.active === false || !newRole.isOwner);
     if (losingOwner && activeOwnerCount(db, u.id) === 0) throw conflict('lastOwner');
 

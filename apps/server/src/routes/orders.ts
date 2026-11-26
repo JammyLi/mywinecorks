@@ -71,6 +71,7 @@ export function mountOrders(api: Api) {
     const db = req.ctx.db!;
     return tx(req, () => {
       const ids = wineIdsFrom(db, perms(req), b);
+      req.ctx.licensing?.assertRoom('ordersPerMonth', 1);
       const o = createOrder(db, actor(req), req.ctx.user!, ids, {
         customerId: b.customerId ?? null,
         listId: b.list ?? null,
@@ -208,6 +209,7 @@ export function mountOrders(api: Api) {
   });
   api.post('/orders/:no/copy', perm('orders', 'create'), (req) => {
     const o = open(req);
+    req.ctx.licensing?.assertRoom('ordersPerMonth', 1);
     return tx(req, () => ({ orderNo: copyOrder(req.ctx.db!, actor(req), req.ctx.user!, o).order_no }));
   });
   api.delete('/orders/:no', OWNER, (req) => {

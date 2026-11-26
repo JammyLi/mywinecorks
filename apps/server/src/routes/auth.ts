@@ -3,7 +3,7 @@ import type { Request, Response } from 'express';
 import type { Me } from '@mwc/shared';
 import { Api, AUTH, PUBLIC, SESSION, SESSION_COOKIE, SESSION_DAYS, actor, type UserRow } from '../http.ts';
 import { nowIso, type DB } from '../db/registry.ts';
-import { badRequest, forbidden, notFound, unauthorized } from '../errors.ts';
+import { ApiError, badRequest, forbidden, notFound, unauthorized } from '../errors.ts';
 import { MIN_PASSWORD, hashPassword, newToken, sha256, verifyPassword } from '../services/crypto.ts';
 import { audit } from '../services/audit.ts';
 import { getRole, isAdminLike } from '../services/roles.ts';
@@ -46,6 +46,19 @@ function resolveWorkspace(req: Request, slug?: string) {
   return { tenant, db: registry.tenantDb(tenant.slug) };
 }
 
+function licenseSummary(req: Request): Me['license'] {
+  const l = req.ctx.licensing;
+  if (!l) return { state: 'active', daysLeft: null, warnings: [], modules: ['inventory', 'portal', 'ai'] };
+  const s = l.status();
+  return {
+    state: s.state,
+    reason: s.reason,
+    daysLeft: s.daysLeft,
+    warnings: s.warnings,
+    modules: l.info().modules,
+  };
+}
+
 export function meOf(req: Request): Me {
   const { user, role, tenant, session, cfg, db } = req.ctx;
   const company = JSON.parse(
@@ -62,6 +75,7 @@ export function meOf(req: Request): Me {
     role: { id: role!.id, name: role!.name, isOwner: role!.isOwner, template: role!.template },
     permissions: role!.permissions,
     tenant: { slug: tenant!.slug, name: company.name || tenant!.name, mode: cfg.mode },
+    license: licenseSummary(req),
   };
 }
 
@@ -122,6 +136,8 @@ export function mountAuth(api: Api) {
       }
     }
     const role = getRole(db, user.role_id)!;
+    // License locked: only the Owner may sign in, to renew or export (SPEC §20.4).
+    if (req.ctx.licensing?.locked() && !role.isOwner) throw new ApiError(423, 'licenseLocked');
     if (body.client === 'web' && !role.permissions.access.backOffice) throw forbidden('noBackOffice');
     if (body.client === 'mobile' && !role.permissions.access.mobile) throw forbidden('noMobile');
 

@@ -10,7 +10,7 @@ import { startLogPurger } from './routes/admin.ts';
 import { ensureTls, lanAddresses, type Tls } from './services/tls.ts';
 
 const cfg = loadConfig();
-const { app, registry } = createApp(cfg);
+const { app, registry, licensing } = createApp(cfg);
 
 // Pages: the built web app (apps/web/dist) when present; otherwise (development) forward to Vite,
 // so phones on the HTTPS port get the same app. API requests never reach this.
@@ -33,6 +33,7 @@ const pages = (req: http.IncomingMessage, res: http.ServerResponse) => {
 };
 
 startLogPurger(registry);
+licensing.start();
 
 const busy = (port: number) => (e: NodeJS.ErrnoException) => {
   if (e.code !== 'EADDRINUSE') throw e;

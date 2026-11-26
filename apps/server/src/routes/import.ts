@@ -164,6 +164,7 @@ export function mountImport(api: Api) {
       renameMerchants(db, pv.suggestions, body.accepted, ctx.who);
       const pl = plan(kind, ctx, pv.parsed.rows, mergesFrom(pv.suggestions, body.accepted), true);
       const r = pl.apply();
+      req.ctx.licensing?.assertRoom('bottles', 0); // over the license's bottle limit → nothing imported
       if (body.remember) rememberMerges(db, pv.suggestions, body.accepted, req.ctx.user!.id);
       audit(db, ctx.who, {
         category: 'import',

@@ -9,6 +9,7 @@ import { ApiError, forbidden, unauthorized } from './errors.ts';
 import { sha256 } from './services/crypto.ts';
 import { getRole } from './services/roles.ts';
 import type { Actor } from './services/audit.ts';
+import type { Licensing } from './services/licensing.ts';
 
 export const SESSION_COOKIE = 'mwc_s';
 export const SESSION_DAYS = 14;
@@ -43,6 +44,7 @@ export interface Ctx {
   user?: UserRow;
   role?: Role;
   session?: SessionInfo;
+  licensing?: Licensing;
 }
 
 declare global {
@@ -88,7 +90,7 @@ export class Api {
   private add(method: RouteDef['method'], path: string, guard: Guard, h: Handler) {
     this.routes.push({ method, path, guard });
     this.router[method](path, async (req, res) => {
-      enforce(req, guard);
+      enforce(req, guard, path);
       const out = await h(req, res);
       // Handlers that stream a file set res.locals.raw and answer themselves.
       if (!res.headersSent && !res.locals.raw) res.json(out ?? { ok: true });
@@ -100,11 +102,19 @@ export class Api {
   delete = (p: string, g: Guard, h: Handler) => this.add('delete', p, g, h);
 }
 
-function enforce(req: Request, g: Guard) {
+/**
+ * While the license is locked (SPEC §20.4) only the Owner may work, and only on the License screen
+ * and "Export my data". Phones, staff and everything else get 423.
+ */
+const LOCKED_OK = [/^\/me$/, /^\/auth\//, /^\/license(\/|$)/, /^\/export\/(xlsx|columns)$/];
+
+function enforce(req: Request, g: Guard, path: string) {
   if (g.kind === 'public') return;
   const { user, role, session } = req.ctx;
   if (!user || !role || !session) throw unauthorized();
   if (g.kind === 'session') return;
+  if (req.ctx.licensing?.locked() && !(role.isOwner && LOCKED_OK.some((re) => re.test(path))))
+    throw new ApiError(423, 'licenseLocked');
   if (session.mustEnrollTotp) throw forbidden('totpRequired');
   if (session.client === 'web' && !role.permissions.access.backOffice) throw forbidden('noBackOffice');
   if (session.client === 'mobile' && !role.permissions.access.mobile) throw forbidden('noMobile');
@@ -122,9 +132,9 @@ export function actor(req: Request): Actor {
 }
 
 /** Resolve tenant + session from the cookie `<slug>.<token>`. */
-export function sessionMiddleware(cfg: Config, registry: Registry) {
+export function sessionMiddleware(cfg: Config, registry: Registry, licensing?: Licensing) {
   return (req: Request, _res: Response, next: NextFunction) => {
-    req.ctx = { cfg, registry };
+    req.ctx = { cfg, registry, licensing };
     const raw = req.cookies?.[SESSION_COOKIE] as string | undefined;
     if (raw && raw.includes('.')) {
       const dot = raw.indexOf('.');

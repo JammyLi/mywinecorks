@@ -25,6 +25,7 @@ export function SettingsLayout() {
     can('settings', 'view') && sees('seeMerchants') && { to: 'merchants', label: t('settings.merchants') },
     { to: 'company', label: t('set.company') },
     isOwner && { to: 'data', label: t('set.data') },
+    (isOwner || can('users', 'manage')) && { to: 'license', label: t('set.license') },
   ].filter(Boolean) as { to: string; label: string }[];
   return (
     <div className="page">

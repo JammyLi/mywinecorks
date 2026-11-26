@@ -24,7 +24,8 @@
     "nodemailer": "^6.10.1",
     "otpauth": "^9.3.0",
     "qrcode": "^1.5.4",
-    "zod": "^3.24.0"
+    "zod": "^3.24.0",
+    "@mwc/license": "workspace:*"
   },
   "devDependencies": {
     "@mwc/ui": "workspace:*",

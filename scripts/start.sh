@@ -17,7 +17,7 @@ if [ -f "$ENV_FILE" ]; then
 fi
 # Stop early with a clear message if another program already uses our ports.
 API_PORT=$(grep -E '^PORT=' "$ENV_FILE" 2>/dev/null | cut -d= -f2); API_PORT=${API_PORT:-3500}
-for P in "$API_PORT" 5500 5543; do
+for P in "$API_PORT" 5500 5543 3700; do
   if lsof -nP -iTCP:"$P" -sTCP:LISTEN >/dev/null 2>&1; then
     echo "Port $P is already in use by:"; lsof -nP -iTCP:"$P" -sTCP:LISTEN | tail -n +2 | awk '{print "  " $1 " (pid " $2 ")"}'
     echo "Stop that program (or MyWineCorks if it is already running in another Terminal window) and try again."
@@ -26,5 +26,6 @@ for P in "$API_PORT" 5500 5543; do
 done
 IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || true)
 echo "MyWineCorks: http://localhost:5500${IP:+   ·   phone setup (first time): http://$IP:$API_PORT/phone   ·   phone app: https://$IP:5543/m}"
+echo "MyWineCorks HQ (licenses, development only): http://localhost:3700 — first time, the setup link is in apps/hq/data/setup-link.txt"
 (sleep 6 && open "http://localhost:5500") >/dev/null 2>&1 &
 exec pnpm dev

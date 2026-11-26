@@ -54,6 +54,13 @@ Manual steps, if you prefer: `pnpm install`, copy `apps/server/.env.example` to 
 Set `MODE=cloud` in `apps/server/.env` to try cloud mode (workspace field on sign-in,
 2-step verification required for Owner/Admin).
 
+**License (development):** a new installation runs a 14-day trial. `pnpm dev` / `start.sh` also run
+MyWineCorks HQ at http://localhost:3700. The first time, open the setup link printed in the
+Terminal (also saved in `apps/hq/data/setup-link.txt`), set a password and 2-step verification,
+add a client, a subscription and "Issue license key", then paste the key in the app under
+Settings › License. HQ's signing key is created in `apps/hq/data/` (never committed). Lost the
+HQ setup link? `pnpm --filter @mwc/hq create-admin you@example.com` prints a new one.
+
 Other commands: `pnpm test`, `pnpm typecheck`, `pnpm --filter @mwc/web build`
 (after a build, `pnpm --filter @mwc/server start` serves everything on :3500).
 
@@ -62,4 +69,9 @@ Other commands: `pnpm test`, `pnpm typecheck`, `pnpm --filter @mwc/web build`
 | Milestone | State |
 |---|---|
 | M0 Foundations — sign-in, 2-step verification, custom roles, users, change log, brand, zh-TW/en | ✅ done |
-| M1 Inventory core — storage, wines, stock, search, moves, stock-out, prices, Excel import | 🟡 in progress (lists, labels, photos, stocktakes next) |
+| M1 Inventory core — storage, wines, stock, search, moves, stock-out, prices, Excel import, lists, labels, photos, stocktakes | ✅ done |
+| M2 MyWines migration | ✅ done |
+| M3 Phone app + offline | ✅ done (field test pending) |
+| M4 Customers, orders, reports | ✅ done |
+| M5 Licensing + HQ | ✅ done |
+| M6 Packaging (installer, updates, backups), cloud | next |

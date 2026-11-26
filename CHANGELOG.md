@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.5.0 — M5 Licensing + HQ (2026-11-26)
+- License keys (`MWC1.…`, signed by HQ) carry the client, plan, modules, limits, expiry and grace
+  period. Settings › License (Owner): paste a key or upload the `.mwclicense` file, check in now,
+  usage against the limits, installation ID, and "Export my data" (Excel or the database file).
+- New installations run a 14-day trial. The first activation binds the key to this server through
+  HQ; the same key on a second server is refused. A daily check-in picks up renewals, plan changes,
+  revocations and update notices (only license id, installation, version and counts are sent).
+- Banners for trial, expiring soon, grace period and late check-in. When locked (trial over,
+  expired after the grace period, 30 days without check-in, revoked) only the Owner can sign in,
+  to the License screen and exports; staff and phones see a lock screen. Nothing is deleted.
+- Limits: warning at 90 %, new bottles / orders / users blocked at 100 %.
+- MyWineCorks HQ (`apps/hq`, port 3700): sign-in with required 2-step verification; clients
+  (MWC-0001), subscriptions and payments entered by hand; issue / renew / grace / revoke / move
+  licenses, download or email the key; installations with alerts (duplicate key, hardware changed,
+  no check-in); releases with update notices; HQ staff and roles; dashboard (renewals due in
+  30/60/90 days, alerts, clients near their limits); append-only audit log; renewal reminder emails
+  30/14/7/1 days before expiry (zh-TW / en).
+- `pnpm dev` now also runs HQ; development servers trust the development HQ's key automatically.
+
 ## 0.4.0 — M4 Orders (2026-11-26)
 - Customers (C-0001 numbers like MyWines): person/company, tax ID, document language, default
   discount, delivery addresses, active/inactive; customer page with orders, amount bought and the

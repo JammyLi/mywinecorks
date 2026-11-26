@@ -24,6 +24,7 @@ export async function api<T = unknown>(
     throw new ApiError(0, 'network');
   }
   const data = await res.json().catch(() => ({}));
+  if (res.status === 423) window.dispatchEvent(new Event('mwc:locked'));
   if (!res.ok) throw new ApiError(res.status, data.error ?? 'server', data.details);
   return data as T;
 }

@@ -381,6 +381,7 @@ export function mountInventory(api: Api) {
       });
       const out: Record<string, unknown> = { wineNo: wine_no };
       if (body.stock?.qty) Object.assign(out, stockIn(db, p, wine, body.stock, actor(req)));
+      req.ctx.licensing?.assertRoom('bottles', 0);
       if (body.price?.price !== undefined && body.price.price !== '') {
         if (!p.functions.prices?.includes('edit')) throw new ApiError(403, 'forbidden');
         addPrice(db, p, wine, body.price, actor(req));
@@ -533,9 +534,11 @@ export function mountInventory(api: Api) {
   api.post('/wines/:no/stock', perm('inventory', 'create'), (req) => {
     const body = StockSchema.parse(req.body);
     const db = req.ctx.db!;
-    return db.transaction(() =>
-      stockIn(db, perms(req), wineByNo(db, String(req.params.no)), body, actor(req)),
-    )();
+    return db.transaction(() => {
+      const r = stockIn(db, perms(req), wineByNo(db, String(req.params.no)), body, actor(req));
+      req.ctx.licensing?.assertRoom('bottles', 0);
+      return r;
+    })();
   });
 
   // ---------------- prices ----------------
