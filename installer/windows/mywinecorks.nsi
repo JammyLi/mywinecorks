@@ -21,7 +21,10 @@ InstallDirRegKey HKLM "${UNINST_KEY}" "InstallLocation"
 RequestExecutionLevel admin
 SetCompressor /SOLID lzma
 BrandingText "${APPNAME} ${VERSION}"
-VIProductVersion "${VERSION}.0"
+!ifndef NUMVERSION
+  !define NUMVERSION "${VERSION}"
+!endif
+VIProductVersion "${NUMVERSION}.0" ; numbers only (1.0.0-beta.1 → 1.0.0.0)
 VIAddVersionKey "ProductName" "MyWineCorks"
 VIAddVersionKey "CompanyName" "MyWineCorks"
 VIAddVersionKey "FileDescription" "MyWineCorks Setup"

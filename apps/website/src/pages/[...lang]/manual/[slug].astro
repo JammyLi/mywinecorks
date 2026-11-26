@@ -1,0 +1,40 @@
+---
+import Base from '../../../layouts/Base.astro';
+import { href, langOf, t as tr, type Lang } from '../../../i18n/index.ts';
+import { chapters } from '../../../manual/index.ts';
+export function getStaticPaths() {
+  return (['zh-TW', 'en'] as Lang[]).flatMap((l) =>
+    chapters(l).map((c) => ({ params: { lang: l === 'en' ? 'en' : undefined, slug: c.slug } })),
+  );
+}
+const lang = langOf(Astro.params.lang);
+const t = tr(lang);
+const list = chapters(lang);
+const i = list.findIndex((c) => c.slug === Astro.params.slug);
+const c = list[i];
+const prev = list[i - 1];
+const next = list[i + 1];
+---
+<Base lang={lang} path={`/manual/${c.slug}/`} title={`${c.title} — ${t('manual.title')}`} description={c.summary}>
+  <section class="dark" style="padding:56px 0 48px">
+    <div class="wrap">
+      <a href={href(lang, '/manual/')} style="color:var(--gold-lt)">← {t('manual.title')}</a>
+      <h1 style="margin-top:16px">{c.title}</h1>
+      <p class="lead">{c.summary}</p>
+    </div>
+  </section>
+  <section style="padding-top:56px">
+    <div class="wrap manual">
+      <nav class="toc small" aria-label={t('manual.title')}>
+        {list.map((x) => <a href={href(lang, `/manual/${x.slug}/`)} aria-current={x.slug === c.slug ? 'page' : undefined}>{x.title}</a>)}
+      </nav>
+      <article class="prose">
+        <c.Content />
+        <div class="row" style="justify-content:space-between;margin-top:48px">
+          {prev ? <a class="btn ghost" style="color:var(--burgundy)" href={href(lang, `/manual/${prev.slug}/`)}>← {prev.title}</a> : <span />}
+          {next && <a class="btn" href={href(lang, `/manual/${next.slug}/`)}>{next.title} →</a>}
+        </div>
+      </article>
+    </div>
+  </section>
+</Base>

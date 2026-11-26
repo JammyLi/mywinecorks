@@ -82,4 +82,4 @@ Other commands: `pnpm test`, `pnpm typecheck`, `pnpm --filter @mwc/web build`
 | M7 Catalogs + customer portal | ✅ done |
 | M8 AI features | ✅ done (with a stand-in for Claude until the API key exists) |
 | M9 Website | ✅ done (not yet deployed to mywinecorks.com) |
-| M10 Hardening + beta | next |
+| M10 Hardening + beta | 🟡 code done — beta with the first client next (`docs/BETA.md`) |

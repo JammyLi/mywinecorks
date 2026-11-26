@@ -27,9 +27,19 @@ docker compose stop app
 # one workspace, as it was at a given time:
 docker compose run --rm litestream restore -timestamp 2026-11-26T03:00:00Z \
   -o /data/tenants/<id>/app.db.restored "s3://$LITESTREAM_BUCKET/tenants/<id>/app.db"
-# check it, then move it over app.db (keep the old file), and start again:
+# check it (sqlite3 app.db.restored 'PRAGMA integrity_check'), keep the old file, put it in place:
+mv data/tenants/<id>/app.db data/tenants/<id>/app.db.before-restore
+rm -f data/tenants/<id>/app.db-wal data/tenants/<id>/app.db-shm
+mv data/tenants/<id>/app.db.restored data/tenants/<id>/app.db
 docker compose start app
 ```
 
 Each database's replica path is its path under `/data` (directory replication keeps the
-layout). Restore drills are part of M10.
+layout). Litestream is pinned to 0.5.8: in the M10 drill, an older 0.5 release silently ignored
+the `dir:` entry, so new workspaces were not backed up at all.
+
+## Restore drill (monthly)
+
+`./restore-drill.sh` restores every database from the replica into a scratch folder, checks that
+each one is intact and compares wines / bottles / orders with the live copy. Nothing live is
+touched. See the comments at the top of the script.

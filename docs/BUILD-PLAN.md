@@ -101,7 +101,12 @@ assistance; scale with team).
 | **M7** ✅ | Catalogs + portal | Catalogs, customer groups, price rules; portal app; invitations/revoke; order requests; portal-service; outbound sync; package-file fallback; TW/US compliance | Self-hosted client publishes catalog; customer requests order; it appears as draft; revoke is instant | L |
 | **M8** ✅ | AI | ai-gateway + metering; label photo, invoice to stock, NL search, drinking windows, cellar Q&A, price suggestion, order from message, suggestions, portal NL search; per-feature switches | Each feature has an accuracy test set (e.g. 100 real labels ≥ 90% correct fields) | L |
 | **M9** ✅ | Website | Marketing pages zh/en, pricing ("contact us"), demo/trial request → HQ leads, client download area | Live on mywinecorks.com | S |
-| **M10** | Hardening + beta | Security review, load test (100k bottles), backup/restore drills, docs & user manual zh/en, beta with first client | First client runs on MyWineCorks; MyWines retired | M |
+| **M10** 🟡 | Hardening + beta | Security review, load test (100k bottles), backup/restore drills, docs & user manual zh/en, beta with first client | First client runs on MyWineCorks; MyWines retired | M |
+
+**M10 status (26 Nov 2026):** security review (`docs/SECURITY-REVIEW.md`), 100k-bottle load test
+(`docs/LOAD-TEST.md`), backup/restore drills (self-hosted test + cloud `restore-drill.sh`) and the
+user manual (website `/manual/`, zh-TW + en) are done; the beta with the first client follows
+`docs/BETA.md` and needs Jammy on site.
 
 Order and parallel work:
 ```

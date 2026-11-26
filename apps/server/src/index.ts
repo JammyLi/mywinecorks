@@ -8,7 +8,7 @@ import { createApp } from './app.ts';
 import { express } from './http.ts';
 import { startLogPurger } from './routes/admin.ts';
 import { ensureTls, lanAddresses, type Tls } from './services/tls.ts';
-import { versionCheck } from './services/maintenance.ts';
+import { startDailyBackups, versionCheck } from './services/maintenance.ts';
 import { ensureFirstRun } from './routes/firstrun.ts';
 import { APP_VERSION } from '@mwc/shared';
 
@@ -46,6 +46,7 @@ const pages = (req: http.IncomingMessage, res: http.ServerResponse) => {
 startLogPurger(registry);
 licensing.start();
 portal.start();
+if (cfg.mode === 'selfhost') startDailyBackups(cfg.dataDir, (e) => console.error('Daily backup failed:', e));
 
 const busy = (port: number) => (e: NodeJS.ErrnoException) => {
   if (e.code !== 'EADDRINUSE') throw e;

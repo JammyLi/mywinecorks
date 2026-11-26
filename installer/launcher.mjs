@@ -24,12 +24,28 @@ const ver = (dir) => {
     return '0.0.0';
   }
 };
-const cmp = (a, b) => {
-  const pa = a.split(/[.-]/).map((x) => Number(x) || 0);
-  const pb = b.split(/[.-]/).map((x) => Number(x) || 0);
-  for (let i = 0; i < 3; i++) if ((pa[i] ?? 0) !== (pb[i] ?? 0)) return (pa[i] ?? 0) - (pb[i] ?? 0);
+function cmp(a, b) {
+  const split = (v) => {
+    const [main, pre = ''] = v.split('-', 2);
+    return { main: main.split('.').map((x) => Number(x) || 0), pre: pre ? pre.split('.') : [] };
+  };
+  const x = split(a);
+  const y = split(b);
+  for (let i = 0; i < 3; i++) if ((x.main[i] ?? 0) !== (y.main[i] ?? 0)) return (x.main[i] ?? 0) - (y.main[i] ?? 0);
+  if (!x.pre.length || !y.pre.length) return (x.pre.length ? -1 : 0) - (y.pre.length ? -1 : 0);
+  for (let i = 0; i < Math.max(x.pre.length, y.pre.length); i++) {
+    const p = x.pre[i];
+    const q = y.pre[i];
+    if (p === undefined) return -1;
+    if (q === undefined) return 1;
+    const np = /^\d+$/.test(p);
+    const nq = /^\d+$/.test(q);
+    if (np && nq && Number(p) !== Number(q)) return Number(p) - Number(q);
+    if (np !== nq) return np ? -1 : 1;
+    if (!np && p !== q) return p < q ? -1 : 1;
+  }
   return 0;
-};
+}
 const readCur = () => {
   try {
     return JSON.parse(fs.readFileSync(curFile, 'utf8'));

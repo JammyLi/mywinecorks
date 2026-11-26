@@ -79,6 +79,16 @@ export class Registry {
     return db;
   }
 
+  /** Close one workspace database (it is opened again on next use) — for a restore. */
+  release(slug: string) {
+    const db = this.open.get(slug);
+    if (db) {
+      db.pragma('wal_checkpoint(TRUNCATE)');
+      db.close();
+      this.open.delete(slug);
+    }
+  }
+
   close() {
     for (const db of this.open.values()) db.close();
     this.open.clear();

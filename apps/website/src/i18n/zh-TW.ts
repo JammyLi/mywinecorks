@@ -166,4 +166,8 @@ export const zh = {
   'nf.title': '找不到這個頁面',
   'nf.d': '這個頁面不存在（或已移除）。',
   'nf.home': '回首頁',
+  'nav.manual': "使用手冊",
+  'manual.title': "使用手冊",
+  'manual.lead': "如何設定與使用 MyWineCorks——從第一次登入到管理自己的伺服器。",
+  'manual.help': "這裡找不到答案？歡迎問我們。",
 };

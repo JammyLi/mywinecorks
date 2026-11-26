@@ -49,6 +49,19 @@ purchase, a decision, a test on real hardware). Tick items off here when done.
 - [ ] **Check the alcohol-sale wording** in the portal (age confirmation, licence confirmation,
       "request, not a purchase") with someone who knows Taiwan / US rules.
 
+## Beta with the first client (M10) — see `docs/BETA.md`
+
+- [ ] **Decide own server or cloud** for the first client.
+- [ ] **Rehearse the MyWines move** on a copy of their `data` folder (dry run, then a test
+      workspace) and do the side-by-side checks in `docs/BETA.md` § 2. Send me anything that looks wrong.
+- [ ] **Training and cut-over day** on site (≈ 2 hours + the evening of the move).
+- [ ] On their server: **set the second backup copy** (Settings › Updates & backups) to a NAS or USB
+      drive — and check now and then that "last copied" is recent.
+- [ ] After a week or two: **restore a backup on a spare PC** once (manual › Running your own server).
+- [ ] After 4 good weeks: retire MyWines (archive the folder, do not delete) → I tag 1.0.0.
+- [ ] Before public launch: an **outside penetration test** of the cloud on a staging copy.
+- [ ] Cloud: run `installer/cloud/restore-drill.sh` monthly once the cloud is live.
+
 ## Website (M9)
 
 - [ ] **Read the website copy** (both languages) and tell me what to change — especially the

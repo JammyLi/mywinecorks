@@ -178,4 +178,8 @@ export const en = {
   'nf.title': 'Page not found',
   'nf.d': 'This page does not exist (any more).',
   'nf.home': 'Go to the home page',
+  'nav.manual': "Manual",
+  'manual.title': "User manual",
+  'manual.lead': "How to set up and use MyWineCorks — from the first sign-in to running your own server.",
+  'manual.help': "Something not covered here? Ask us.",
 };

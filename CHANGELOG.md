@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.0.0-beta.1 — M10 Hardening (2026-11-26)
+- **Security review** (`docs/SECURITY-REVIEW.md`): cross-site request guard, Content-Security-Policy
+  on every app, sign-in limits per network address, photo files checked byte by byte, clean errors
+  for oversized requests, no search-engine indexing of the apps. All dependencies updated; no known
+  vulnerabilities, and CI now fails on new ones. A sweep test checks that no screen shows cost or
+  merchants to a role that may not see them.
+- **Faster with big cellars** (`docs/LOAD-TEST.md`, tested with 100,000 bottles): sales report 5 s →
+  0.05 s, filter counts 6 s → 0.2 s, portal sync 10 s → 0.9 s and much smaller (compressed, and only
+  changes are sent); all server responses compressed (phone sync about 10× smaller). Run it yourself
+  with `pnpm --filter @mwc/server loadtest`.
+- **Backups you can rely on** (Settings › Updates & backups): a backup every day (kept 7 days); a
+  **second copy on another disk** (NAS, USB drive, network share) including the wine photos;
+  **Restore** a workspace from any backup (typed word + password), with a safety backup first so it
+  can be undone — numbers on printed labels are never given out twice.
+- **Cloud backups fixed:** the Litestream version in use silently skipped workspace databases; it is
+  now pinned to a version checked by the new monthly **restore drill** (`installer/cloud/restore-drill.sh`).
+- **User manual** in Chinese and English on the website (mywinecorks.com/manual), linked from the
+  ? button in the app.
+- Version numbers with a pre-release part (1.0.0-beta.N) are now ordered correctly for updates.
+
 ## 0.9.0 — M9 Website (2026-11-26)
 - **Website** (`apps/website`, Astro, static): home, features, pricing, request a demo / trial,
   FAQ, about, contact, client account, terms, privacy notice, software licence agreement — in

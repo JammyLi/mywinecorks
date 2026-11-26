@@ -32,12 +32,8 @@ export interface Manifest {
 export const updateSigningText = (m: Pick<Manifest, 'version' | 'platform' | 'sha256' | 'size'>) =>
   `MWC-UPDATE\n${m.version}\n${m.platform}\n${m.sha256}\n${m.size}`;
 
-export function cmpVersion(a: string, b: string) {
-  const pa = a.split(/[.-]/).map((x) => Number(x) || 0);
-  const pb = b.split(/[.-]/).map((x) => Number(x) || 0);
-  for (let i = 0; i < 3; i++) if ((pa[i] ?? 0) !== (pb[i] ?? 0)) return (pa[i] ?? 0) - (pb[i] ?? 0);
-  return 0;
-}
+import { cmpVersion } from '@mwc/shared';
+export { cmpVersion };
 
 export function verifyManifest(m: Manifest, keys: string[]) {
   const data = Buffer.from(updateSigningText(m));

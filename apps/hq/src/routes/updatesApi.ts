@@ -7,6 +7,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { z } from 'zod';
+import { cmpVersion } from '@mwc/shared';
 import type { Sql } from '../db.ts';
 import { Api, HqError } from '../http.ts';
 import type { Signing } from '../signing.ts';
@@ -16,12 +17,7 @@ export const updateSigningText = (m: { version: string; platform: string; sha256
 export const signUpdate = (signing: Signing, m: Parameters<typeof updateSigningText>[0]) =>
   crypto.sign(null, Buffer.from(updateSigningText(m)), signing.privateKey).toString('base64url');
 
-const cmp = (a: string, b: string) => {
-  const pa = a.split(/[.-]/).map((x) => Number(x) || 0);
-  const pb = b.split(/[.-]/).map((x) => Number(x) || 0);
-  for (let i = 0; i < 3; i++) if ((pa[i] ?? 0) !== (pb[i] ?? 0)) return (pa[i] ?? 0) - (pb[i] ?? 0);
-  return 0;
-};
+const cmp = cmpVersion;
 
 const Ask = z.object({
   licenseId: z.string().max(40),

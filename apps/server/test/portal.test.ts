@@ -400,10 +400,9 @@ describe('customer portal (M7)', () => {
     const t = s.registry.get('demo')!;
     await s.portal.sync(t);
     await s.portal.sync(t);
-    expect(sent.slice(-2)).toEqual([
-      { gzip: true, unchanged: false },
-      { gzip: false, unchanged: true },
-    ]);
+    // (A background sync may also run in between; what matters is one full compressed copy, then light ones.)
+    expect(sent.filter((x) => !x.unchanged)).toEqual([{ gzip: true, unchanged: false }]);
+    expect(sent.at(-1)).toEqual({ gzip: false, unchanged: true });
     // The customer still has everything after the unchanged sync.
     const c = request.agent(portal.app);
     await c.post(`/api/p/${H}/auth/accept`).send({ code: inv.code, password: 'Chen-portal-pw-1', age: true }).expect(200);

@@ -1,0 +1,24 @@
+---
+import Base from '../../../layouts/Base.astro';
+import { href, langOf, langPaths, t as tr } from '../../../i18n/index.ts';
+import { chapters } from '../../../manual/index.ts';
+export const getStaticPaths = langPaths;
+const lang = langOf(Astro.params.lang);
+const t = tr(lang);
+const list = chapters(lang);
+---
+<Base lang={lang} path="/manual/" title={t('manual.title')} description={t('manual.lead')}>
+  <section class="dark" style="padding-bottom:64px"><div class="wrap"><h1>{t('manual.title')}</h1><p class="lead">{t('manual.lead')}</p></div></section>
+  <section>
+    <div class="wrap grid g3">
+      {list.map((c) => (
+        <a class="card manual-card" href={href(lang, `/manual/${c.slug}/`)}>
+          <span class="tag">{String(c.n).padStart(2, '0')}</span>
+          <h3>{c.title}</h3>
+          <p class="muted" style="margin:0">{c.summary}</p>
+        </a>
+      ))}
+    </div>
+    <div class="wrap center" style="margin-top:48px"><p class="muted">{t('manual.help')}</p><a class="btn" href={href(lang, '/contact/')}>{t('nav.contact')}</a></div>
+  </section>
+</Base>

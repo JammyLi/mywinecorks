@@ -126,6 +126,15 @@ export function Layout() {
           >
             <Icon n={theme === 'dark' ? 'sun' : 'moon'} />
           </button>
+          <a
+            className="btn ghost desk"
+            href={`https://mywinecorks.com${lang === 'en' ? '/en' : ''}/manual/`}
+            target="_blank"
+            rel="noopener"
+            title={t('help.manual')}
+          >
+            ?
+          </a>
           <span className="muted desk">{me.name || me.email}</span>
           <button className="btn ghost" onClick={logout} title={t('signOut')}>
             <Icon n="out" />
