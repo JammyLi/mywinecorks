@@ -418,4 +418,90 @@ CREATE TABLE payments (
 CREATE INDEX payments_order ON payments(order_id);
 `,
   },
+  {
+    id: 8,
+    name: 'm7_catalogs_portal',
+    sql: `
+-- Customer groups (VIP, Restaurants, Friends…) — catalogs are shown to customers and/or groups (SPEC §7).
+CREATE TABLE customer_groups (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  note TEXT,
+  created_at TEXT NOT NULL
+);
+CREATE TABLE customer_group_members (
+  group_id INTEGER NOT NULL REFERENCES customer_groups(id) ON DELETE CASCADE,
+  customer_id INTEGER NOT NULL REFERENCES customers(id),
+  PRIMARY KEY (group_id, customer_id)
+);
+-- A catalog = wines + audience + price rule.
+CREATE TABLE catalogs (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  name_en TEXT,
+  intro TEXT,
+  content TEXT NOT NULL DEFAULT 'manual',   -- manual / list / rule
+  list_id INTEGER REFERENCES lists(id),
+  rule TEXT,                                -- JSON search conditions (content = rule)
+  price_kind TEXT NOT NULL DEFAULT 'suggested', -- fixed / market / suggested / request
+  price_pct REAL NOT NULL DEFAULT 0,        -- market: +X %; suggested: −X % (plus the customer's discount)
+  use_customer_discount INTEGER NOT NULL DEFAULT 1,
+  stock_display TEXT NOT NULL DEFAULT 'band', -- exact / band / hidden
+  band_limit INTEGER NOT NULL DEFAULT 6,    -- "Limited" at or below this many bottles
+  max_per_customer INTEGER,                 -- bottles per customer per wine (optional)
+  show_sold_out INTEGER NOT NULL DEFAULT 0,
+  starts_on TEXT, ends_on TEXT,             -- YYYY-MM-DD, optional
+  priority INTEGER NOT NULL DEFAULT 0,      -- higher wins when a wine is in two catalogs
+  active INTEGER NOT NULL DEFAULT 1,
+  created_by INTEGER, created_at TEXT NOT NULL, updated_at TEXT
+);
+CREATE TABLE catalog_wines (
+  catalog_id INTEGER NOT NULL REFERENCES catalogs(id) ON DELETE CASCADE,
+  wine_id INTEGER NOT NULL REFERENCES wines(id),
+  fixed_price INTEGER,                      -- minor units (price_kind = fixed, or an override)
+  pos INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (catalog_id, wine_id)
+);
+CREATE TABLE catalog_audience (
+  catalog_id INTEGER NOT NULL REFERENCES catalogs(id) ON DELETE CASCADE,
+  customer_id INTEGER REFERENCES customers(id),
+  group_id INTEGER REFERENCES customer_groups(id) ON DELETE CASCADE,
+  CHECK ((customer_id IS NULL) <> (group_id IS NULL))
+);
+CREATE UNIQUE INDEX catalog_audience_u ON catalog_audience(catalog_id, IFNULL(customer_id, 0), IFNULL(group_id, 0));
+-- Portal access per customer (SPEC §9.1): none / invited / active / suspended / revoked.
+ALTER TABLE customers ADD COLUMN portal_status TEXT NOT NULL DEFAULT 'none';
+ALTER TABLE customers ADD COLUMN portal_email TEXT;
+ALTER TABLE customers ADD COLUMN portal_invited_at TEXT;
+ALTER TABLE customers ADD COLUMN state TEXT;               -- US state (shipping restrictions)
+-- Shown to customers in the portal (the wine's own notes stay internal).
+ALTER TABLE wines ADD COLUMN tasting_notes TEXT;
+-- Order requests from the portal arrive as draft orders (SPEC §8.3).
+ALTER TABLE orders ADD COLUMN source TEXT NOT NULL DEFAULT 'staff'; -- staff / portal
+ALTER TABLE orders ADD COLUMN request_ref TEXT;                     -- the portal's request id
+ALTER TABLE orders ADD COLUMN request_status TEXT;                  -- received / confirmed / declined
+ALTER TABLE orders ADD COLUMN request_note TEXT;
+CREATE UNIQUE INDEX orders_request_ref ON orders(request_ref) WHERE request_ref IS NOT NULL;
+-- Access requests from people who are not customers yet; staff approve or decline.
+CREATE TABLE portal_access_requests (
+  id INTEGER PRIMARY KEY,
+  ref TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  phone TEXT,
+  message TEXT,
+  status TEXT NOT NULL DEFAULT 'pending',   -- pending / approved / declined
+  customer_id INTEGER REFERENCES customers(id),
+  decided_by INTEGER, decided_at TEXT,
+  created_at TEXT NOT NULL
+);
+-- Sync with the cloud portal: what is waiting to go out (access changes are sent at once).
+CREATE TABLE portal_outbox (
+  id INTEGER PRIMARY KEY,
+  kind TEXT NOT NULL,                       -- access / request-status
+  payload TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+`,
+  },
 ];

@@ -11,6 +11,7 @@ import { getRole } from './services/roles.ts';
 import type { Actor } from './services/audit.ts';
 import type { LicenseView, Licensing } from './services/licensing.ts';
 import type { Updater } from './services/updates.ts';
+import type { PortalClient } from './services/portal.ts';
 
 export const SESSION_COOKIE = 'mwc_s';
 export const SESSION_DAYS = 14;
@@ -50,6 +51,7 @@ export interface Ctx {
   /** The installation (updates, provisioning). */
   install?: Licensing;
   updater?: Updater;
+  portal?: PortalClient;
 }
 
 declare global {
@@ -137,9 +139,15 @@ export function actor(req: Request): Actor {
 }
 
 /** Resolve tenant + session from the cookie `<slug>.<token>`. */
-export function sessionMiddleware(cfg: Config, registry: Registry, licensing?: Licensing, updater?: Updater) {
+export function sessionMiddleware(
+  cfg: Config,
+  registry: Registry,
+  licensing?: Licensing,
+  updater?: Updater,
+  portal?: PortalClient,
+) {
   return (req: Request, _res: Response, next: NextFunction) => {
-    req.ctx = { cfg, registry, licensing, install: licensing, updater };
+    req.ctx = { cfg, registry, licensing, install: licensing, updater, portal };
     const raw = req.cookies?.[SESSION_COOKIE] as string | undefined;
     if (raw && raw.includes('.')) {
       const dot = raw.indexOf('.');

@@ -19,6 +19,7 @@ const NAV: { to: string; icon: string; key: string; module?: Module; action?: st
   { to: '/orders', icon: 'order', key: 'nav.orders', module: 'orders' },
   { to: '/prices', icon: 'price', key: 'nav.prices', module: 'prices' },
   { to: '/customers', icon: 'people', key: 'nav.customers', module: 'customers' },
+  { to: '/catalogs', icon: 'lists', key: 'nav.catalogs', module: 'catalogs' },
   { to: '/reports', icon: 'chart', key: 'nav.reports', module: 'reports' },
   { to: '/import', icon: 'upload', key: 'nav.import', module: 'importExport', action: 'import' },
   { to: '/audit', icon: 'log', key: 'nav.audit', module: 'audit' },

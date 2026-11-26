@@ -33,8 +33,12 @@ const PLATFORMS = {
 
 const { values } = parseArgs({
   options: {
-    platform: { type: 'string', default: `${process.platform === 'win32' ? 'win' : process.platform}-${process.arch}` },
+    platform: {
+      type: 'string',
+      default: `${process.platform === 'win32' ? 'win' : process.platform}-${process.arch}`,
+    },
     trust: { type: 'string', multiple: true, default: [] },
+    'portal-keys': { type: 'string' }, // portal-service public keys JSON {signing, encryption}
     out: { type: 'string', default: path.join(ROOT, 'release') },
     'skip-web': { type: 'boolean', default: false },
   },
@@ -47,9 +51,12 @@ if (!trusted.length) {
   console.error('Give the HQ public key the build should trust: --trust <hq-license-public.pem>');
   process.exit(1);
 }
-for (const k of trusted) if (!k.includes('BEGIN PUBLIC KEY')) throw new Error('--trust must be a PEM public key');
+for (const k of trusted)
+  if (!k.includes('BEGIN PUBLIC KEY')) throw new Error('--trust must be a PEM public key');
 
-const version = /APP_VERSION = '([^']+)'/.exec(fs.readFileSync(path.join(ROOT, 'packages/shared/src/version.ts'), 'utf8'))[1];
+const version = /APP_VERSION = '([^']+)'/.exec(
+  fs.readFileSync(path.join(ROOT, 'packages/shared/src/version.ts'), 'utf8'),
+)[1];
 const OUT = path.join(path.resolve(values.out), platform);
 const APP = path.join(OUT, 'app');
 const CACHE = path.join(ROOT, 'release/.cache');
@@ -86,15 +93,32 @@ const common = {
   legalComments: 'none',
   external: ['better-sqlite3', '@node-rs/argon2'],
   banner: { js: banner },
-  define: { __MWC_RELEASE__: 'true', __MWC_TRUSTED_KEYS__: JSON.stringify(trusted) },
+  define: {
+    __MWC_RELEASE__: 'true',
+    __MWC_TRUSTED_KEYS__: JSON.stringify(trusted),
+    // Customer-portal keys (package files for servers without internet); otherwise learnt at the first sync.
+    ...(values['portal-keys'] ? { __MWC_PORTAL_KEYS__: fs.readFileSync(values['portal-keys'], 'utf8') } : {}),
+  },
   logLevel: 'warning',
 };
-await build({ ...common, entryPoints: [path.join(ROOT, 'apps/server/src/index.ts')], outfile: path.join(APP, 'server.mjs') });
+await build({
+  ...common,
+  entryPoints: [path.join(ROOT, 'apps/server/src/index.ts')],
+  outfile: path.join(APP, 'server.mjs'),
+});
 for (const cli of ['reset-password', 'create-tenant'])
-  await build({ ...common, entryPoints: [path.join(ROOT, `apps/server/src/cli/${cli}.ts`)], outfile: path.join(APP, `cli/${cli}.mjs`) });
+  await build({
+    ...common,
+    entryPoints: [path.join(ROOT, `apps/server/src/cli/${cli}.ts`)],
+    outfile: path.join(APP, `cli/${cli}.mjs`),
+  });
 fs.writeFileSync(
   path.join(APP, 'package.json'),
-  JSON.stringify({ name: 'mywinecorks-server', version, private: true, type: 'module', main: 'server.mjs', platform }, null, 2),
+  JSON.stringify(
+    { name: 'mywinecorks-server', version, private: true, type: 'module', main: 'server.mjs', platform },
+    null,
+    2,
+  ),
 );
 
 // 3. Native modules for the target platform
@@ -104,17 +128,32 @@ const srcNm = path.join(ROOT, 'apps/server/node_modules');
 const real = (p) => fs.realpathSync(p);
 const copyPkg = (from, to, files) => {
   fs.mkdirSync(to, { recursive: true });
-  for (const f of files) if (fs.existsSync(path.join(from, f))) fs.cpSync(path.join(from, f), path.join(to, f), { recursive: true });
+  for (const f of files)
+    if (fs.existsSync(path.join(from, f)))
+      fs.cpSync(path.join(from, f), path.join(to, f), { recursive: true });
 };
 const bs3 = real(path.join(srcNm, 'better-sqlite3'));
 const bs3v = JSON.parse(fs.readFileSync(path.join(bs3, 'package.json'), 'utf8')).version;
 copyPkg(bs3, path.join(nm, 'better-sqlite3'), ['package.json', 'lib', 'LICENSE']);
 const bindings = real(path.join(bs3, '..', 'bindings'));
 copyPkg(bindings, path.join(nm, 'bindings'), ['package.json', 'bindings.js', 'LICENSE.md']);
-copyPkg(real(path.join(bindings, '..', 'file-uri-to-path')), path.join(nm, 'file-uri-to-path'), ['package.json', 'index.js', 'LICENSE']);
+copyPkg(real(path.join(bindings, '..', 'file-uri-to-path')), path.join(nm, 'file-uri-to-path'), [
+  'package.json',
+  'index.js',
+  'LICENSE',
+]);
 const tgz = path.join(CACHE, `better-sqlite3-v${bs3v}-node-v${NODE_ABI}-${plat.sqlite}.tar.gz`);
 if (!fs.existsSync(tgz))
-  execFileSync('curl', ['-fsSL', '-o', tgz, `https://github.com/WiseLibs/better-sqlite3/releases/download/v${bs3v}/better-sqlite3-v${bs3v}-node-v${NODE_ABI}-${plat.sqlite}.tar.gz`], { stdio: 'inherit' });
+  execFileSync(
+    'curl',
+    [
+      '-fsSL',
+      '-o',
+      tgz,
+      `https://github.com/WiseLibs/better-sqlite3/releases/download/v${bs3v}/better-sqlite3-v${bs3v}-node-v${NODE_ABI}-${plat.sqlite}.tar.gz`,
+    ],
+    { stdio: 'inherit' },
+  );
 execFileSync('tar', ['-xzf', tgz, '-C', path.join(nm, 'better-sqlite3')]);
 
 const a2 = real(path.join(srcNm, '@node-rs/argon2'));
@@ -125,7 +164,13 @@ const a2tgz = path.join(CACHE, `node-rs-argon2-${plat.argon2}-${a2v}.tgz`);
 if (!fs.existsSync(a2tgz)) {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'mwc-pack-'));
   execFileSync('npm', ['pack', `${a2pkg}@${a2v}`, '--silent'], { cwd: tmp });
-  fs.renameSync(path.join(tmp, fs.readdirSync(tmp).find((f) => f.endsWith('.tgz'))), a2tgz);
+  fs.renameSync(
+    path.join(
+      tmp,
+      fs.readdirSync(tmp).find((f) => f.endsWith('.tgz')),
+    ),
+    a2tgz,
+  );
 }
 const a2dir = path.join(nm, a2pkg);
 fs.mkdirSync(a2dir, { recursive: true });
@@ -151,5 +196,14 @@ step('Packing the update package');
 const pkg = path.join(OUT, `MyWineCorks-${version}-${platform}.tar.gz`);
 execFileSync('tar', ['-czf', pkg, '-C', APP, '.']);
 const sha256 = crypto.createHash('sha256').update(fs.readFileSync(pkg)).digest('hex');
-fs.writeFileSync(path.join(OUT, 'release.json'), JSON.stringify({ version, platform, file: path.basename(pkg), sha256, size: fs.statSync(pkg).size }, null, 2));
-console.log(`\n✓ ${OUT}\n  ${path.basename(pkg)}  ${(fs.statSync(pkg).size / 1e6).toFixed(1)} MB  sha256 ${sha256.slice(0, 16)}…`);
+fs.writeFileSync(
+  path.join(OUT, 'release.json'),
+  JSON.stringify(
+    { version, platform, file: path.basename(pkg), sha256, size: fs.statSync(pkg).size },
+    null,
+    2,
+  ),
+);
+console.log(
+  `\n✓ ${OUT}\n  ${path.basename(pkg)}  ${(fs.statSync(pkg).size / 1e6).toFixed(1)} MB  sha256 ${sha256.slice(0, 16)}…`,
+);

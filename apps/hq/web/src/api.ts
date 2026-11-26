@@ -1,3 +1,4 @@
+import { fromMinor } from '@mwc/shared';
 export class HqApiError extends Error {
   constructor(
     public status: number,
@@ -44,4 +45,4 @@ export const money = (minor: number | null | undefined, cur: string, lang: strin
         style: 'currency',
         currency: cur,
         maximumFractionDigits: cur === 'TWD' ? 0 : 2,
-      }).format(minor / 100);
+      }).format(fromMinor(minor, cur));

@@ -4,6 +4,7 @@
  * or cancelled (releases bottles). Invoicing and payments are tracked beside the status.
  * Sale prices, cost and margin are only returned to roles allowed to see them.
  */
+import { catalogPriceFor } from './catalogs.ts';
 import { can, lineAmount, orderTotals, payStatus, sees, type Permissions } from '@mwc/shared';
 import type { DB } from '../db/registry.ts';
 import { nowIso } from '../db/registry.ts';
@@ -147,6 +148,9 @@ export function defaultPrice(db: DB, wineId: number, customerId: number | null):
       )
       .get(wineId, customerId) as { unit_price: number } | undefined;
     if (last) return last.unit_price;
+    // Then the price in the customer's catalogs (SPEC §8.1).
+    const cat = catalogPriceFor(db, customerId, wineId);
+    if (cat != null) return cat;
   }
   const sug = (
     db.prepare('SELECT suggested_price FROM wines WHERE id = ?').get(wineId) as {
@@ -330,6 +334,8 @@ export function orderDetail(db: DB, p: Permissions, o: OrderRow) {
       closedAt: o.closed_at,
       cancelledAt: o.cancelled_at,
       cancelReason: o.cancel_reason,
+      source: (o as OrderRow & { source?: string }).source ?? 'staff',
+      requestNote: (o as OrderRow & { request_note?: string | null }).request_note ?? null,
       ...(prices ? { shippingFee: o.shipping_fee } : {}),
     },
     lines,
@@ -384,6 +390,7 @@ export function listOrders(
         bottles: t.bottles,
         invoiceNumber: o.invoice_no,
         createdBy: o.created_label,
+        source: (o as OrderRow & { source?: string }).source ?? 'staff',
         ...(prices ? { total: t.total, paid, payStatus: payStatus(t.total, paid) } : {}),
       };
     })

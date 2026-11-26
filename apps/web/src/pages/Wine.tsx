@@ -336,7 +336,7 @@ export function WineDetailPage() {
         </div>
       </div>
 
-      {(w.grapes || w.scores || w.notes || w.suggested_price) && (
+      {(w.grapes || w.scores || w.notes || w.tasting_notes || w.suggested_price) && (
         <div className="card">
           <dl className="dl">
             {w.grapes && (
@@ -361,6 +361,12 @@ export function WineDetailPage() {
               <>
                 <dt>{t('f.notes')}</dt>
                 <dd style={{ whiteSpace: 'pre-wrap' }}>{w.notes}</dd>
+              </>
+            )}
+            {w.tasting_notes && (
+              <>
+                <dt>{t('f.tastingNotes')}</dt>
+                <dd style={{ whiteSpace: 'pre-wrap' }}>{w.tasting_notes}</dd>
               </>
             )}
           </dl>
@@ -774,7 +780,8 @@ type WineForm = Record<
   | 'scores'
   | 'suggestedPrice'
   | 'wsUrl'
-  | 'notes',
+  | 'notes'
+  | 'tastingNotes',
   string
 >;
 const emptyWine: WineForm = {
@@ -793,6 +800,7 @@ const emptyWine: WineForm = {
   suggestedPrice: '',
   wsUrl: '',
   notes: '',
+  tastingNotes: '',
 };
 
 export function WineFormPage() {
@@ -834,6 +842,7 @@ export function WineFormPage() {
       suggestedPrice: minorToInput(x.suggested_price as number | null, existing.data!.currency),
       wsUrl: s(x.ws_url),
       notes: s(x.notes),
+      tastingNotes: s(x.tasting_notes),
     });
   }, [existing.data]);
 
@@ -861,6 +870,7 @@ export function WineFormPage() {
     suggestedPrice: w.suggestedPrice || null,
     wsUrl: w.wsUrl,
     notes: w.notes,
+    tastingNotes: w.tastingNotes,
   });
 
   const submit = async (e: FormEvent) => {
@@ -1045,6 +1055,13 @@ export function WineFormPage() {
         </div>
         <Field label={t('f.notes')}>
           <textarea className="input" value={w.notes} onChange={(e) => set({ notes: e.target.value })} />
+        </Field>
+        <Field label={t('f.tastingNotes')} hint={t('f.tastingNotesHint')}>
+          <textarea
+            className="input"
+            value={w.tastingNotes}
+            onChange={(e) => set({ tastingNotes: e.target.value })}
+          />
         </Field>
       </div>
       {isNew && stock && can('inventory', 'create') && (

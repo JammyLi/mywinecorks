@@ -31,6 +31,10 @@ export interface Config {
   platform: string;
   /** Started by the launcher (installer / Docker image): in-app updates can restart into a new version. */
   launched: boolean;
+  /** Cloud customer portal service (PORTAL_URL). The server only ever calls out to it. */
+  portalUrl: string;
+  /** Portal public keys {encryption, signing} for package files: embedded in releases, else PORTAL_PUBLIC_KEYS / dev file. */
+  portalKeys: () => { encryption: string; signing: string } | null;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -62,7 +66,30 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     platform:
       env.MWC_PLATFORM || `${process.platform === 'win32' ? 'win' : process.platform}-${process.arch}`,
     launched: env.MWC_LAUNCHED === '1',
+    portalUrl: (
+      env.PORTAL_URL || (production ? 'https://portal.mywinecorks.com' : 'http://localhost:3900')
+    ).replace(/\/$/, ''),
+    portalKeys: () => portalKeys(env, production),
   };
+}
+
+declare const __MWC_PORTAL_KEYS__: { encryption: string; signing: string } | undefined;
+function portalKeys(env: NodeJS.ProcessEnv, production: boolean) {
+  if (typeof __MWC_PORTAL_KEYS__ !== 'undefined') return __MWC_PORTAL_KEYS__;
+  const v = env.PORTAL_PUBLIC_KEYS?.trim();
+  try {
+    if (v) return JSON.parse(v.startsWith('{') ? v : fs.readFileSync(v, 'utf8'));
+    if (!production)
+      return JSON.parse(
+        fs.readFileSync(
+          path.resolve(import.meta.dirname, '../../portal-service/data/portal-public.json'),
+          'utf8',
+        ),
+      );
+  } catch {
+    /* not available */
+  }
+  return null;
 }
 
 /** Dev: LICENSE_PUBLIC_KEY (PEM or file path), else the dev HQ's key at apps/hq/data/license-public.pem. */

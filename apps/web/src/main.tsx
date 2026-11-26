@@ -29,6 +29,7 @@ import { DataSettings } from './pages/Data.tsx';
 import { CompanySettings } from './pages/Company.tsx';
 import { LicensePage } from './pages/License.tsx';
 import { UpdatesPage } from './pages/Updates.tsx';
+import { CatalogPage, CatalogsPage, GroupsPage, PortalSettings } from './pages/Catalogs.tsx';
 import { OrderPage, OrderShipPage, OrdersPage } from './pages/Orders.tsx';
 import { CustomerPage, CustomersPage } from './pages/Customers.tsx';
 import { ReportsPage } from './pages/Reports.tsx';
@@ -129,12 +130,16 @@ function App() {
           <Route path="company" element={<CompanySettings />} />
           <Route path="license" element={<LicensePage />} />
           <Route path="updates" element={<UpdatesPage />} />
+          <Route path="portal" element={<PortalSettings />} />
         </Route>
         <Route path="more" element={<More />} />
         <Route path="orders" element={<OrdersPage />} />
         <Route path="orders/:no" element={<OrderPage />} />
         <Route path="orders/:no/ship" element={<OrderShipPage />} />
         <Route path="customers" element={<CustomersPage />} />
+        <Route path="customers/groups" element={<GroupsPage />} />
+        <Route path="catalogs" element={<CatalogsPage />} />
+        <Route path="catalogs/:id" element={<CatalogPage />} />
         <Route path="customers/:id" element={<CustomerPage />} />
         <Route path="reports" element={<ReportsPage />} />
         <Route path="m/pick/:no" element={<MPick />} />

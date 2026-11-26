@@ -79,4 +79,5 @@ Other commands: `pnpm test`, `pnpm typecheck`, `pnpm --filter @mwc/web build`
 | M4 Customers, orders, reports | ✅ done |
 | M5 Licensing + HQ | ✅ done |
 | M6 Packaging (Windows installer, Docker, in-app updates, backups), cloud workspaces | ✅ done (installer not code-signed yet) |
-| M7 Catalogs + customer portal | next |
+| M7 Catalogs + customer portal | ✅ done |
+| M8 AI features | next |

@@ -375,6 +375,13 @@ export function mountOrders(api: Api) {
     discount: z.number().min(0).max(100).nullable().optional(),
     note: z.string().max(2000).nullable().optional(),
     active: z.boolean().default(true),
+    state: z
+      .string()
+      .toUpperCase()
+      .regex(/^[A-Z]{2}$/)
+      .nullable()
+      .optional(),
+    portalEmail: z.string().max(200).nullable().optional(),
   });
   const COLS = {
     name: 'name',
@@ -388,8 +395,10 @@ export function mountOrders(api: Api) {
     discount: 'discount',
     note: 'note',
     active: 'active',
+    state: 'state',
+    portalEmail: 'portal_email',
   } as const;
-  const custOut = `id, customer_no customerNo, name, kind, tax_id taxId, contact, phone, email, address, lang, discount, note, active`;
+  const custOut = `id, customer_no customerNo, name, kind, tax_id taxId, contact, phone, email, address, lang, discount, note, active, state, portal_email portalEmail, portal_status portalStatus`;
 
   api.get('/customers', perm('customers', 'view'), (req) => {
     const q = z.object({ q: z.string().optional(), all: z.string().optional() }).parse(req.query);

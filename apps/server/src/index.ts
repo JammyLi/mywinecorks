@@ -16,7 +16,7 @@ const cfg = loadConfig();
 // Data last used by another version: back up every database before anything is migrated.
 const preUpdate = versionCheck(cfg.dataDir);
 if (preUpdate) console.log(`Backed up all data before starting version ${APP_VERSION}: ${preUpdate}`);
-const { app, registry, licensing } = createApp(cfg);
+const { app, registry, licensing, portal } = createApp(cfg);
 const firstRun = ensureFirstRun(cfg, registry);
 
 // Pages: the built web app (apps/web/dist) when present; otherwise (development) forward to Vite,
@@ -45,6 +45,7 @@ const pages = (req: http.IncomingMessage, res: http.ServerResponse) => {
 
 startLogPurger(registry);
 licensing.start();
+portal.start();
 
 const busy = (port: number) => (e: NodeJS.ErrnoException) => {
   if (e.code !== 'EADDRINUSE') throw e;

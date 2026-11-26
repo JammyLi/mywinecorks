@@ -24,6 +24,8 @@ purchase, a decision, a test on real hardware). Tick items off here when done.
       the repo>` → put `license-signing.pem` in the HQ secret store (`LICENSE_SIGNING_KEY`), delete the
       file, commit `installer/keys/hq-license-public.pem`. Release builds accept no license until this
       is done.
+- [ ] **Try the customer portal on your own phone** (invite yourself as a customer): sign in,
+      browse, send a request, see it arrive as a draft order.
 - [ ] **Try "Update now" once on a real Windows PC** (CI tested install / upgrade / uninstall, not the
       in-app update on Windows).
 
@@ -38,6 +40,14 @@ purchase, a decision, a test on real hardware). Tick items off here when done.
 - [ ] **Deploy HQ** with a real PostgreSQL database (`DATABASE_URL`) and the production signing key.
 - [ ] **Deploy the cloud server** (`installer/cloud`) and give HQ its address and token
       (`CLOUD_URL`, `CLOUD_PROVISION_TOKEN`).
+- [ ] **Deploy the customer portal service** (`apps/portal-service`, PostgreSQL) at
+      `portal.mywinecorks.com` with its production keys (`PORTAL_KEYS`) and the HQ public key
+      (`LICENSE_PUBLIC_KEYS`); later a wildcard DNS record for `<client>.mywinecorks.com`
+      (SPEC open question 4: custom domains at launch?).
+- [ ] **Decide: customer sign-in** — keep email + password, or also magic links / LINE login
+      (needs email sending first).
+- [ ] **Check the alcohol-sale wording** in the portal (age confirmation, licence confirmation,
+      "request, not a purchase") with someone who knows Taiwan / US rules.
 
 ## Later
 

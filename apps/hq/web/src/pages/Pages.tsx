@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Dialog, Field, useToast } from '@mwc/ui';
+import { toMinor } from '@mwc/shared';
 import { api, day, dt, money } from '../api.ts';
 import { useHqT } from '../i18n.ts';
 import { useHq } from '../session.tsx';
@@ -866,7 +867,7 @@ function SubDialog(p: { clientId: number; onClose: () => void; onSaved: () => vo
           startsOn: f.startsOn,
           renewsOn: f.renewsOn,
           billingPeriod: f.billingPeriod,
-          price: f.price ? Math.round(Number(f.price) * 100) : null,
+          price: f.price ? toMinor(f.price, f.currency) : null,
           currency: f.currency,
         },
       });
@@ -1155,7 +1156,7 @@ function PayDialog(p: { clientId: number; subs: Sub[]; onClose: () => void; onSa
         body: {
           ...f,
           subscriptionId: f.subscriptionId ? Number(f.subscriptionId) : null,
-          amount: Math.round(Number(f.amount) * 100),
+          amount: toMinor(f.amount, f.currency),
           reference: f.reference || undefined,
           invoiceNo: f.invoiceNo || undefined,
         },

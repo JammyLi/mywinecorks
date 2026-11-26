@@ -6,6 +6,7 @@ import { Dialog, Field, Seg, useI18n, useToast } from '@mwc/ui';
 import { api } from '../api.ts';
 import { qs, useApi, useFmt } from '../hooks.ts';
 import { useSession } from '../session.tsx';
+import { PortalAccessCard } from './Catalogs.tsx';
 import { ErrorBox } from '../inv.tsx';
 import { OrderStatus, PayStatus, useNewOrder } from './Orders.tsx';
 
@@ -23,6 +24,9 @@ export interface Customer {
   discount: number | null;
   note: string | null;
   active: number;
+  state?: string | null;
+  portalEmail?: string | null;
+  portalStatus?: string;
   orders?: number;
   lastOrder?: string | null;
 }
@@ -40,6 +44,9 @@ export function CustomersPage() {
       <div className="page-head">
         <h1>{t('nav.customers')}</h1>
         <span className="sp" />
+        <Link className="btn" to="/customers/groups">
+          {t('grp.title')}
+        </Link>
         <input
           className="input"
           type="search"
@@ -136,12 +143,17 @@ export function CustomerDialog(p: {
     discount: c?.discount != null ? String(c.discount) : '',
     note: c?.note ?? '',
     active: c ? !!c.active : true,
+    state: c?.state ?? '',
   });
   const [err, setErr] = useState<unknown>(null);
   const set = (k: keyof typeof f, v: string | boolean) => setF({ ...f, [k]: v });
   const save = async () => {
     setErr(null);
-    const body = { ...f, discount: f.discount.trim() === '' ? null : Number(f.discount) };
+    const body = {
+      ...f,
+      discount: f.discount.trim() === '' ? null : Number(f.discount),
+      state: f.state.trim() ? f.state.trim().toUpperCase() : null,
+    };
     try {
       if (c) {
         await api(`/customers/${c.id}`, { method: 'PATCH', body });
@@ -219,9 +231,20 @@ export function CustomerDialog(p: {
           />
         </Field>
       </div>
-      <Field label={t('cu.address')}>
-        <input className="input" value={f.address} onChange={(e) => set('address', e.target.value)} />
-      </Field>
+      <div className="grid g2">
+        <Field label={t('cu.address')}>
+          <input className="input" value={f.address} onChange={(e) => set('address', e.target.value)} />
+        </Field>
+        <Field label={t('cu.state')} hint={t('cu.stateHint')}>
+          <input
+            className="input mono"
+            maxLength={2}
+            value={f.state}
+            onChange={(e) => set('state', e.target.value.toUpperCase().replace(/[^A-Z]/g, ''))}
+            placeholder="CA"
+          />
+        </Field>
+      </div>
       <Field label={t('f.note')}>
         <textarea className="input" rows={2} value={f.note} onChange={(e) => set('note', e.target.value)} />
       </Field>
@@ -410,6 +433,7 @@ export function CustomerPage() {
           )}
           <ErrorBox error={err} />
         </div>
+        <PortalAccessCard customer={c} onChange={reload} />
       </div>
       {can('orders', 'view') && (
         <div className="card stack">

@@ -48,6 +48,8 @@ export interface OrderDetail {
     confirmedAt: string | null;
     shippedAt: string | null;
     cancelReason: string | null;
+    source?: string;
+    requestNote?: string | null;
   };
   lines: OrderLine[];
   totals: {
@@ -155,6 +157,7 @@ export function OrdersPage() {
       payStatus?: string;
       invoiceNumber: string | null;
       createdBy: string;
+      source?: string;
     }[];
   }>('/orders' + qs({ status, pay, q: sp.get('q') ?? '' }));
   const newOrder = useNewOrder();
@@ -245,6 +248,11 @@ export function OrdersPage() {
                 <td>{r.customer ?? '—'}</td>
                 <td>
                   <OrderStatus s={r.status} />
+                  {r.source === 'portal' && (
+                    <span className="tag" style={{ marginLeft: 6 }}>
+                      {t('ord.fromPortal')}
+                    </span>
+                  )}
                 </td>
                 <td className="num">{r.bottles}</td>
                 {prices && <td className="num">{f.money(r.total, data.currency)}</td>}
@@ -424,6 +432,7 @@ export function OrderPage() {
         <div className="wine-title">
           <h1>
             {o.orderNo} <OrderStatus s={o.status} />{' '}
+            {o.source === 'portal' && <span className="tag">{t('ord.fromPortal')}</span>}{' '}
             {prices && o.status !== 'draft' && o.status !== 'cancelled' && (
               <PayStatus s={d.totals.payStatus} />
             )}

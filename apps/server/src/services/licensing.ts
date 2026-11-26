@@ -175,6 +175,18 @@ export class Licensing implements LicenseView {
     return this.status().state === 'locked';
   }
 
+  /** The signed license key that covers a workspace (sent to cloud services such as the portal). */
+  keyFor(slug: string): string | null {
+    if (this.cfg.mode === 'cloud')
+      return (
+        (
+          this.registry.db.prepare('SELECT license_key FROM tenants WHERE slug = ?').get(slug) as
+            { license_key: string | null } | undefined
+        )?.license_key ?? null
+      );
+    return this.payload().p ? this.row().key : null;
+  }
+
   /** License id + installation id: what HQ needs to hand out update packages. */
   identity() {
     return { licenseId: this.payload().p?.lid ?? null, installId: this.install().install_id };

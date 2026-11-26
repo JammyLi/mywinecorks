@@ -53,10 +53,20 @@ if (arg !== '--existing') {
   }
   const t = new URL(link).searchParams.get('t');
   must(!!t, 'first-run link found');
-  const made = await call('/api/public/first-run', { t, company: 'Smoke Test Cellar', ownerEmail: EMAIL, ownerName: 'Owner', lang: 'en' });
+  const made = await call('/api/public/first-run', {
+    t,
+    company: 'Smoke Test Cellar',
+    ownerEmail: EMAIL,
+    ownerName: 'Owner',
+    lang: 'en',
+  });
   must(made.status === 200, `workspace created (${made.status} ${JSON.stringify(made.data)})`);
   const q = new URLSearchParams(made.data.setup.split('?')[1]);
-  const setup = await call('/api/auth/setup', { workspace: q.get('w'), token: q.get('t'), password: PASSWORD });
+  const setup = await call('/api/auth/setup', {
+    workspace: q.get('w'),
+    token: q.get('t'),
+    password: PASSWORD,
+  });
   must(setup.status === 200, 'Owner password set');
 }
 const login = await call('/api/auth/login', { email: EMAIL, password: PASSWORD, client: 'web' });

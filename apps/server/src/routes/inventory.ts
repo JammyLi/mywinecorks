@@ -52,6 +52,8 @@ const WineBody = z.object({
   suggestedPrice: z.union([z.string(), z.number()]).nullable().optional(),
   wsUrl: s,
   notes: z.string().max(4000).optional().nullable(),
+  /** Shown to customers in the portal (notes stay internal). */
+  tastingNotes: z.string().max(4000).optional().nullable(),
 });
 type WineInput = z.infer<typeof WineBody>;
 
@@ -90,6 +92,7 @@ function wineCols(db: import('../db/registry.ts').DB, b: WineInput) {
     ['scores', 'scores'],
     ['wsUrl', 'ws_url'],
     ['notes', 'notes'],
+    ['tastingNotes', 'tasting_notes'],
   ];
   for (const [k, col] of map) if (k in b) out[col] = clean(b[k]) || null;
   if ('vintage' in b) out.vintage = parseVintage(b.vintage);

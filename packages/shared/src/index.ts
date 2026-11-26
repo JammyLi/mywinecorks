@@ -27,3 +27,4 @@ export interface Me {
 }
 export * from './orders.ts';
 export * from './version.ts';
+export * from './portal.ts';

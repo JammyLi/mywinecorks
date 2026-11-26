@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.7.0 — M7 Catalogs and the customer portal (2026-11-26)
+- **Customer groups** (VIP, Restaurants, Friends…) under Customers › Groups.
+- **Catalogs:** wines picked by hand, from a saved list, or by search conditions; shown to groups
+  and/or single customers; price = suggested −X %, market +X %, fixed per wine, or "price on
+  request", with the customer's own discount; stock shown exactly, as Available / Limited, or not
+  at all; limit per customer; sold-out wines hidden or shown; active dates; priority when a wine is
+  in two catalogs; "what a customer sees" preview. Staff orders now default to the catalog price
+  after the customer's last price.
+- **Customer portal** (`apps/portal`, served by the new `apps/portal-service`): invitation link
+  (14 days, once) → password and age confirmation → browse and search the wines with photos and
+  tasting notes, favorites, "notify me when available", order request with delivery or pick-up and
+  a note, request history with the confirmed prices, profile (phone, language, addresses);
+  zh-TW / en; phone layout. Not public: strangers can only ask for access.
+- **Order requests become draft orders** (marked "From portal"); confirming, cancelling or shipping
+  shows on the customer's request.
+- **Access:** invite, suspend, revoke (with a reason in the change log; the customer is signed out
+  at once and sees "access ended"), reactivate; access requests approved or declined by staff.
+- **Settings › Customer portal:** address, welcome text, colour, market (age 18+ / 21+), US states
+  you cannot ship to, alcohol-licence confirmation, sync status and "Sync now", and for servers
+  without internet: download the portal package, import the order-requests file.
+- **Sync:** the server connects out every few minutes and right after access changes, signed with
+  the workspace's own key; it sends only public wine facts and each customer's own prices — never
+  cost, merchants, locations, bottle/case numbers or other customers (tested).
+- Wines have **tasting notes** for customers (internal notes stay internal).
+
 ## 0.6.0 — M6 Packaging, updates, cloud (2026-11-26)
 - **Windows installer** (`installer/windows/build.sh`): Node 22 and the server bundled; runs as the
   "MyWineCorks" Windows service (starts with Windows, restarts after a crash); firewall opened for
