@@ -3,10 +3,12 @@
 # Needs: Node 22, pnpm, makensis (apt install nsis / brew install makensis), internet (npm + GitHub).
 #   installer/windows/build.sh --trust <hq-license-public.pem>
 set -euo pipefail
+ORIG=$(pwd)
 cd "$(dirname "$0")"
 HERE=$(pwd); REPO=$(cd ../.. && pwd)
 WINSW_VER=2.12.0
-node "$REPO/scripts/release/build.mjs" --platform win-x64 "$@"
+# (arguments such as --trust are relative to where the script was started)
+(cd "$ORIG" && node "$REPO/scripts/release/build.mjs" --platform win-x64 "$@")
 REL="$REPO/release/win-x64"
 VERSION=$(node -p "require('$REL/release.json').version")
 CACHE="$REPO/release/.cache"; STAGE="$HERE/.stage"
