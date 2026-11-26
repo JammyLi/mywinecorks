@@ -23,6 +23,7 @@ export function SettingsLayout() {
     { to: 'security', label: t('settings.security') },
     can('settings', 'view') && { to: 'types', label: t('settings.types') },
     can('settings', 'view') && sees('seeMerchants') && { to: 'merchants', label: t('settings.merchants') },
+    { to: 'company', label: t('set.company') },
     isOwner && { to: 'data', label: t('set.data') },
   ].filter(Boolean) as { to: string; label: string }[];
   return (

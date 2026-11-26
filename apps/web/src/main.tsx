@@ -26,6 +26,12 @@ import { RoleEditor, Roles, Security, SettingsIndex, SettingsLayout, Users } fro
 import { Audit } from './pages/Audit.tsx';
 import { ImportPage } from './pages/Import.tsx';
 import { DataSettings } from './pages/Data.tsx';
+import { CompanySettings } from './pages/Company.tsx';
+import { OrderPage, OrderShipPage, OrdersPage } from './pages/Orders.tsx';
+import { CustomerPage, CustomersPage } from './pages/Customers.tsx';
+import { ReportsPage } from './pages/Reports.tsx';
+import { PrintOrderPage } from './pages/PrintOrder.tsx';
+import { MOrders, MPick } from './m/Pick.tsx';
 import { ListDetailPage, ListsPage } from './pages/Lists.tsx';
 import { LabelsPage, PrintLabelsPage } from './pages/Labels.tsx';
 import { StocktakeReportPage, StocktakesPage } from './pages/Stocktakes.tsx';
@@ -68,6 +74,14 @@ function App() {
       <Route path="/enroll" element={<Enroll />} />
       <Route path="/phone" element={<PhoneSetup />} />
       <Route
+        path="/print/order/:no"
+        element={
+          <RequireAuth>
+            <PrintOrderPage />
+          </RequireAuth>
+        }
+      />
+      <Route
         path="/print/labels"
         element={
           <RequireAuth>
@@ -109,8 +123,17 @@ function App() {
           <Route path="types" element={<TypesSettings />} />
           <Route path="merchants" element={<MerchantsSettings />} />
           <Route path="data" element={<DataSettings />} />
+          <Route path="company" element={<CompanySettings />} />
         </Route>
         <Route path="more" element={<More />} />
+        <Route path="orders" element={<OrdersPage />} />
+        <Route path="orders/:no" element={<OrderPage />} />
+        <Route path="orders/:no/ship" element={<OrderShipPage />} />
+        <Route path="customers" element={<CustomersPage />} />
+        <Route path="customers/:id" element={<CustomerPage />} />
+        <Route path="reports" element={<ReportsPage />} />
+        <Route path="m/pick/:no" element={<MPick />} />
+        <Route path="m/orders" element={<MOrders />} />
         <Route path="m" element={<MHome />} />
         <Route path="m/b/:no" element={<MBottle />} />
         <Route path="m/c/:no" element={<MCase />} />

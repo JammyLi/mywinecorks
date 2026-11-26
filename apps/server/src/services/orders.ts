@@ -297,7 +297,7 @@ export function orderDetail(db: DB, p: Permissions, o: OrderRow) {
     : [];
   const logs = db
     .prepare(
-      "SELECT ts, user_label user, action, changes, reason FROM audit_log WHERE obj_type = 'order' AND obj_id = ? ORDER BY id DESC LIMIT 100",
+      "SELECT id, ts, user_label, action, changes, reason FROM audit_log WHERE obj_type = 'order' AND obj_id = ? ORDER BY id DESC LIMIT 100",
     )
     .all(o.order_no)
     .map((r) => {

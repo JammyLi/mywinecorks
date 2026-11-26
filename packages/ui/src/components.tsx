@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import {
+  type CSSProperties,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from 'react';
 import { useT } from './i18n/index.tsx';
 
 export function Dialog(props: {
@@ -46,9 +54,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 }
 export const useToast = () => useContext(ToastCtx);
 
-export function Field(props: { label: ReactNode; children: ReactNode; hint?: ReactNode }) {
+export function Field(props: {
+  label: ReactNode;
+  children: ReactNode;
+  hint?: ReactNode;
+  style?: CSSProperties;
+}) {
   return (
-    <label className="f">
+    <label className="f" style={props.style}>
       {props.label}
       {props.children}
       {props.hint && <span className="muted small">{props.hint}</span>}

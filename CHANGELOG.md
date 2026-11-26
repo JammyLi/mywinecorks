@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.4.0 — M4 Orders (2026-11-26)
+- Customers (C-0001 numbers like MyWines): person/company, tax ID, document language, default
+  discount, delivery addresses, active/inactive; customer page with orders, amount bought and the
+  prices they paid per wine.
+- Orders (SO-YYYYMMDD-NNN): create from search results, a list, a wine page, a customer or blank;
+  lines with quantity, unit price and discount; tax rate and shipping; default price is the
+  customer's last price → suggested price → market price + markup (shown next to each price).
+- Confirm holds specific bottles (loose bottles first, then fullest cases); back to draft or cancel
+  (with a reason) releases them. Pick list (by location, with an ORDER: QR code) and customer copy
+  in the order's language, printable as PDF.
+- Pick / ship / hand over by scanning — on the desktop or on the phone (`/m/orders`): another bottle
+  of the same wine replaces a held one, a wrong wine or another order's bottle is refused; a whole
+  case can be scanned; or ship the held bottles directly.
+- Invoice number, payments (transfer, cash, card, cheque; partial; refunds; void with a reason);
+  shipped + fully paid closes the order; a void reopens it.
+- Role rules: confirm limit per role, customer prices / cost / margin only for roles that may see
+  them (including payments and exports), "see other users' orders"; deleting a draft order, a
+  customer without orders or an address is Owner-only.
+- Reports: collection value now and over 12 months, unrealized gain by type / country / region /
+  cellar / locker / wine, storage rent vs value, and realized sales profit by month / customer / wine.
+- Settings › Company: names, address, tax ID, default tax rate, order markup, payment instructions.
+- Orders Excel export (orders + lines). Wine page shows "New order".
+- MyWines migration now brings customers, addresses and orders too (with held bottles); bottles keep
+  the date their wine was entered.
+
 ## 0.3.0 — M3 Phone app + offline (2026-11-25)
 - Phone screens at `/m` (ported from MyWines): scan / look up, bottle, case, locker, wine, move
   (bottles, whole case, into a new case), stock-out with reason, scan to a list, stocktake, search,

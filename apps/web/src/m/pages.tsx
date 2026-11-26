@@ -54,6 +54,7 @@ function Modes({ on }: { on: string }) {
     ['/m/list', t('m.list'), true],
     ['/m/count', t('m.count'), can('inventory', 'edit')],
     ['/m/search', t('nav.search'), true],
+    ['/m/orders', t('m.toShip'), can('orders', 'ship')],
   ];
   return (
     <div className="modes">
@@ -102,6 +103,8 @@ export function MHome() {
   const [s] = useSnap();
   const [msg, setMsg] = useState<Flash>(null);
   const go = (code: string) => {
+    const ord = code.trim().match(/^ORDER:(.+)$/i);
+    if (ord) return nav('/m/pick/' + ord[1].toUpperCase());
     if (!s) return;
     const r = resolveLocal(s, code, un);
     if (!r) return setMsg({ kind: 'err', text: t('m.notFound', { code }) });

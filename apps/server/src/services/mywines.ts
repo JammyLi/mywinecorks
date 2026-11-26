@@ -398,6 +398,7 @@ export function migrateMyWines(src: DB, db: DB, o: MigrateOptions): MigrateRepor
       `INSERT INTO bottles (id, bottle_no, wine_id, lot_id, case_id, rack_id, status, label_printed_at, out_reason, out_at, note, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
+    const wineCreated = new Map(wines.map((w) => [Number(w.id), ts(w.created_at)]));
     for (const b of bottles) {
       let status = String(b.status ?? 'in_stock');
       if (!(BOTTLE_STATUSES as readonly string[]).includes(status)) {
@@ -416,7 +417,8 @@ export function migrateMyWines(src: DB, db: DB, o: MigrateOptions): MigrateRepor
         bcols.has('out_reason') ? (b.out_reason ?? null) : null,
         bcols.has('out_at') ? ts(b.out_at) : null,
         b.note ?? null,
-        now,
+        // MyWines bottles have no date of their own: they arrived when their wine was entered.
+        (bcols.has('created_at') ? ts(b.created_at) : null) ?? wineCreated.get(Number(b.wine_id)) ?? now,
       );
     }
     const reserved = bottles.filter((b) => b.status === 'reserved').length;

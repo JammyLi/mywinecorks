@@ -4,6 +4,7 @@ import { CURRENCIES, minorToInput } from '@mwc/shared';
 import { Dialog, Field, useI18n, useToast } from '@mwc/ui';
 import { api } from '../api.ts';
 import { AddToListDialog } from './Lists.tsx';
+import { useNewOrder } from './Orders.tsx';
 import { qs, useApi, useFmt } from '../hooks.ts';
 import { useSession } from '../session.tsx';
 import {
@@ -75,6 +76,7 @@ export function WineDetailPage() {
   const { no = '' } = useParams();
   const { t } = useI18n();
   const { can, sees, isOwner } = useSession();
+  const newOrder = useNewOrder();
   const f = useFmt();
   const nav = useNavigate();
   const toast = useToast();
@@ -153,6 +155,11 @@ export function WineDetailPage() {
           <button className="btn" onClick={() => setDlg('list')}>
             {t('lists.addTo')}
           </button>
+          {can('orders', 'create') && data.qty > 0 && (
+            <button className="btn" onClick={() => newOrder({ wineNos: [w.wine_no] })}>
+              {t('ord.new')}
+            </button>
+          )}
         </div>
       </div>
       {dlg === 'list' && (

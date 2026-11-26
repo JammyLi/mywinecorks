@@ -1,4 +1,5 @@
 import { AddToListDialog } from './Lists.tsx';
+import { useNewOrder } from './Orders.tsx';
 import { ExportDialog } from './Export.tsx';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -96,6 +97,7 @@ export function Search() {
   const [kw, setKw] = useState(q.q);
   const [open, setOpen] = useState(false);
   const [dlg, setDlg] = useState<'list' | 'export' | null>(null);
+  const newOrder = useNewOrder();
   useEffect(() => setKw(q.q), [q.q]);
   const set = (patch: Partial<typeof q>) => {
     const next = { ...q, page: '', ...patch };
@@ -133,6 +135,11 @@ export function Search() {
         <span className="sp" />
         {data && data.totals.wines > 0 && (
           <>
+            {can('orders', 'create') && data.totals.wines <= 200 && (
+              <button className="btn" onClick={() => newOrder({ query: srcQuery })}>
+                {t('ord.newFromResults')}
+              </button>
+            )}
             {can('inventory', 'view') && (
               <button className="btn" onClick={() => setDlg('list')}>
                 {t('lists.saveResults', { n: data.totals.wines })}

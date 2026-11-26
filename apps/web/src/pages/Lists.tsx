@@ -6,6 +6,7 @@ import { useApi, useFmt } from '../hooks.ts';
 import { useSession } from '../session.tsx';
 import { ErrorBox, useTypeName } from '../inv.tsx';
 import { ExportDialog } from './Export.tsx';
+import { useNewOrder } from './Orders.tsx';
 
 interface ListRow {
   id: number;
@@ -84,6 +85,7 @@ export function ListDetailPage() {
   const { id = '' } = useParams();
   const { t } = useI18n();
   const { can, isOwner } = useSession();
+  const newOrder = useNewOrder();
   const f = useFmt();
   const nav = useNavigate();
   const toast = useToast();
@@ -127,6 +129,11 @@ export function ListDetailPage() {
         </div>
         <span className="sp" />
         <div className="row">
+          {can('orders', 'create') && (
+            <button className="btn primary" onClick={() => newOrder({ list: l.id })}>
+              {t('ord.newFromList')}
+            </button>
+          )}
           {can('labels', 'print') && (
             <button
               className="btn"

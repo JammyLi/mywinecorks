@@ -235,6 +235,10 @@ export interface LogEntry {
 }
 
 const MONEY_KEYS = new Set([
+  'total',
+  'amount',
+  'shippingFee',
+  'unitPrice',
   'marketPrice',
   'unitCost',
   'cost',
@@ -250,6 +254,15 @@ function fmtVal(t: (k: string) => string, k: string, v: unknown, money?: (m: num
   if (k === 'source' && v === 'manual') return t('src.manual');
   if (k === 'stockoutReason') return t(`rs.${v}`);
   if (k === 'status') return t(`st.${v}`);
+  if (k === 'method' && typeof v === 'string') return t(`pm.${v}`);
+  if (k === 'delivery' && typeof v === 'string')
+    return t(v === 'pickup' ? 'ord.deliveryPickup' : 'ord.deliveryShip');
+  if (k === 'lang' && typeof v === 'string') return v === 'en' ? 'English' : '繁體中文';
+  if (v && typeof v === 'object' && 'qty' in v) {
+    // An order line: "2 × NT$3,000 −5%"
+    const l = v as { qty: number; price?: number | null; discount?: number };
+    return `${l.qty}${l.price != null && money ? ` × ${money(l.price)}` : ''}${l.discount ? ` −${l.discount}%` : ''}`;
+  }
   if (typeof v === 'boolean') return v ? t('yes') : t('no');
   return typeof v === 'object' ? JSON.stringify(v) : String(v);
 }

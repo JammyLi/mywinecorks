@@ -95,9 +95,9 @@ export function mountReports(api: Api) {
           `SELECT COUNT(*) bottles, SUM(${priceAt(d)}) market, SUM(lot.base_unit_cost) cost
            FROM bottles b JOIN wines w ON w.id = b.wine_id JOIN racks k ON k.id = b.rack_id JOIN lockers l ON l.id = k.locker_id
            LEFT JOIN lots lot ON lot.id = b.lot_id
-           WHERE ${scope} AND b.created_at <= ? AND (b.out_at IS NULL OR b.out_at > ?)`,
+           WHERE ${scope} AND COALESCE(lot.purchase_date, substr(b.created_at, 1, 10)) <= ? AND (b.out_at IS NULL OR b.out_at > ?)`,
         )
-        .get(end, end) as { bottles: number; market: number | null; cost: number | null };
+        .get(d, end) as { bottles: number; market: number | null; cost: number | null };
       return { date: d, bottles: x.bottles, market: x.market ?? 0, ...(cost ? { cost: x.cost ?? 0 } : {}) };
     });
 

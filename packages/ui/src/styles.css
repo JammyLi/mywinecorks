@@ -1213,3 +1213,99 @@ table.t {
   width: 100%;
   height: 100%;
 }
+
+/* ---------- Orders ---------- */
+.totals {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 16px;
+  align-items: center;
+  justify-self: end;
+  min-width: 300px;
+}
+.tag.gold {
+  background: var(--accent-soft);
+  color: var(--gold);
+}
+.crumbs {
+  font-size: 13px;
+  color: var(--ink-3);
+}
+/* Order document / pick list (print to PDF) */
+.doc {
+  max-width: 190mm;
+  margin: 0 auto;
+  padding: 16px;
+  background: #fff;
+  color: #111;
+  font-size: 10pt;
+  font-family: 'Noto Sans TC', system-ui, sans-serif;
+}
+.doc .hd {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  border-bottom: 2px solid #5e1a24;
+  padding-bottom: 8px;
+  margin-bottom: 14px;
+  gap: 12px;
+}
+.doc .big {
+  font-size: 14pt;
+  font-weight: 700;
+}
+.doc table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.doc th {
+  text-align: left;
+  font-size: 8.5pt;
+  color: #555;
+  border-bottom: 1px solid #999;
+  padding: 6px;
+}
+.doc td {
+  border-bottom: 1px solid #ddd;
+  padding: 6px;
+  vertical-align: top;
+  break-inside: avoid;
+}
+.doc .r {
+  text-align: right;
+  white-space: nowrap;
+}
+.doc .sub {
+  color: #666;
+  font-size: 8.5pt;
+}
+.doc .meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 24px;
+  margin-bottom: 14px;
+}
+.doc .tot {
+  margin-left: auto;
+  width: 280px;
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+}
+.doc .box {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 1px solid #333;
+  vertical-align: -2px;
+}
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm 12mm;
+  }
+  .doc {
+    padding: 0;
+  }
+}
