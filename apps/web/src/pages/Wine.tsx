@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { LabelScan } from './Ai.tsx';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { CURRENCIES, minorToInput } from '@mwc/shared';
 import { Dialog, Field, useI18n, useToast } from '@mwc/ui';
@@ -914,6 +915,24 @@ export function WineFormPage() {
         </button>
       </div>
       <ErrorBox error={err} />
+      {isNew && (
+        <LabelScan
+          onFill={(x) =>
+            setW((cur) => ({
+              ...cur,
+              winery: x.winery ?? cur.winery,
+              name: x.name ?? cur.name,
+              vintage: x.vintage ?? cur.vintage,
+              country: x.country ?? cur.country,
+              region: x.region ?? cur.region,
+              classification: x.classification ?? cur.classification,
+              typeCode: x.typeCode ?? cur.typeCode,
+              volumeMl: x.volumeMl ? String(x.volumeMl) : cur.volumeMl,
+              grapes: x.grapes ?? cur.grapes,
+            }))
+          }
+        />
+      )}
       {similar.data && similar.data.length > 0 && (
         <div className="alert warn">
           {t('wine.similar')}{' '}

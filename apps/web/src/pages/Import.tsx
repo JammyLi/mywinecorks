@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type DragEvent } from 'react';
+import { useAi } from './Ai.tsx';
 import { Link } from 'react-router-dom';
 import { useI18n } from '@mwc/ui';
 import { ApiError, api } from '../api.ts';
@@ -81,6 +82,7 @@ async function upload(kind: Kind, file: File): Promise<Preview> {
 export function ImportPage() {
   const { t, lang } = useI18n();
   const { can, sees } = useSession();
+  const ai = useAi();
   const has = (k: Kind) =>
     k === 'inventory'
       ? can('inventory', 'create')
@@ -158,6 +160,12 @@ export function ImportPage() {
       <p className="muted" style={{ margin: 0 }}>
         {t('imp.intro')}
       </p>
+      {ai('invoice') && can('inventory', 'create') && sees('seeCost') && (
+        <Link className="card row" to="/import/invoice" style={{ color: 'inherit' }}>
+          <b>✦ {t('ai.invoiceTitle')}</b>
+          <span className="muted small">{t('ai.invoiceHint')}</span>
+        </Link>
+      )}
 
       <div className="grid g4">
         {kinds.map((k) => (

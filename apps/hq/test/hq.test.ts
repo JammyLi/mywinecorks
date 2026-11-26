@@ -274,3 +274,41 @@ describe('renewal reminders', () => {
     expect(m[0].subject).toContain('天後到期');
   });
 });
+
+describe('AI usage (M8)', () => {
+  it('reads usage from the AI gateway and sets caps with the admin token', async () => {
+    expect((await admin.get('/api/ai-usage').expect(200)).body.configured).toBe(false);
+    const { aiAdmin } = await import('../src/routes/aiUsage.ts');
+    const calls: string[] = [];
+    aiAdmin.fetcher = async (url, init) => {
+      calls.push(`${init?.method} ${url} ${(init?.headers as Record<string, string>).authorization}`);
+      const body = String(url).endsWith('/usage')
+        ? {
+            defaultCap: 3000000,
+            configured: true,
+            clients: [{ lid: 'L-1', client: 'Lee' }],
+            caps: [],
+            rows: [],
+          }
+        : { ok: true };
+      return new Response(JSON.stringify(body), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    };
+    Object.assign(cfg, { aiUrl: 'http://ai.test', aiAdminToken: 'adm' });
+    try {
+      const u = await admin.get('/api/ai-usage').expect(200);
+      expect(u.body).toMatchObject({ configured: true, keySet: true, clients: [{ lid: 'L-1' }] });
+      await admin.post('/api/ai-usage/cap').send({ lid: 'L-1', monthlyTokens: 1000 }).expect(200);
+      expect(calls).toEqual([
+        'GET http://ai.test/api/admin/usage Bearer adm',
+        'POST http://ai.test/api/admin/cap Bearer adm',
+      ]);
+      const log = await hq.sql.q<{ action: string }>("SELECT action FROM hq_audit WHERE action = 'aiCapSet'");
+      expect(log).toHaveLength(1);
+    } finally {
+      Object.assign(cfg, { aiUrl: null, aiAdminToken: null });
+    }
+  });
+});

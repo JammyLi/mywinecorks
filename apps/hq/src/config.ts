@@ -14,6 +14,9 @@ export interface HqConfig {
   /** Cloud server that hosts cloud workspaces (CLOUD_URL) and its provisioning token. */
   cloudUrl: string | null;
   cloudToken: string | null;
+  /** AI gateway admin API (usage, caps): AI_URL + AI_ADMIN_TOKEN. */
+  aiUrl: string | null;
+  aiAdminToken: string | null;
   /** Update packages: <data>/releases/<version>/<file>. */
   releasesDir: string;
 }
@@ -34,6 +37,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): HqConfig {
     production: env.NODE_ENV === 'production',
     cloudUrl: env.CLOUD_URL?.replace(/\/$/, '') || null,
     cloudToken: env.CLOUD_PROVISION_TOKEN || null,
+    aiUrl: env.AI_URL?.replace(/\/$/, '') || null,
+    aiAdminToken: env.AI_ADMIN_TOKEN || null,
     releasesDir: path.resolve(env.RELEASES_DIR || path.join(dataDir, 'releases')),
   };
 }

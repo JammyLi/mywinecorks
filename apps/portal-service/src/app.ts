@@ -7,6 +7,7 @@ import { loadKeys, type PortalKeys } from './keys.ts';
 import { customerGuard, mountCustomer } from './routes/customer.ts';
 import { mountPackage } from './routes/package.ts';
 import { mountTenant, tenantGuard } from './routes/tenant.ts';
+import { mountAi } from './routes/ai.ts';
 
 export async function createPortal(cfg: PortalConfig, opts: { sql?: Sql; keys?: PortalKeys } = {}) {
   const sql = opts.sql ?? (await openDb(cfg.databaseUrl, cfg.databaseUrl ? null : cfg.dataDir));
@@ -19,6 +20,7 @@ export async function createPortal(cfg: PortalConfig, opts: { sql?: Sql; keys?: 
   mountTenant(api);
   mountCustomer(api);
   mountPackage(api);
+  mountAi(api);
 
   const app = express();
   app.disable('x-powered-by');

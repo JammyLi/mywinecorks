@@ -1,0 +1,32 @@
+[
+  {
+    "name": "LINE message, zh, case = 6",
+    "feature": "orderMessage",
+    "input": {
+      "text": "陳先生：你好～想訂 Krug Grande Cuvée 一箱，還有 2015 Leroy Bourgogne 兩瓶，週六來店裡拿",
+      "customers": ["陳先生", "Lee Wine Club"]
+    },
+    "expect": {
+      "customer": "陳先生",
+      "delivery": "pickup",
+      "lines.0.qty": 6,
+      "lines.1.qty": 2,
+      "lines.1.vintage": "2015"
+    }
+  },
+  {
+    "name": "Email, en, ship",
+    "feature": "orderMessage",
+    "input": {
+      "text": "Hi, this is Lee Wine Club. Please send 3 bottles of Sassicaia 2018 and 12 of Dom Pérignon 2013 to our usual address. Thanks!",
+      "customers": ["陳先生", "Lee Wine Club"]
+    },
+    "expect": {
+      "customer": "Lee Wine Club",
+      "delivery": "ship",
+      "lines.0.qty": 3,
+      "lines.1.qty": 12,
+      "lines.1.vintage": "2013"
+    }
+  }
+]

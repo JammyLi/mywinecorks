@@ -37,6 +37,7 @@ export interface TenantRow {
     ageMin?: number;
     blockedStates?: string[];
     softHoldHours?: number;
+    ai?: boolean;
   };
   catalogs: { id: number; name: string; nameEn: string | null; intro: string | null }[];
   seq: string | number;

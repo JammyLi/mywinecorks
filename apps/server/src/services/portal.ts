@@ -22,6 +22,7 @@ import { ApiError, badRequest } from '../errors.ts';
 import { audit, type Actor } from './audit.ts';
 import { availableByWine, customerEntries, fileHash, photoFiles, publicWine, wineRef } from './catalogs.ts';
 import { settings } from './inventory.ts';
+import { aiSettings } from './ai.ts';
 import type { LicenseView } from './licensing.ts';
 import { company, newOrderNo } from './orders.ts';
 
@@ -92,7 +93,7 @@ export const syncState = (db: DB): SyncState =>
 const saveSync = (db: DB, s: SyncState) => setJson(db, 'portalSync', s);
 
 /** This workspace's own signing key (Ed25519); its public half is registered with the portal. */
-function tenantKey(db: DB) {
+export function tenantKey(db: DB) {
   const r = db.prepare("SELECT value FROM settings WHERE key = 'portalKey'").get() as
     { value: string } | undefined;
   if (r) return JSON.parse(r.value) as { privateKey: string; publicKey: string };
@@ -165,6 +166,7 @@ export function buildSnapshot(
   cfg: Config,
   db: DB,
   tenant: TenantRow,
+  aiPortal = false,
 ): { snapshot: PortalSnapshot; photos: Map<string, string> } {
   const ps = portalSettings(db, tenant.slug);
   const co = company(db);
@@ -239,6 +241,7 @@ export function buildSnapshot(
         ageMin: ageMin(ps.country),
         blockedStates: ps.blockedStates,
         softHoldHours: ps.softHoldHours,
+        ai: aiPortal,
       },
       catalogs: [...cats.values()],
       wines: pw,
@@ -482,7 +485,12 @@ export class PortalClient {
         await this.register(t);
         st = syncState(db);
       }
-      const { snapshot, photos } = buildSnapshot(this.cfg, db, t);
+      const { snapshot, photos } = buildSnapshot(
+        this.cfg,
+        db,
+        t,
+        this.license(t.slug).hasModule('ai') && aiSettings(db).portal,
+      );
       snapshot.licenseKey = this.licenseKey(t.slug) ?? undefined;
       const hash = sha256(JSON.stringify({ ...snapshot, seq: 0 }));
       const inb = await this.call<PortalInbound>(db, 'POST', '/api/tenant/sync', snapshot);

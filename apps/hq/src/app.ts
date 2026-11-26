@@ -8,6 +8,7 @@ import { issueSetup, mountAuth } from './routes/auth.ts';
 import { mountClients } from './routes/clients.ts';
 import { mountLicenseApi } from './routes/licenseApi.ts';
 import { mountCloud } from './routes/cloudws.ts';
+import { mountAiUsage } from './routes/aiUsage.ts';
 import { mountUpdatesApi } from './routes/updatesApi.ts';
 import { loadSigning, type Signing } from './signing.ts';
 
@@ -20,6 +21,7 @@ export async function createHq(cfg: HqConfig, opts: { sql?: Sql; signing?: Signi
   mountAdmin(api);
   mountLicenseApi(api, signing);
   mountCloud(api, signing);
+  mountAiUsage(api);
   mountUpdatesApi(api, cfg.releasesDir);
 
   const app = express();

@@ -1,0 +1,22 @@
+[
+  {
+    "name": "Portal search: something for oysters",
+    "feature": "portalSearch",
+    "input": {
+      "text": "配生蠔的酒",
+      "lang": "zh-TW",
+      "wines": [
+        { "ref": "w1", "label": "Krug · Grande Cuvée · NV · Champagne · France · Champagne · 香檳" },
+        {
+          "ref": "w2",
+          "label": "Leroy · Bourgogne · 2015 · Bourgogne · France · Red Wine · 紅葡萄酒 · Pinot Noir"
+        },
+        {
+          "ref": "w3",
+          "label": "Raveneau · Chablis 1er Cru Montée de Tonnerre · 2019 · Bourgogne · France · White Wine · 白葡萄酒 · Chardonnay"
+        }
+      ]
+    },
+    "expect": { "refs": { "contains": "w" } }
+  }
+]

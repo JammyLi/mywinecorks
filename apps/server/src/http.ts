@@ -12,6 +12,7 @@ import type { Actor } from './services/audit.ts';
 import type { LicenseView, Licensing } from './services/licensing.ts';
 import type { Updater } from './services/updates.ts';
 import type { PortalClient } from './services/portal.ts';
+import type { AiClient } from './services/ai.ts';
 
 export const SESSION_COOKIE = 'mwc_s';
 export const SESSION_DAYS = 14;
@@ -52,6 +53,7 @@ export interface Ctx {
   install?: Licensing;
   updater?: Updater;
   portal?: PortalClient;
+  ai?: AiClient;
 }
 
 declare global {
@@ -145,9 +147,10 @@ export function sessionMiddleware(
   licensing?: Licensing,
   updater?: Updater,
   portal?: PortalClient,
+  ai?: AiClient,
 ) {
   return (req: Request, _res: Response, next: NextFunction) => {
-    req.ctx = { cfg, registry, licensing, install: licensing, updater, portal };
+    req.ctx = { cfg, registry, licensing, install: licensing, updater, portal, ai };
     const raw = req.cookies?.[SESSION_COOKIE] as string | undefined;
     if (raw && raw.includes('.')) {
       const dot = raw.indexOf('.');

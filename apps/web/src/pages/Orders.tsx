@@ -1,4 +1,5 @@
 /** Orders (ported from MyWines Orders.jsx / OrderEdit.jsx / OrderShip.jsx). */
+import { OrderFromMessage, OrderSuggestions, PriceSuggest, useAi } from './Ai.tsx';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ORDER_STATUSES, PAYMENT_METHODS, lineAmount, minorToInput, orderTotals, toMinor } from '@mwc/shared';
@@ -168,6 +169,8 @@ export function OrdersPage() {
     setSp(n, { replace: true });
   };
   const prices = sees('seeCustomerPrices');
+  const ai = useAi();
+  const [fromMsg, setFromMsg] = useState(false);
   const all = data ? Object.values(data.counts).reduce((a, b) => a + b, 0) : 0;
   return (
     <div className="page">
@@ -179,6 +182,12 @@ export function OrdersPage() {
             {t('exp.title')}
           </a>
         )}
+        {can('orders', 'create') && ai('orderMessage') && (
+          <button className="btn" onClick={() => setFromMsg(true)}>
+            ✦ {t('ai.orderFromMessage')}
+          </button>
+        )}
+        {fromMsg && <OrderFromMessage onClose={() => setFromMsg(false)} />}
         {can('orders', 'create') && (
           <button className="btn primary" onClick={() => newOrder({ wineNos: [] })}>
             ＋ {t('ord.new')}
@@ -694,6 +703,14 @@ export function OrderPage() {
                           onChange={(e) => setL(i, { price: e.target.value.replace(/[^\d.]/g, '') })}
                           aria-label={t('ord.unitPrice')}
                         />
+                        {editable && (
+                          <PriceSuggest
+                            wineNo={l.wineNo}
+                            customerId={form.customerId ? Number(form.customerId) : null}
+                            currency={cur}
+                            onPick={(m) => setL(i, { price: minorToInput(m, cur) })}
+                          />
+                        )}
                         {x.priceSource &&
                           x.priceSource !== 'manual' &&
                           minorToInput(x.unitPrice ?? null, cur) === l.price && (
@@ -749,6 +766,16 @@ export function OrderPage() {
             </tbody>
           </table>
         </div>
+        {editable && (
+          <OrderSuggestions
+            orderNo={no!}
+            onAdd={(wineNo) =>
+              run(() =>
+                api('/orders/' + no + '/lines', { body: { wineNos: [wineNo] } }).then(() => undefined),
+              )
+            }
+          />
+        )}
         {editable && (
           <div className="row" style={{ alignItems: 'flex-start' }}>
             <input

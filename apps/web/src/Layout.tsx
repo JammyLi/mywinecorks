@@ -1,15 +1,26 @@
 import { Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { BottleMark, Seg, useI18n } from '@mwc/ui';
-import type { Module } from '@mwc/shared';
+import type { AiSwitch, Module } from '@mwc/shared';
+import { useAi } from './pages/Ai.tsx';
 import { api } from './api.ts';
 import { forgetDevice, useSession, useTheme } from './session.tsx';
 import { Icon } from './icons.tsx';
 import { LicenseBanner, LockScreen } from './pages/License.tsx';
 
 /** Navigation mirrors MyWines; items appear only when the role can view them. */
-const NAV: { to: string; icon: string; key: string; module?: Module; action?: string; end?: boolean }[] = [
+const NAV: {
+  to: string;
+  icon: string;
+  key: string;
+  module?: Module;
+  action?: string;
+  end?: boolean;
+  ai?: AiSwitch;
+}[] = [
   { to: '/', icon: 'dash', key: 'nav.overview', end: true },
   { to: '/search', icon: 'search', key: 'nav.search', module: 'inventory' },
+  { to: '/ask', icon: 'chat', key: 'nav.ask', module: 'inventory', ai: 'ask' },
+  { to: '/drinking', icon: 'glass', key: 'nav.drinking', module: 'inventory' },
   { to: '/storage', icon: 'storage', key: 'nav.storage', module: 'locations' },
   { to: '/move', icon: 'move', key: 'nav.move', module: 'inventory', action: 'edit' },
   { to: '/stockout', icon: 'out', key: 'nav.stockout', module: 'inventory', action: 'edit' },
@@ -29,6 +40,7 @@ const NAV: { to: string; icon: string; key: string; module?: Module; action?: st
 export function Layout() {
   const { t, lang, setLang } = useI18n();
   const { me, setMe, can } = useSession();
+  const ai = useAi();
   const [theme, setTheme] = useTheme();
   const nav = useNavigate();
   const loc = useLocation();
@@ -40,7 +52,10 @@ export function Layout() {
   }
   const locked = me.license.state === 'locked';
   const items = NAV.filter(
-    (i) => (!locked || i.to === '/settings') && (!i.module || can(i.module, i.action ?? 'view')),
+    (i) =>
+      (!locked || i.to === '/settings') &&
+      (!i.module || can(i.module, i.action ?? 'view')) &&
+      (!i.ai || ai(i.ai)),
   );
   const changeLang = (l: 'zh-TW' | 'en') => {
     setLang(l);
@@ -154,7 +169,10 @@ export function More() {
     setLang(l);
     api('/me', { method: 'PATCH', body: { lang: l } }).catch(() => {});
   };
-  const items = NAV.filter((i) => i.to !== '/' && (!i.module || can(i.module, i.action ?? 'view')));
+  const ai = useAi();
+  const items = NAV.filter(
+    (i) => i.to !== '/' && (!i.module || can(i.module, i.action ?? 'view')) && (!i.ai || ai(i.ai)),
+  );
   return (
     <div className="page">
       <h1>{t('nav.more')}</h1>

@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.8.0 — M8 AI features (2026-11-26)
+- **AI gateway** (`apps/ai-gateway`, cloud): the only place with the Claude API key. Servers
+  register with their license (needs the *AI* module) and sign each call; usage is counted per
+  license with a monthly cap; prompts and answers are not stored. Without an API key it answers with
+  fixed examples in development, so everything can be tried now.
+- **New wine from label photos:** front/back label → producer, name, vintage, country, region,
+  classification, type, size, grapes filled in; wines already in the cellar are shown.
+- **Stock in from an invoice** (Import › Stock in from invoice; roles that see cost): PDF or photo →
+  merchant, invoice no., date, currency, extra costs per bottle and each line matched to a wine
+  (or created) → added to stock with cost after you check each line.
+- **Search in your own words** on the stock search ("香檳 5000 以下", "2010 Bordeaux in Neihu") →
+  the normal filters, shown and editable.
+- **Drinking windows** page: entering this year / in window / past / too young / no window;
+  AI suggests windows for wines without one, saved only when you click "Use this".
+- **Ask your cellar:** questions about stock, purchases, value and sales, answered with figures
+  calculated on your own server under the asking user's permissions; wines in the answer link to
+  their page.
+- **Price suggestion** (✦ beside an order line's price, roles that see customer prices) from the
+  market price, suggested price, this customer's past prices and — only for roles that see cost —
+  the cost.
+- **Order from a message:** paste a LINE / WhatsApp / email message or add a photo of a handwritten
+  list → customer, wines and quantities matched → check → draft order.
+- **Order suggestions** (no AI cost): other vintages when a line is short, wines often bought
+  together. **Overview suggestions:** wines past or entering their window, without a window, or
+  without a recent market price.
+- **Customer portal:** search in your own words and "Ask about this wine" — only that customer's
+  wines and own price are sent.
+- **Settings › AI:** switch each feature on or off; this month's usage. **HQ › AI usage:** tokens
+  per client and feature, monthly caps.
+- **Accuracy checks:** `pnpm --filter @mwc/ai-gateway eval` scores the prompts against test cases
+  (real labels and invoices go in `apps/ai-gateway/eval/private/`, not committed).
+
 ## 0.7.0 — M7 Catalogs and the customer portal (2026-11-26)
 - **Customer groups** (VIP, Restaurants, Friends…) under Customers › Groups.
 - **Catalogs:** wines picked by hand, from a saved list, or by search conditions; shown to groups

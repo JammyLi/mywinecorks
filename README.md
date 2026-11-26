@@ -80,4 +80,5 @@ Other commands: `pnpm test`, `pnpm typecheck`, `pnpm --filter @mwc/web build`
 | M5 Licensing + HQ | ✅ done |
 | M6 Packaging (Windows installer, Docker, in-app updates, backups), cloud workspaces | ✅ done (installer not code-signed yet) |
 | M7 Catalogs + customer portal | ✅ done |
-| M8 AI features | next |
+| M8 AI features | ✅ done (with a stand-in for Claude until the API key exists) |
+| M9 Website | next |

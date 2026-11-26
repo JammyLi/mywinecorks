@@ -1,4 +1,5 @@
 import { AddToListDialog } from './Lists.tsx';
+import { NlSearch } from './Ai.tsx';
 import { useNewOrder } from './Orders.tsx';
 import { ExportDialog } from './Export.tsx';
 import { useEffect, useState } from 'react';
@@ -189,6 +190,7 @@ export function Search() {
           {nf ? ` (${nf})` : ''}
         </button>
       </form>
+      <NlSearch />
       <div className="layout-search">
         <aside className={'card filters' + (open ? '' : ' closed')} aria-label={t('search.filters')}>
           <div className="row" style={{ justifyContent: 'space-between' }}>

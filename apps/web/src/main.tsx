@@ -22,6 +22,7 @@ import { SessionProvider, useSession, useTheme } from './session.tsx';
 import { Layout, More } from './Layout.tsx';
 import { Enroll, Forgot, Login, Setup, Welcome } from './pages/Auth.tsx';
 import { ComingSoon, Overview } from './pages/Overview.tsx';
+import { AiSettingsPage, AskPage, DrinkingPage, InvoicePage } from './pages/Ai.tsx';
 import { RoleEditor, Roles, Security, SettingsIndex, SettingsLayout, Users } from './pages/Settings.tsx';
 import { Audit } from './pages/Audit.tsx';
 import { ImportPage } from './pages/Import.tsx';
@@ -131,8 +132,12 @@ function App() {
           <Route path="license" element={<LicensePage />} />
           <Route path="updates" element={<UpdatesPage />} />
           <Route path="portal" element={<PortalSettings />} />
+          <Route path="ai" element={<AiSettingsPage />} />
         </Route>
         <Route path="more" element={<More />} />
+        <Route path="ask" element={<AskPage />} />
+        <Route path="drinking" element={<DrinkingPage />} />
+        <Route path="import/invoice" element={<InvoicePage />} />
         <Route path="orders" element={<OrdersPage />} />
         <Route path="orders/:no" element={<OrderPage />} />
         <Route path="orders/:no/ship" element={<OrderShipPage />} />

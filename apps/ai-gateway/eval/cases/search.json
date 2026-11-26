@@ -1,0 +1,48 @@
+[
+  {
+    "name": "Champagne under 5000 (zh)",
+    "feature": "search",
+    "input": {
+      "text": "香檳 5000 以下",
+      "currency": "TWD",
+      "types": [
+        { "code": "CP", "en": "Champagne", "zh": "香檳" },
+        { "code": "R", "en": "Red Wine", "zh": "紅葡萄酒" },
+        { "code": "W", "en": "White Wine", "zh": "白葡萄酒" }
+      ],
+      "cellars": ["內湖", "Xinyi"],
+      "countries": ["France", "Italy"],
+      "regions": ["Bourgogne", "Bordeaux", "Champagne", "Piemonte"]
+    },
+    "expect": { "types": ["CP"], "priceMax": 5000, "priceMin": null }
+  },
+  {
+    "name": "2010 Bordeaux in a cellar (en)",
+    "feature": "search",
+    "input": {
+      "text": "2010 Bordeaux in Xinyi",
+      "currency": "TWD",
+      "types": [{ "code": "R", "en": "Red Wine", "zh": "紅葡萄酒" }],
+      "cellars": ["內湖", "Xinyi"],
+      "countries": ["France"],
+      "regions": ["Bourgogne", "Bordeaux"]
+    },
+    "expect": { "region": "Bordeaux", "vintageFrom": "2010", "vintageTo": "2010", "cellar": "Xinyi" }
+  },
+  {
+    "name": "Burgundy red, translated (zh)",
+    "feature": "search",
+    "input": {
+      "text": "布根地紅酒 2015 年以後",
+      "currency": "TWD",
+      "types": [
+        { "code": "R", "en": "Red Wine", "zh": "紅葡萄酒" },
+        { "code": "W", "en": "White Wine", "zh": "白葡萄酒" }
+      ],
+      "cellars": [],
+      "countries": ["France"],
+      "regions": ["Bourgogne", "Bordeaux"]
+    },
+    "expect": { "types": ["R"], "region": "Bourgogne", "vintageFrom": "2015" }
+  }
+]

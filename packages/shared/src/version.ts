@@ -1,5 +1,5 @@
 /** The app version (package builds stamp the same number into their file names). */
-export const APP_VERSION = '0.7.0';
+export const APP_VERSION = '0.8.0';
 
 declare const __MWC_RELEASE__: boolean | undefined;
 /**

@@ -52,6 +52,7 @@ interface Info {
   accent: string | null;
   ageMin: number;
   currency: string;
+  ai?: boolean;
 }
 interface Me {
   name: string;
@@ -563,8 +564,28 @@ function Wines({ only }: { only?: 'favorites' }) {
   const [q, setQ] = useState('');
   const [cat, setCat] = useState<number | null>(null);
   const [type, setType] = useState('');
+  const [ai, setAi] = useState<{ refs: string[]; explanation: string } | null>(null);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiErr, setAiErr] = useState<string | null>(null);
+  const askAi = async () => {
+    setAiBusy(true);
+    setAiErr(null);
+    try {
+      setAi(
+        await call<{ refs: string[]; explanation: string }>(`/p/${handle}/ai/search`, { body: { text: q } }),
+      );
+    } catch (e) {
+      setAiErr(t((e as PApiError).code === 'aiTooMany' ? 'p.err.aiTooMany' : 'p.err.ai'));
+    } finally {
+      setAiBusy(false);
+    }
+  };
   const items = useMemo(() => {
     if (!data) return [];
+    if (ai) {
+      const byRef = new Map(data.items.map((i) => [i.ref, i]));
+      return ai.refs.map((r) => byRef.get(r)).filter((i): i is Item => !!i);
+    }
     const s = q.trim().toLowerCase();
     return data.items
       .filter((i) => (only === 'favorites' ? i.fav : true))
@@ -583,7 +604,7 @@ function Wines({ only }: { only?: 'favorites' }) {
           (a.avail.kind === 'soldOut' ? 1 : 0) - (b.avail.kind === 'soldOut' ? 1 : 0) ||
           a.winery.localeCompare(b.winery),
       );
-  }, [data, q, cat, type, only]);
+  }, [data, q, cat, type, only, ai]);
   if (error) return <div className="alert err">{String((error as PApiError).code)}</div>;
   if (!data) return <div className="muted">…</div>;
   const types = [
@@ -599,16 +620,36 @@ function Wines({ only }: { only?: 'favorites' }) {
   return (
     <div className="stack" style={{ gap: 16 }}>
       {!only && intro && <p className="p-intro">{intro}</p>}
+      {ai && (
+        <div className="small muted">
+          ✦ {ai.explanation} · {t('p.aiNote')}{' '}
+          <button className="btn ghost sm" onClick={() => setAi(null)}>
+            {t('p.aiClear')}
+          </button>
+        </div>
+      )}
+      {aiErr && <div className="alert err">{aiErr}</div>}
       <div className="row" style={{ flexWrap: 'wrap' }}>
         <input
           className="input"
           type="search"
           placeholder={t('p.search')}
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          onChange={(e) => (setQ(e.target.value), setAi(null))}
+          onKeyDown={(e) => e.key === 'Enter' && info?.ai && q.trim() && askAi()}
           style={{ maxWidth: 320 }}
           aria-label={t('p.search')}
         />
+        {info?.ai && !only && (
+          <button
+            className="btn sm"
+            disabled={aiBusy || !q.trim()}
+            onClick={askAi}
+            title={t('p.aiSearchHint')}
+          >
+            {aiBusy ? '…' : '✦ ' + t('p.aiSearch')}
+          </button>
+        )}
         {types.length > 1 && (
           <select
             className="input"
@@ -684,7 +725,7 @@ function WinePage() {
   const { t } = usePT();
   const { lang } = useI18n();
   const toast = useToast();
-  const { handle, base } = usePortal();
+  const { handle, base, info } = usePortal();
   const { data, error, setData } = useCatalog();
   useEnded(error);
   if (!data) return <div className="muted">…</div>;
@@ -750,8 +791,61 @@ function WinePage() {
                 <FragmentKV key={k} k={k} v={v!} />
               ))}
           </dl>
+          {info?.ai && <WineQa wineRef={i.ref} />}
         </div>
       </div>
+    </div>
+  );
+}
+function WineQa({ wineRef }: { wineRef: string }) {
+  const { t } = usePT();
+  const { handle } = usePortal();
+  const [q, setQ] = useState('');
+  const [a, setA] = useState<{ q: string; answer: string }[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const ask = async () => {
+    setBusy(true);
+    setErr(null);
+    try {
+      const r = await call<{ answer: string }>(`/p/${handle}/ai/qa`, { body: { ref: wineRef, question: q } });
+      setA([{ q, answer: r.answer }, ...a]);
+      setQ('');
+    } catch (e) {
+      setErr(t((e as PApiError).code === 'aiTooMany' ? 'p.err.aiTooMany' : 'p.err.ai'));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="card stack">
+      <b>✦ {t('p.aiAsk')}</b>
+      <form
+        className="row"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (q.trim().length > 1) ask();
+        }}
+      >
+        <input
+          className="input"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder={t('p.aiAskPlaceholder')}
+          style={{ flex: 1 }}
+        />
+        <button className="btn sm" disabled={busy || q.trim().length < 2}>
+          {busy ? '…' : t('p.aiAskGo')}
+        </button>
+      </form>
+      {err && <div className="alert err">{err}</div>}
+      {a.map((x, k) => (
+        <div key={a.length - k}>
+          <div className="small muted">{x.q}</div>
+          <div style={{ whiteSpace: 'pre-wrap' }}>{x.answer}</div>
+        </div>
+      ))}
+      {a.length > 0 && <div className="small muted">{t('p.aiNote')}</div>}
     </div>
   );
 }

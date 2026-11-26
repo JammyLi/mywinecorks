@@ -91,6 +91,7 @@ export function mountCustomer(api: Api) {
       accent: i.accent ?? null,
       ageMin: i.ageMin ?? 18,
       currency: i.currency ?? 'TWD',
+      ai: !!i.ai && !!req.p.cfg.aiServiceToken,
     };
   });
 

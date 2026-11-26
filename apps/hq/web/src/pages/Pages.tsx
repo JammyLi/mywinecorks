@@ -1718,3 +1718,112 @@ export function CloudPage() {
     </div>
   );
 }
+
+// ---------------------------------------------------------------- AI usage (from the AI gateway)
+interface AiUsage {
+  configured: boolean;
+  keySet?: boolean;
+  defaultCap?: number;
+  clients?: { lid: string; client: string }[];
+  caps?: { lid: string; monthly_tokens: number }[];
+  rows?: {
+    lid: string;
+    client: string;
+    month: string;
+    feature: string;
+    tokens: number;
+    calls: number;
+    failed: number;
+  }[];
+}
+export function AiUsagePage() {
+  const { t } = useHqT();
+  const toast = useToast();
+  const { can } = useHq();
+  const [d, reload] = useLoad<AiUsage>('/ai-usage');
+  const month = new Date().toISOString().slice(0, 7);
+  const lids = [...new Set([...(d?.clients ?? []).map((c) => c.lid), ...(d?.rows ?? []).map((r) => r.lid)])];
+  const name = (lid: string) =>
+    d?.clients?.find((c) => c.lid === lid)?.client || d?.rows?.find((r) => r.lid === lid)?.client || lid;
+  const cap = (lid: string) => d?.caps?.find((c) => c.lid === lid)?.monthly_tokens ?? null;
+  const sum = (lid: string, m: string, k: 'tokens' | 'calls' | 'failed') =>
+    (d?.rows ?? []).filter((r) => r.lid === lid && r.month === m).reduce((s, r) => s + r[k], 0);
+  const n = (x: number) => x.toLocaleString();
+  const setCap = async (lid: string) => {
+    const v = window.prompt(t('hq.ai.capPrompt'), String(cap(lid) ?? d?.defaultCap ?? ''));
+    if (v === null) return;
+    await api('/ai-usage/cap', { body: { lid, monthlyTokens: v.trim() === '' ? null : Number(v) } });
+    toast(t('hq.saved'));
+    reload();
+  };
+  return (
+    <div className="page">
+      <h1>{t('hq.nav.ai')}</h1>
+      {d && !d.configured && <div className="alert warn">{t('hq.ai.notConfigured')}</div>}
+      {d?.configured && !d.keySet && <div className="alert warn">{t('hq.ai.noKey')}</div>}
+      {d?.configured && (
+        <div className="card" style={{ padding: 0 }}>
+          <table className="t">
+            <thead>
+              <tr>
+                <th>{t('hq.client')}</th>
+                <th>{t('hq.ai.thisMonth')}</th>
+                <th>{t('hq.ai.cap')}</th>
+                <th>{t('hq.ai.byFeature')}</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {lids.map((lid) => {
+                const used = sum(lid, month, 'tokens');
+                const c = cap(lid) ?? d.defaultCap ?? 0;
+                return (
+                  <tr key={lid}>
+                    <td>
+                      {name(lid)}
+                      <div className="muted small mono">{lid}</div>
+                    </td>
+                    <td>
+                      {n(used)} · {n(sum(lid, month, 'calls'))} {t('hq.ai.calls')}
+                      {sum(lid, month, 'failed') > 0 && (
+                        <span className="muted small">
+                          {' '}
+                          ({n(sum(lid, month, 'failed'))} {t('hq.ai.failed')})
+                        </span>
+                      )}
+                      {c > 0 && used / c > 0.8 && (
+                        <span className="tag">{Math.round((used / c) * 100)}%</span>
+                      )}
+                    </td>
+                    <td>
+                      {n(c)}
+                      {cap(lid) === null && <span className="muted small"> ({t('hq.ai.default')})</span>}
+                    </td>
+                    <td className="small">
+                      {(d.rows ?? [])
+                        .filter((r) => r.lid === lid && r.month === month)
+                        .map((r) => `${r.feature} ${n(r.tokens)}`)
+                        .join(' · ') || '—'}
+                    </td>
+                    <td>
+                      {can('subs.edit') && (
+                        <button className="btn sm" onClick={() => setCap(lid)}>
+                          {t('hq.ai.setCap')}
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {!lids.length && (
+            <p className="muted" style={{ padding: 16 }}>
+              {t('hq.none')}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

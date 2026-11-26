@@ -49,9 +49,26 @@ purchase, a decision, a test on real hardware). Tick items off here when done.
 - [ ] **Check the alcohol-sale wording** in the portal (age confirmation, licence confirmation,
       "request, not a purchase") with someone who knows Taiwan / US rules.
 
+## AI (M8)
+
+- [ ] **Claude API key:** in the Claude Console (console.anthropic.com, Getfocus organisation; a
+      Max/Team plan's monthly API credit can be used by linking it) create a key per environment and
+      put it in `apps/ai-gateway/.env` as `ANTHROPIC_API_KEY=…` on your Mac (never in chat or git).
+      Until then every AI feature answers with fixed examples.
+- [ ] **Accuracy test sets:** collect about **100 real label photos** (front + back) and **20–30 real
+      merchant invoices** (PDF or photo) with the correct answers; I will turn them into test cases in
+      `apps/ai-gateway/eval/private/` (kept out of git) and tune the prompts until labels reach ≥ 90 %
+      correct fields (BUILD-PLAN M8 exit check).
+- [ ] **Issue licenses with the AI module** in HQ for clients who should have AI (trial installs have
+      none). Decide the monthly token allowance per plan (default 3 M tokens ≈ a few hundred label
+      reads).
+- [ ] **Deploy the AI gateway** (`apps/ai-gateway`, PostgreSQL) at `ai.mywinecorks.com` with the API
+      key, the HQ public key (`LICENSE_PUBLIC_KEYS`) and two random tokens: `AI_SERVICE_TOKEN` (same
+      value in portal-service) and `AI_ADMIN_TOKEN` (same value in HQ, with `AI_URL`). On your Mac
+      `./scripts/start.sh` creates these tokens by itself.
+
 ## Later
 
-- [ ] **Claude API key for the AI gateway** (M8; Getfocus account, separate key per environment).
 - [ ] **Optional: a GitHub token for Claude** so it can open pull requests and read CI logs itself
       (`gh auth` currently fails in Claude's workspace; pushing works).
 - [ ] **Move your brother's real MyWines data** when MyWineCorks replaces MyWines (M10 beta).

@@ -13,10 +13,12 @@ import { newKeyPair, signLicense } from '@mwc/license';
 import { createPortal } from '../../portal-service/src/app.ts';
 import { loadConfig as portalConfig } from '../../portal-service/src/config.ts';
 import { openDb } from '../../portal-service/src/db.ts';
+import { mountAi as portalAi } from '../../portal-service/src/routes/ai.ts';
 import { makeServer, setupAndLogin, type Server } from './helpers.ts';
 
 const signing = newKeyPair();
 let portal: Awaited<ReturnType<typeof createPortal>>;
+let portalCfg: ReturnType<typeof portalConfig>;
 let s: Server;
 let owner: Awaited<ReturnType<typeof setupAndLogin>>;
 let H = 'lee-cellar';
@@ -40,14 +42,12 @@ const via =
 
 beforeAll(async () => {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mwc-portal-'));
-  portal = await createPortal(
-    {
-      ...portalConfig({ DATA_DIR: dataDir }),
-      publicUrl: 'http://portal.test',
-      licenseKeys: () => [signing.publicKey],
-    },
-    { sql: await openDb(null, null) },
-  );
+  portalCfg = {
+    ...portalConfig({ DATA_DIR: dataDir }),
+    publicUrl: 'http://portal.test',
+    licenseKeys: () => [signing.publicKey],
+  };
+  portal = await createPortal(portalCfg, { sql: await openDb(null, null) });
 });
 
 beforeEach(async () => {
@@ -65,7 +65,7 @@ beforeEach(async () => {
       client: 'Lee Cellar',
       kind: 'selfhost',
       plan: 'Merchant',
-      modules: ['inventory', 'portal'],
+      modules: ['inventory', 'portal', 'ai'],
       limits: { bottles: null, ordersPerMonth: null, users: null },
       issuedAt: new Date().toISOString(),
       expiresAt: new Date(Date.now() + 300 * 86400_000).toISOString(),
@@ -321,6 +321,50 @@ describe('customer portal (M7)', () => {
       'portalRevoked',
     ]);
     expect(log.at(-1)!.reason).toBe('Unpaid invoices');
+  });
+
+  it('portal AI: only this customer’s wines and price go to the AI gateway', async () => {
+    const { inv } = await setUp();
+    const c = request.agent(portal.app);
+    await c
+      .post(`/api/p/${H}/auth/accept`)
+      .send({ code: inv.code, password: 'Chen-portal-pw-1', age: true })
+      .expect(200);
+    // Not offered while the portal service has no AI token.
+    expect((await c.get(`/api/p/${H}/info`)).body.ai).toBe(false);
+    portalCfg.aiServiceToken = 'svc-token';
+    expect((await c.get(`/api/p/${H}/info`)).body.ai).toBe(true);
+    const cat = (await c.get(`/api/p/${H}/catalog`).expect(200)).body;
+    const krug = cat.items.find((i: { winery: string }) => i.winery === 'Krug');
+    const bodies: string[] = [];
+    portalAi.fetcher = async (url, init) => {
+      bodies.push(String(url) + ' ' + String(init?.body));
+      expect((init?.headers as Record<string, string>).authorization).toBe('Bearer svc-token');
+      const res = String(url).endsWith('portalSearch')
+        ? { result: { refs: [krug.ref, 'w-not-theirs'], explanation: 'Champagne' } }
+        : { result: { answer: 'Lovely with oysters.' } };
+      return new Response(JSON.stringify(res), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    };
+    try {
+      const sr = await c.post(`/api/p/${H}/ai/search`).send({ text: 'bubbles' }).expect(200);
+      expect(sr.body.refs).toEqual([krug.ref]);
+      const qa = await c.post(`/api/p/${H}/ai/qa`).send({ ref: krug.ref, question: 'Food?' }).expect(200);
+      expect(qa.body.answer).toContain('oysters');
+      const all = bodies.join('\n');
+      expect(all).toContain('4200 TWD');
+      for (const secret of ['1777', '1555', 'Merchant Andy', 'Secret Cellar', 'RACK-Q7', '1234', 'Other'])
+        expect(all).not.toContain(secret);
+      // Switched off in Settings › AI → gone from the portal after the next sync.
+      await owner.patch('/api/ai/settings').send({ portal: false }).expect(200);
+      await s.portal.sync(s.registry.get('demo')!);
+      expect((await c.post(`/api/p/${H}/ai/search`).send({ text: 'x' })).body.error).toBe('aiOff');
+    } finally {
+      portalAi.fetcher = undefined;
+      portalCfg.aiServiceToken = null;
+    }
   });
 
   it('access requests from strangers wait for staff', async () => {

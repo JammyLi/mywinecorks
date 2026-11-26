@@ -16,6 +16,9 @@ export interface PortalConfig {
   licenseKeys: () => string[];
   /** The portal's own private keys (JSON {signing, encryption}); development: generated in data/. */
   portalKeys: string | null;
+  /** AI gateway for customers' search and wine questions (AI_URL + AI_SERVICE_TOKEN); off when unset. */
+  aiUrl: string;
+  aiServiceToken: string | null;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): PortalConfig {
@@ -32,6 +35,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): PortalConfig {
     mailFrom: env.MAIL_FROM || 'MyWineCorks <no-reply@mywinecorks.com>',
     secureCookies: publicUrl.startsWith('https://'),
     production,
+    aiUrl: (env.AI_URL || (production ? 'https://ai.mywinecorks.com' : 'http://localhost:3600')).replace(
+      /\/$/,
+      '',
+    ),
+    aiServiceToken: env.AI_SERVICE_TOKEN || null,
     licenseKeys: () => {
       const v = env.LICENSE_PUBLIC_KEYS?.trim() || env.LICENSE_PUBLIC_KEY?.trim();
       const out: string[] = [];

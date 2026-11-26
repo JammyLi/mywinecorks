@@ -33,6 +33,8 @@ export interface Config {
   launched: boolean;
   /** Cloud customer portal service (PORTAL_URL). The server only ever calls out to it. */
   portalUrl: string;
+  /** Cloud AI gateway (AI_URL). Holds the Claude API key; the server only ever calls out to it. */
+  aiUrl: string;
   /** Portal public keys {encryption, signing} for package files: embedded in releases, else PORTAL_PUBLIC_KEYS / dev file. */
   portalKeys: () => { encryption: string; signing: string } | null;
 }
@@ -69,6 +71,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     portalUrl: (
       env.PORTAL_URL || (production ? 'https://portal.mywinecorks.com' : 'http://localhost:3900')
     ).replace(/\/$/, ''),
+    aiUrl: (env.AI_URL || (production ? 'https://ai.mywinecorks.com' : 'http://localhost:3600')).replace(
+      /\/$/,
+      '',
+    ),
     portalKeys: () => portalKeys(env, production),
   };
 }

@@ -3,6 +3,7 @@ import { useI18n } from '@mwc/ui';
 import { useSession } from '../session.tsx';
 import { useApi, useFmt } from '../hooks.ts';
 import { useFilters, useTypeName } from '../inv.tsx';
+import { AiSuggestionsCard } from './Ai.tsx';
 
 interface Dash {
   currency: string;
@@ -40,6 +41,7 @@ export function Overview() {
           </Link>
         )}
       </div>
+      <AiSuggestionsCard />
       {d && d.bottles === 0 && (
         <div className="card row">
           <span style={{ flex: 1 }}>{t('ov.empty')}</span>

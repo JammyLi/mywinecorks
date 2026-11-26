@@ -70,6 +70,8 @@ export interface PortalSnapshot {
     ageMin: number;
     blockedStates: string[];
     softHoldHours: number;
+    /** AI search and wine questions offered on the portal (license has AI and the switch is on). */
+    ai?: boolean;
   };
   catalogs: { id: number; name: string; nameEn: string | null; intro: string | null }[];
   wines: PortalWine[];
