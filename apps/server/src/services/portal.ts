@@ -6,6 +6,7 @@
  */
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import zlib from 'node:zlib';
 import {
   lineAmount,
   PORTAL_PROTOCOL,
@@ -20,7 +21,7 @@ import type { DB, Registry, TenantRow } from '../db/registry.ts';
 import { nowIso } from '../db/registry.ts';
 import { ApiError, badRequest } from '../errors.ts';
 import { audit, type Actor } from './audit.ts';
-import { availableByWine, customerEntries, fileHash, photoFiles, publicWine, wineRef } from './catalogs.ts';
+import { availableByWine, customerEntries, newCatalogCache, fileHash, photoFiles, publicWine, wineRef } from './catalogs.ts';
 import { settings } from './inventory.ts';
 import { aiSettings } from './ai.ts';
 import type { LicenseView } from './licensing.ts';
@@ -46,6 +47,9 @@ export interface SyncState {
   lastOk: string | null;
   error: string | null;
   lastHash: string | null;
+  /** When the last full copy was sent (unchanged copies in between only carry requests and acks). */
+  lastFullAt?: string | null;
+  lastSeq?: number;
   ack: { requests: string[]; access: string[]; profile: number[]; accepted: string[] };
   portalKeys: { encryption: string; signing: string } | null;
 }
@@ -187,10 +191,11 @@ export function buildSnapshot(
   }[];
   const wines = new Set<number>();
   const cats = new Map<number, { id: number; name: string; nameEn: string | null; intro: string | null }>();
+  const cache = newCatalogCache();
   const customers: PortalCustomer[] = custs.map((c) => {
     const { catalogs, entries } =
       c.portal_status === 'active' || c.portal_status === 'invited'
-        ? customerEntries(db, c.id, avail)
+        ? customerEntries(db, c.id, avail, cache)
         : { catalogs: [], entries: [] };
     for (const k of catalogs) cats.set(k.id, { id: k.id, name: k.name, nameEn: k.name_en, intro: k.intro });
     for (const e of entries) wines.add(e.wineId);
@@ -414,18 +419,22 @@ export class PortalClient {
     const sig = crypto
       .sign(null, Buffer.from(portalSigningText(ts, method, path, sha256(data))), k.privateKey)
       .toString('base64url');
+    // Big snapshots travel compressed; the signature covers the uncompressed bytes.
+    const zip = !raw && data.length > 64 * 1024;
+    const wire = zip ? zlib.gzipSync(data) : data;
     let res: Response;
     try {
       res = await this.fetcher(this.cfg.portalUrl + path, {
         method,
         headers: {
+          ...(zip ? { 'content-encoding': 'gzip' } : {}),
           'content-type': raw ? 'application/octet-stream' : 'application/json',
           'x-mwc-key': st.registeredKey ?? '',
           'x-mwc-ts': ts,
           'x-mwc-sig': sig,
         },
-        body: method === 'GET' ? undefined : new Uint8Array(data),
-        signal: AbortSignal.timeout(30_000),
+        body: method === 'GET' ? undefined : new Uint8Array(wire),
+        signal: AbortSignal.timeout(60_000),
       });
     } catch {
       throw new ApiError(502, 'portalUnreachable');
@@ -474,7 +483,15 @@ export class PortalClient {
   }
 
   /** Send the snapshot, upload missing photos, bring back requests. */
-  async sync(t: TenantRow) {
+  private chains = new Map<string, Promise<unknown>>();
+  /** One sync at a time per workspace (timer, "Sync now" and access changes can overlap). */
+  sync(t: TenantRow): ReturnType<PortalClient['syncNow']> {
+    const next = (this.chains.get(t.slug) ?? Promise.resolve()).catch(() => undefined).then(() => this.syncNow(t));
+    this.chains.set(t.slug, next);
+    return next;
+  }
+
+  private async syncNow(t: TenantRow) {
     const db = this.registry.tenantDb(t.slug);
     const ps = portalSettings(db, t.slug);
     if (!ps.enabled) return { skipped: true as const };
@@ -492,15 +509,31 @@ export class PortalClient {
         this.license(t.slug).hasModule('ai') && aiSettings(db).portal,
       );
       snapshot.licenseKey = this.licenseKey(t.slug) ?? undefined;
-      const hash = sha256(JSON.stringify({ ...snapshot, seq: 0 }));
-      const inb = await this.call<PortalInbound>(db, 'POST', '/api/tenant/sync', snapshot);
+      // Always newer than the last one sent, even within the same millisecond.
+      if (st.lastSeq && snapshot.seq <= st.lastSeq) snapshot.seq = st.lastSeq + 1;
+      const hash = sha256(JSON.stringify({ ...snapshot, seq: 0, requests: [], ack: null }));
+      // Same as last time (and sent in full within the hour): send only requests and acknowledgements.
+      const same =
+        hash === st.lastHash && !!st.lastFullAt && Date.now() - Date.parse(st.lastFullAt) < 3600_000;
+      const send: PortalSnapshot = same
+        ? { ...snapshot, unchanged: true, catalogs: [], wines: [], customers: [] }
+        : snapshot;
+      const inb = await this.call<PortalInbound>(db, 'POST', '/api/tenant/sync', send);
       for (const h of inb.photosMissing.slice(0, 50)) {
         const f = photos.get(h);
         if (f) await this.call(db, 'POST', `/api/tenant/photo/${h}`, undefined, fs.readFileSync(f));
       }
       const r = applyInbound(db, inb);
       const now = nowIso();
-      saveSync(db, { ...syncState(db), lastAt: now, lastOk: now, error: null, lastHash: hash });
+      saveSync(db, {
+        ...syncState(db),
+        lastAt: now,
+        lastOk: now,
+        error: null,
+        lastHash: hash,
+        lastFullAt: same ? st.lastFullAt : now,
+        lastSeq: snapshot.seq,
+      });
       return { ...r, sent: { customers: snapshot.customers.length, wines: snapshot.wines.length } };
     } catch (e) {
       saveSync(db, { ...syncState(db), lastAt: nowIso(), error: (e as ApiError).code ?? 'portalError' });

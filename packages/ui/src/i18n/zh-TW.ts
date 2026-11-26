@@ -1055,6 +1055,8 @@ export const zhTW: Dict = {
   'ai.alsoBought': '常一起購買：',
   'ai.boughtBy': '{n} 位客戶一起買過',
   'ai.answerNote': "AI 依您的資料回答，數字由 MyWineCorks 計算",
+  'err.tooMany': "這個網路的嘗試次數太多，請稍等幾分鐘。",
+  'err.badOrigin': "此請求不是來自 MyWineCorks，已拒絕。",
   'audit.act.setupLinkIssued': '產生設定連結',
   'audit.act.userSignedOutEverywhere': '使用者已登出所有裝置',
   'audit.act.roleCreated': '新增角色',

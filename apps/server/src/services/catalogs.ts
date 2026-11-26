@@ -87,27 +87,58 @@ export function catalogWineIds(db: DB, c: CatalogRow): number[] {
 
 const roundPrice = (minor: number) => Math.round(minor);
 
+/**
+ * Lookups shared while working out many customers' entries (portal snapshot): each catalog's wines
+ * and fixed prices, and every wine's market and suggested price, read once instead of per wine.
+ */
+export interface CatalogCache {
+  wineIds: Map<number, number[]>;
+  fixed: Map<number, Map<number, number | null>>;
+  market?: Map<number, number | null>;
+  suggested?: Map<number, number | null>;
+}
+export const newCatalogCache = (): CatalogCache => ({ wineIds: new Map(), fixed: new Map() });
+
+function cachedWineIds(db: DB, c: CatalogRow, cache: CatalogCache) {
+  let ids = cache.wineIds.get(c.id);
+  if (!ids) cache.wineIds.set(c.id, (ids = catalogWineIds(db, c)));
+  return ids;
+}
+
 /** Price of a wine in a catalog for a customer (minor units), or null for "price on request". */
-export function catalogPrice(db: DB, c: CatalogRow, wineId: number, discount: number | null): number | null {
-  const fixed = (
-    db
-      .prepare('SELECT fixed_price FROM catalog_wines WHERE catalog_id = ? AND wine_id = ?')
-      .get(c.id, wineId) as { fixed_price: number | null } | undefined
-  )?.fixed_price;
+export function catalogPrice(
+  db: DB,
+  c: CatalogRow,
+  wineId: number,
+  discount: number | null,
+  cache: CatalogCache = newCatalogCache(),
+): number | null {
+  let fixedMap = cache.fixed.get(c.id);
+  if (!fixedMap) {
+    const rows = db.prepare('SELECT wine_id, fixed_price FROM catalog_wines WHERE catalog_id = ?').all(c.id) as {
+      wine_id: number;
+      fixed_price: number | null;
+    }[];
+    cache.fixed.set(c.id, (fixedMap = new Map(rows.map((r) => [r.wine_id, r.fixed_price]))));
+  }
+  const fixed = fixedMap.get(wineId);
   if (fixed != null) return fixed;
   if (c.price_kind === 'fixed' || c.price_kind === 'request') return null;
   const disc = c.use_customer_discount && discount ? discount : 0;
   if (c.price_kind === 'market') {
-    const m = (
-      db.prepare(`SELECT ${latestPrice} p FROM wines w WHERE w.id = ?`).get(wineId) as { p: number | null }
-    ).p;
+    cache.market ??= new Map(
+      (db.prepare(`SELECT w.id, ${latestPrice} p FROM wines w`).all() as { id: number; p: number | null }[]).map((r) => [r.id, r.p]),
+    );
+    const m = cache.market.get(wineId) ?? null;
     return m == null ? null : roundPrice(m * (1 + c.price_pct / 100) * (1 - disc / 100));
   }
-  const s = (
-    db.prepare('SELECT suggested_price FROM wines WHERE id = ?').get(wineId) as {
-      suggested_price: number | null;
-    }
-  ).suggested_price;
+  cache.suggested ??= new Map(
+    (db.prepare('SELECT id, suggested_price FROM wines').all() as { id: number; suggested_price: number | null }[]).map((r) => [
+      r.id,
+      r.suggested_price,
+    ]),
+  );
+  const s = cache.suggested.get(wineId) ?? null;
   return s == null ? null : roundPrice(s * (1 - c.price_pct / 100) * (1 - disc / 100));
 }
 
@@ -128,13 +159,14 @@ export function customerEntries(
   db: DB,
   customerId: number,
   avail = availableByWine(db),
+  cache: CatalogCache = newCatalogCache(),
 ): { catalogs: CatalogRow[]; entries: Entry[] } {
   const cust = db.prepare('SELECT discount FROM customers WHERE id = ?').get(customerId) as
     { discount: number | null } | undefined;
   const cats = catalogsFor(db, customerId);
   const byWine = new Map<number, Entry>();
   for (const c of cats) {
-    for (const wineId of catalogWineIds(db, c)) {
+    for (const wineId of cachedWineIds(db, c, cache)) {
       const have = byWine.get(wineId);
       if (have) {
         have.catalogs.push(c.id);
@@ -153,7 +185,7 @@ export function customerEntries(
         wineId,
         catalogId: c.id,
         catalogs: [c.id],
-        price: catalogPrice(db, c, wineId, cust?.discount ?? null),
+        price: catalogPrice(db, c, wineId, cust?.discount ?? null, cache),
         availability,
         // Never more than is actually there.
         max: qty <= 0 ? 0 : c.max_per_customer ? Math.min(c.max_per_customer, qty) : qty,
@@ -165,8 +197,19 @@ export function customerEntries(
 
 /** The best catalog price for a customer (for the default price of a staff order). */
 export function catalogPriceFor(db: DB, customerId: number, wineId: number): number | null {
-  const e = customerEntries(db, customerId).entries.find((x) => x.wineId === wineId);
-  return e?.price ?? null;
+  // Same rule as customerEntries, for one wine only (an order line), without building them all.
+  const cust = db.prepare('SELECT discount FROM customers WHERE id = ?').get(customerId) as
+    { discount: number | null } | undefined;
+  const qty = (
+    db.prepare("SELECT COUNT(*) n FROM bottles WHERE wine_id = ? AND status = 'in_stock'").get(wineId) as { n: number }
+  ).n;
+  const cache = newCatalogCache();
+  for (const c of catalogsFor(db, customerId)) {
+    if (!catalogWineIds(db, c).includes(wineId)) continue;
+    if (qty <= 0 && !c.show_sold_out) continue;
+    return catalogPrice(db, c, wineId, cust?.discount ?? null, cache);
+  }
+  return null;
 }
 
 // ---------------------------------------------------------------- portal copy (SPEC §9.3)

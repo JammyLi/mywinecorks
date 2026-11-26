@@ -504,4 +504,20 @@ CREATE TABLE portal_outbox (
 );
 `,
   },
+  {
+    id: 9,
+    name: 'm10_indexes',
+    sql: `
+-- Found by the 100,000-bottle load test (M10).
+CREATE INDEX order_bottles_line ON order_bottles(line_id, state);
+CREATE INDEX orders_shipped ON orders(status, shipped_at);
+CREATE INDEX audit_obj ON audit_log(obj_type, obj_id);
+CREATE INDEX catalog_wines_wine ON catalog_wines(wine_id);
+CREATE INDEX customers_portal ON customers(portal_status);
+CREATE INDEX bottles_rack_status ON bottles(rack_id, status);
+CREATE INDEX wines_type ON wines(type_code);
+CREATE INDEX wines_region ON wines(region);
+CREATE INDEX wines_country ON wines(country);
+`,
+  },
 ];

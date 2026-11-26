@@ -9,6 +9,7 @@ import { audit } from '../services/audit.ts';
 import { getRole, isAdminLike } from '../services/roles.ts';
 import { checkTotp, newTotpSecret, totpSetupInfo } from '../services/totp.ts';
 import { sendMail } from '../services/mail.ts';
+import { limit } from '../services/ratelimit.ts';
 import { issueSetupToken, setupUrl, SETUP_TOKEN_DAYS } from '../services/workspace.ts';
 
 /** At most 3 reset emails per address per hour. */
@@ -113,6 +114,8 @@ function recordFailure(db: DB, user: UserRow, req: Request, reason: string) {
 
 export function mountAuth(api: Api) {
   api.post('/auth/login', PUBLIC, async (req, res) => {
+    // Password spraying across many accounts from one address (each account also locks itself).
+    limit('login:' + req.ip, 30, 15);
     const body = LoginBody.parse(req.body);
     const ws = resolveWorkspace(req, body.workspace);
     if (!ws) throw unauthorized('badLogin');
@@ -261,6 +264,7 @@ export function mountAuth(api: Api) {
   });
 
   api.post('/auth/setup', PUBLIC, async (req) => {
+    limit('setup:' + req.ip, 20, 15);
     const body = SetupBody.parse(req.body);
     if (body.password.length < MIN_PASSWORD) throw badRequest('passwordShort');
     const ws = resolveWorkspace(req, body.workspace);

@@ -213,6 +213,10 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
     res.status(400).json({ error: 'badRequest', details: err.flatten().fieldErrors });
     return;
   }
+  if ((err as { type?: string })?.type === 'entity.too.large') {
+    res.status(413).json({ error: 'fileTooLarge' });
+    return;
+  }
   if ((err as { type?: string })?.type === 'entity.parse.failed') {
     res.status(400).json({ error: 'badRequest' });
     return;

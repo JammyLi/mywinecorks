@@ -302,7 +302,7 @@ export const FEATURES: Record<Exclude<AiFeature, 'ask'>, Feature> = {
     max: 500,
     input: z.object({
       question: z.string().min(1).max(500),
-      wine: z.record(z.unknown()),
+      wine: z.record(z.string(), z.unknown()),
       lang: z.enum(['zh-TW', 'en']),
     }),
     system: `${SAFE} A customer asks about one wine from a shop's list. Answer briefly in the language given, from the wine facts given and general wine knowledge (food pairing, style, serving). Never talk about other customers, stock levels beyond what is given, or prices other than the one given. If unsure, say so.`,
@@ -337,7 +337,7 @@ export const AskInput = z.object({
     .array(
       z.object({
         role: z.enum(['user', 'assistant']),
-        content: z.union([z.string().max(20000), z.array(z.record(z.unknown())).max(40)]),
+        content: z.union([z.string().max(20000), z.array(z.record(z.string(), z.unknown())).max(40)]),
       }),
     )
     .min(1)

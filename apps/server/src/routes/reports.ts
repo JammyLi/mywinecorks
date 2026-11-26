@@ -21,8 +21,10 @@ const GROUPS = {
 } as const;
 
 /** Price of each wine as of a date (latest non-voided entry on or before it). */
-const priceAt = (date: string) =>
-  `(SELECT price FROM price_history p WHERE p.wine_id = w.id AND p.voided = 0 AND p.effective_date <= '${date}' ORDER BY effective_date DESC, id DESC LIMIT 1)`;
+const priceAt = (date: string) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('bad date');
+  return `(SELECT price FROM price_history p WHERE p.wine_id = w.id AND p.voided = 0 AND p.effective_date <= '${date}' ORDER BY effective_date DESC, id DESC LIMIT 1)`;
+};
 
 function monthEnds(last: string, n: number): string[] {
   const [y, m] = last.split('-').map(Number);
@@ -137,10 +139,9 @@ export function mountReports(api: Api) {
     const profit = cost && sees(p, 'seeProfit');
     const now = today(db);
     const tz = settings(db).timezone;
-    const monthOf = (iso: string) =>
-      new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit' })
-        .format(new Date(iso))
-        .slice(0, 7);
+    // One formatter for all lines (making one per line was most of the time at 100k bottles).
+    const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit' });
+    const monthOf = (iso: string) => fmt.format(new Date(iso)).slice(0, 7);
     const q = z
       .object({
         from: z

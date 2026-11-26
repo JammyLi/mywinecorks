@@ -108,6 +108,12 @@ export async function applySnapshot(cfg: PortalConfig, sql: Sql, tenant: TenantR
   if (Number(s.seq) <= Number(tenant.seq)) throw new PError(409, 'staleSnapshot');
   const wineRefs = new Set(s.wines.map((w) => w.ref));
   await sql.tx(async (t) => {
+    // Nothing changed since the last full copy: only request statuses and acknowledgements.
+    if (s.unchanged) {
+      await t.q('UPDATE tenants SET seq = $2, last_sync = now() WHERE id = $1', [tenant.id, s.seq]);
+      await applyRequestsAndAcks(t, tenant, s);
+      return;
+    }
     await t.q('UPDATE tenants SET info = $2, catalogs = $3, seq = $4, last_sync = now() WHERE id = $1', [
       tenant.id,
       JSON.stringify(s.tenant),
@@ -167,32 +173,9 @@ export async function applySnapshot(cfg: PortalConfig, sql: Sql, tenant: TenantR
       [tenant.id, seen],
     );
     for (const g of gone) await t.q('DELETE FROM sessions WHERE customer_id = $1', [g.id]);
-    for (const r of s.requests)
-      await t.q(
-        'UPDATE requests SET status = $3, order_no = $4, final = $5 WHERE tenant_id = $1 AND ref = $2',
-        [tenant.id, r.ref, r.status, r.orderNo, JSON.stringify(r)],
-      );
-    if (s.ack.requests.length)
-      await t.q('UPDATE requests SET delivered = true WHERE tenant_id = $1 AND ref = ANY($2::text[])', [
-        tenant.id,
-        s.ack.requests,
-      ]);
-    if (s.ack.access.length)
-      await t.q(
-        'UPDATE access_requests SET delivered = true WHERE tenant_id = $1 AND ref = ANY($2::text[])',
-        [tenant.id, s.ack.access],
-      );
-    if (s.ack.profile.length)
-      await t.q(
-        'UPDATE profile_updates SET delivered = true WHERE id = ANY($2::int[]) AND customer_id IN (SELECT id FROM customers WHERE tenant_id = $1)',
-        [tenant.id, s.ack.profile],
-      );
-    if (s.ack.accepted?.length)
-      await t.q('UPDATE customers SET accepted_sent = true WHERE tenant_id = $1 AND ref = ANY($2::text[])', [
-        tenant.id,
-        s.ack.accepted,
-      ]);
+    await applyRequestsAndAcks(t, tenant, s);
   });
+  if (s.unchanged) return [];
   await notifyAvailable(cfg, sql, tenant, s);
   const have = new Set(
     fs.existsSync(photoDir(cfg, tenant.id)) ? fs.readdirSync(photoDir(cfg, tenant.id)) : [],
@@ -306,4 +289,33 @@ export async function pending(
       createdAt: new Date(p.created_at).toISOString(),
     })),
   };
+}
+
+/** Final request statuses and what the client server has received. */
+async function applyRequestsAndAcks(t: Sql, tenant: TenantRow, s: PortalSnapshot) {
+  for (const r of s.requests)
+    await t.q(
+      'UPDATE requests SET status = $3, order_no = $4, final = $5 WHERE tenant_id = $1 AND ref = $2',
+      [tenant.id, r.ref, r.status, r.orderNo, JSON.stringify(r)],
+    );
+  if (s.ack.requests.length)
+    await t.q('UPDATE requests SET delivered = true WHERE tenant_id = $1 AND ref = ANY($2::text[])', [
+      tenant.id,
+      s.ack.requests,
+    ]);
+  if (s.ack.access.length)
+    await t.q(
+      'UPDATE access_requests SET delivered = true WHERE tenant_id = $1 AND ref = ANY($2::text[])',
+      [tenant.id, s.ack.access],
+    );
+  if (s.ack.profile.length)
+    await t.q(
+      'UPDATE profile_updates SET delivered = true WHERE id = ANY($2::int[]) AND customer_id IN (SELECT id FROM customers WHERE tenant_id = $1)',
+      [tenant.id, s.ack.profile],
+    );
+  if (s.ack.accepted?.length)
+    await t.q('UPDATE customers SET accepted_sent = true WHERE tenant_id = $1 AND ref = ANY($2::text[])', [
+      tenant.id,
+      s.ack.accepted,
+    ]);
 }

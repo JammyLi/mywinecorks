@@ -119,7 +119,7 @@ describe('photos', () => {
       .set('Content-Type', 'image/png')
       .send(png)
       .expect(200);
-    await owner.post('/api/wines/W-000001/photos').set('Content-Type', 'text/plain').send('hi').expect(400);
+    await owner.post('/api/wines/W-000001/photos').set('Content-Type', 'text/plain').send('hi').expect(415);
     let list = (await owner.get('/api/wines/W-000001/photos')).body;
     expect(list[0]).toMatchObject({ id: a.body.id, isMain: 1 });
     await owner.post(`/api/photos/${b.body.id}/main`).expect(200);

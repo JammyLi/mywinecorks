@@ -57,6 +57,8 @@ export interface PortalRequestStatus {
 export interface PortalSnapshot {
   v: number;
   seq: number;
+  /** Same catalogs, wines and customers as the last full copy: tenant/catalogs/wines/customers are empty. */
+  unchanged?: boolean;
   /** The client's current license key (renewals reach the portal this way). */
   licenseKey?: string;
   tenant: {

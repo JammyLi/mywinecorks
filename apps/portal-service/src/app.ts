@@ -26,6 +26,10 @@ export async function createPortal(cfg: PortalConfig, opts: { sql?: Sql; keys?: 
   app.disable('x-powered-by');
   app.set('trust proxy', 'loopback');
   app.use((_req, res, next) => {
+    res.setHeader(
+      'Content-Security-Policy',
+      "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; media-src 'self' blob:; worker-src 'self'; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'",
+    );
     res.setHeader('X-Content-Type-Options', 'nosniff');
     // The app, portals and services are never indexed (SPEC §22); only the website is.
     res.setHeader('X-Robots-Tag', 'noindex, nofollow');

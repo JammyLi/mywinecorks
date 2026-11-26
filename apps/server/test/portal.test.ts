@@ -33,7 +33,10 @@ const via =
     for (const [k, v] of Object.entries((init?.headers ?? {}) as Record<string, string>)) r = r.set(k, v);
     const buf = init?.body ? Buffer.from(init.body as Uint8Array) : null;
     const json = String((init?.headers as Record<string, string>)?.['content-type'] ?? '').includes('json');
-    const res = buf ? await r.send(json ? buf.toString() : buf) : await r;
+    const gz = String((init?.headers as Record<string, string>)?.['content-encoding'] ?? '') === 'gzip';
+    // supertest would JSON-encode a Buffer sent as JSON; the portal reads the raw bytes either way.
+    if (gz) r = r.set('content-type', 'application/octet-stream');
+    const res = buf ? await r.send(json && !gz ? buf.toString() : buf) : await r;
     return new Response(JSON.stringify(res.body), {
       status: res.status,
       headers: { 'content-type': 'application/json' },
@@ -365,6 +368,51 @@ describe('customer portal (M7)', () => {
       portalAi.fetcher = undefined;
       portalCfg.aiServiceToken = null;
     }
+  });
+
+  it('large snapshots go compressed; unchanged ones carry only requests (M10)', async () => {
+    const { cust, inv } = await setUp();
+    // 400 more wines in Chen's catalog → a snapshot well over 64 KB.
+    const now = new Date().toISOString();
+    const cat = (s.db.prepare("SELECT id FROM catalogs WHERE name = '年終精選'").get() as { id: number }).id;
+    const rack = (s.db.prepare('SELECT rack_id FROM bottles LIMIT 1').get() as { rack_id: number }).rack_id;
+    for (let i = 0; i < 400; i++) {
+      const id = Number(
+        s.db
+          .prepare("INSERT INTO wines (wine_no, winery, name, vintage, type_code, suggested_price, match_key, search_key, created_at, tasting_notes) VALUES (?, 'Bulk', ?, '2010', 'R', 1000, ?, '', ?, ?)")
+          .run(`W-9${String(i).padStart(5, '0')}`, `Wine ${i}`, `bulk${i}`, now, 'Ripe, long, '.repeat(10)).lastInsertRowid,
+      );
+      s.db.prepare("INSERT INTO bottles (bottle_no, wine_id, rack_id, created_at) VALUES (?, ?, ?, ?)").run(`B-9${String(i).padStart(6, '0')}`, id, rack, now);
+      s.db.prepare('INSERT INTO catalog_wines (catalog_id, wine_id) VALUES (?, ?)').run(cat, id);
+    }
+    const sent: { gzip: boolean; unchanged: boolean }[] = [];
+    const inner = via(portal.app);
+    s.portal.fetcher = async (url, init) => {
+      if (String(url).endsWith('/api/tenant/sync')) {
+        const h = init!.headers as Record<string, string>;
+        const gzip = h['content-encoding'] === 'gzip';
+        const body = Buffer.from(init!.body as Uint8Array);
+        const json = JSON.parse((gzip ? (await import('node:zlib')).gunzipSync(body) : body).toString());
+        sent.push({ gzip, unchanged: !!json.unchanged });
+      }
+      return inner(url, init);
+    };
+    const t = s.registry.get('demo')!;
+    await s.portal.sync(t);
+    await s.portal.sync(t);
+    expect(sent.slice(-2)).toEqual([
+      { gzip: true, unchanged: false },
+      { gzip: false, unchanged: true },
+    ]);
+    // The customer still has everything after the unchanged sync.
+    const c = request.agent(portal.app);
+    await c.post(`/api/p/${H}/auth/accept`).send({ code: inv.code, password: 'Chen-portal-pw-1', age: true }).expect(200);
+    const cat2 = (await c.get(`/api/p/${H}/catalog`).expect(200)).body;
+    expect(cat2.items.length).toBeGreaterThan(400);
+    // A change → a full copy again.
+    await owner.patch(`/api/customers/${cust.id}`).send({ discount: 20 }).expect(200);
+    await s.portal.sync(t);
+    expect(sent.at(-1)).toEqual({ gzip: true, unchanged: false });
   });
 
   it('access requests from strangers wait for staff', async () => {

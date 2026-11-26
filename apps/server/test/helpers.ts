@@ -6,10 +6,12 @@ import type TestAgent from 'supertest/lib/agent';
 import { createApp } from '../src/app.ts';
 import { loadConfig, type Mode } from '../src/config.ts';
 import { createWorkspace } from '../src/services/workspace.ts';
+import { resetLimits } from '../src/services/ratelimit.ts';
 
 export const PW = 'correct-horse-9';
 
 export function makeServer(mode: Mode = 'selfhost', extra: Record<string, string> = {}) {
+  resetLimits();
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mwc-test-'));
   const cfg = loadConfig({ MODE: mode, DATA_DIR: dataDir, PUBLIC_URL: 'http://localhost:5500', ...extra });
   const { app, api, registry, licensing, updater, portal, ai } = createApp(cfg);

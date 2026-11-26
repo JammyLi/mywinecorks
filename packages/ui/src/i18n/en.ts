@@ -1087,6 +1087,8 @@ export const en = {
   'ai.alsoBought': 'Often bought with these:',
   'ai.boughtBy': 'Bought together by {n} customers',
   'ai.answerNote': "AI answer from your own data — figures are calculated by MyWineCorks",
+  'err.tooMany': "Too many attempts from this network. Please wait a few minutes.",
+  'err.badOrigin': "This request did not come from MyWineCorks and was refused.",
   'audit.act.setupLinkIssued': 'Setup link issued',
   'audit.act.userSignedOutEverywhere': 'User signed out everywhere',
   'audit.act.roleCreated': 'Role created',

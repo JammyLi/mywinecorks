@@ -31,6 +31,13 @@ export async function createHq(cfg: HqConfig, opts: { sql?: Sql; signing?: Signi
   app.set('trust proxy', 'loopback');
   app.use((_req, res, next) => {
     res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+    res.setHeader(
+      'Content-Security-Policy',
+      "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; media-src 'self' blob:; worker-src 'self'; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'",
+    );
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('Referrer-Policy', 'same-origin');
     next();
   });
   // The website may call /api/web from its own origin (leads, client account).

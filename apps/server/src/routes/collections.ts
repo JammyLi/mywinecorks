@@ -82,6 +82,17 @@ export function addItems(db: DB, listId: number, ids: number[]) {
 }
 
 // ---------------------------------------------------------------- photos
+/** The bytes must match the declared image type (no HTML or scripts saved as "photos"). */
+function looksLikeImage(b: Buffer, type: string) {
+  const hex = b.subarray(0, 12).toString('hex');
+  const ascii = b.subarray(0, 12).toString('latin1');
+  if (type === 'image/jpeg') return hex.startsWith('ffd8ff');
+  if (type === 'image/png') return hex.startsWith('89504e470d0a1a0a');
+  if (type === 'image/gif') return ascii.startsWith('GIF8');
+  if (type === 'image/webp') return ascii.startsWith('RIFF') && ascii.slice(8, 12) === 'WEBP';
+  if (type === 'image/heic') return ascii.slice(4, 8) === 'ftyp';
+  return false;
+}
 const IMAGE_TYPES: Record<string, string> = {
   'image/jpeg': '.jpg',
   'image/png': '.png',
@@ -528,7 +539,8 @@ export function mountCollections(api: Api) {
     const w = wineByNo(db, String(req.params.no));
     const type = String(req.headers['content-type'] ?? '').split(';')[0];
     const ext = IMAGE_TYPES[type];
-    if (!ext || !Buffer.isBuffer(req.body) || !req.body.length) throw badRequest('notImage');
+    if (!ext || !Buffer.isBuffer(req.body) || !req.body.length || !looksLikeImage(req.body, type))
+      throw badRequest('notImage');
     const file = `${w.wine_no}-${randomBytes(5).toString('hex')}${ext}`;
     fs.writeFileSync(path.join(photoDir(req.ctx.registry.dataDir, req.ctx.tenant!.slug), file), req.body);
     const has = (db.prepare('SELECT COUNT(*) n FROM photos WHERE wine_id = ?').get(w.id) as { n: number }).n;

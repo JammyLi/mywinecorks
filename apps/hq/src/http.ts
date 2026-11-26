@@ -157,6 +157,9 @@ export function errors(err: unknown, _req: Request, res: Response, _next: NextFu
     return void res.status(err.status).json({ error: err.code, details: err.details });
   if (err instanceof ZodError)
     return void res.status(400).json({ error: 'badRequest', details: err.flatten().fieldErrors });
+  const type = (err as { type?: string })?.type;
+  if (type === 'entity.too.large') return void res.status(413).json({ error: 'fileTooLarge' });
+  if (type === 'entity.parse.failed') return void res.status(400).json({ error: 'badRequest' });
   console.error(err);
   res.status(500).json({ error: 'server' });
 }
