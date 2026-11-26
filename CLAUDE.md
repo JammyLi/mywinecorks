@@ -59,3 +59,5 @@ paper `#f3f2f2`, night `#1b1a18`. Fonts: Cormorant Garamond, Lora, Noto Sans/Ser
 - Work milestone by milestone (BUILD-PLAN §5). Commit each finished step to `main` with tests passing
   (use a branch + PR for risky or long-running changes).
 - Update `CHANGELOG.md` at the end of each milestone.
+- Anything only Jammy can do (accounts, purchases, decisions, tests on real hardware) goes in
+  `docs/TODO-JAMMY.md`; keep it current.
