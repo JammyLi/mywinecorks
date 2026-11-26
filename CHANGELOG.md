@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.6.0 — M6 Packaging, updates, cloud (2026-11-26)
+- **Windows installer** (`installer/windows/build.sh`): Node 22 and the server bundled; runs as the
+  "MyWineCorks" Windows service (starts with Windows, restarts after a crash); firewall opened for
+  the office network only; data in `C:\ProgramData\MyWineCorks`; Start-menu shortcuts (app, phone
+  setup, addresses, data folder); upgrade by running the new installer; uninstall keeps the data.
+- **Docker image** (`installer/docker`) for Mac, Linux and NAS, with a compose file; `PUBLIC_IP`
+  sets the address phones use.
+- **First run without a default password:** a new server opens a one-time link — company and Owner,
+  then the Owner sets a password.
+- **Backups before updates:** every database is copied to `backups/` before a new version first
+  starts. Settings › Updates & backups (Owner): version, check for updates, "Update now", back up now,
+  list of backups.
+- **In-app update:** packages are signed by HQ and only handed to a valid license on its own server;
+  checksum and signature are checked, everything is backed up, the new version is unpacked beside the
+  old one and started; if it fails to start three times the previous version comes back.
+- **Release build** (`node scripts/release/build.mjs`): one minified server file per platform
+  (win-x64, linux-x64, linux-arm64, darwin-arm64) with the HQ public key embedded; production builds
+  never trust development keys. CI builds the installer and image and tests a clean install, an
+  upgrade and an uninstall on Windows, and a clean install and restart in Docker.
+- **HQ:** update packages per release (`publish-release`), update API for servers; **cloud
+  workspaces** — create from a cloud subscription (license, workspace, Owner email), list with live
+  usage, new Owner link; renew / grace / revoke reach the workspace at once.
+- **Cloud server:** provisioning API (token), each workspace with its own license, Litestream
+  continuous backup to S3-compatible storage (`installer/cloud`).
+
 ## 0.5.0 — M5 Licensing + HQ (2026-11-26)
 - License keys (`MWC1.…`, signed by HQ) carry the client, plan, modules, limits, expiry and grace
   period. Settings › License (Owner): paste a key or upload the `.mwclicense` file, check in now,

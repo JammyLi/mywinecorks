@@ -61,6 +61,10 @@ add a client, a subscription and "Issue license key", then paste the key in the 
 Settings › License. HQ's signing key is created in `apps/hq/data/` (never committed). Lost the
 HQ setup link? `pnpm --filter @mwc/hq create-admin you@example.com` prints a new one.
 
+**Packages:** `installer/windows/build.sh --trust installer/keys/hq-license-public.pem` (Windows
+installer), `docker build -f installer/docker/Dockerfile .` (Docker), `pnpm release --platform
+linux-x64 --trust …` (update package). See `installer/*/README.md`.
+
 Other commands: `pnpm test`, `pnpm typecheck`, `pnpm --filter @mwc/web build`
 (after a build, `pnpm --filter @mwc/server start` serves everything on :3500).
 
@@ -74,4 +78,5 @@ Other commands: `pnpm test`, `pnpm typecheck`, `pnpm --filter @mwc/web build`
 | M3 Phone app + offline | ✅ done (field test pending) |
 | M4 Customers, orders, reports | ✅ done |
 | M5 Licensing + HQ | ✅ done |
-| M6 Packaging (installer, updates, backups), cloud | next |
+| M6 Packaging (Windows installer, Docker, in-app updates, backups), cloud workspaces | ✅ done (installer not code-signed yet) |
+| M7 Catalogs + customer portal | next |

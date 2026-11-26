@@ -112,7 +112,7 @@ export function LicensePage() {
         {info.notice && <div>{t(`lic.notice.${info.notice}`, { v: info.latestVersion ?? '' })}</div>}
       </div>
 
-      {info.mode !== 'cloud' && info.installId && (
+      {(info.mode === 'cloud' ? !!l : !!info.installId) && (
         <div className="card">
           <dl className="kv">
             <dt>{t('lic.client')}</dt>
@@ -123,19 +123,23 @@ export function LicensePage() {
             <dd>{l ? `${date(l.expiresAt)}（${t('lic.graceDays', { n: l.graceDays })}）` : '—'}</dd>
             <dt>{t('lic.licenseId')}</dt>
             <dd className="mono">{l?.lid ?? '—'}</dd>
-            <dt>{t('lic.installId')}</dt>
-            <dd className="mono">{info.installId}</dd>
-            <dt>{t('lic.version')}</dt>
-            <dd>{info.version}</dd>
-            <dt>{t('lic.lastCheckin')}</dt>
-            <dd>
-              {fmtDateTime(info.checkin?.lastOk, lang)}
-              {info.checkin?.error && (
-                <span className="tag warn" style={{ marginLeft: 8 }}>
-                  {t(`err.${info.checkin.error}`)}
-                </span>
-              )}
-            </dd>
+            {info.mode !== 'cloud' && (
+              <>
+                <dt>{t('lic.installId')}</dt>
+                <dd className="mono">{info.installId}</dd>
+                <dt>{t('lic.version')}</dt>
+                <dd>{info.version}</dd>
+                <dt>{t('lic.lastCheckin')}</dt>
+                <dd>
+                  {fmtDateTime(info.checkin?.lastOk, lang)}
+                  {info.checkin?.error && (
+                    <span className="tag warn" style={{ marginLeft: 8 }}>
+                      {t(`err.${info.checkin.error}`)}
+                    </span>
+                  )}
+                </dd>
+              </>
+            )}
           </dl>
           {info.usage && l && (
             <div className="stack" style={{ gap: 8, marginTop: 12 }}>
@@ -159,7 +163,7 @@ export function LicensePage() {
               })}
             </div>
           )}
-          {isOwner && (
+          {isOwner && info.mode !== 'cloud' && (
             <div className="row" style={{ marginTop: 12 }}>
               <button className="btn" disabled={busy || !l} onClick={checkin}>
                 {t('lic.checkinNow')}
