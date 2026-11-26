@@ -9,6 +9,7 @@ import { lineAmount, sees } from '@mwc/shared';
 import { forbidden } from '../errors.ts';
 import { Api, perm } from '../http.ts';
 import { perms, scopeSql, settings, today } from '../services/inventory.ts';
+import { localToIso } from '../services/mywines.ts';
 
 const GROUPS = {
   wine: { key: 'w.wine_no', label: "w.name || ' ' || w.vintage" },
@@ -87,7 +88,8 @@ export function mountReports(api: Api) {
 
     // Value at each month end: bottles that had arrived and not yet left, at the price of that day.
     const series = monthEnds(now, 12).map((d) => {
-      const end = `${d}T23:59:59.999Z`;
+      // End of that day in the workspace's time zone, as UTC (stored times are UTC).
+      const end = localToIso(`${d} 23:59:59`, settings(db).timezone)!.replace('.000Z', '.999Z');
       const x = db
         .prepare(
           `SELECT COUNT(*) bottles, SUM(${priceAt(d)}) market, SUM(lot.base_unit_cost) cost
@@ -134,6 +136,11 @@ export function mountReports(api: Api) {
     const cost = sees(p, 'seeCost');
     const profit = cost && sees(p, 'seeProfit');
     const now = today(db);
+    const tz = settings(db).timezone;
+    const monthOf = (iso: string) =>
+      new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit' })
+        .format(new Date(iso))
+        .slice(0, 7);
     const q = z
       .object({
         from: z
@@ -150,21 +157,24 @@ export function mountReports(api: Api) {
     // Shipped lines: revenue (ex-tax) and the cost of the bottles that actually left.
     const lines = db
       .prepare(
-        `SELECT l.id, l.qty, l.unit_price, l.discount, o.order_no, substr(o.shipped_at, 1, 7) month, o.shipped_at,
+        `SELECT l.id, l.qty, l.unit_price, l.discount, o.order_no, o.shipped_at,
          COALESCE(c.name, '') customer, c.id customerId, w.wine_no wineNo, w.name || ' ' || w.vintage wine,
          (SELECT SUM(lot.base_unit_cost) FROM order_bottles ob JOIN bottles b ON b.id = ob.bottle_id JOIN lots lot ON lot.id = b.lot_id
           WHERE ob.line_id = l.id AND ob.state = 'shipped') cost,
          (SELECT COUNT(*) FROM order_bottles ob JOIN bottles b ON b.id = ob.bottle_id LEFT JOIN lots lot ON lot.id = b.lot_id
           WHERE ob.line_id = l.id AND ob.state = 'shipped' AND lot.base_unit_cost IS NULL) uncosted
          FROM order_lines l JOIN orders o ON o.id = l.order_id JOIN wines w ON w.id = l.wine_id LEFT JOIN customers c ON c.id = o.customer_id
-         WHERE o.status IN ('shipped','closed') AND substr(o.shipped_at, 1, 10) BETWEEN ? AND ?`,
+         WHERE o.status IN ('shipped','closed') AND o.shipped_at BETWEEN ? AND ?`,
       )
-      .all(q.from, q.to) as {
+      .all(
+        localToIso(`${q.from} 00:00:00`, tz),
+        localToIso(`${q.to} 23:59:59`, tz)!.replace('.000Z', '.999Z'),
+      ) as {
       qty: number;
       unit_price: number | null;
       discount: number;
       order_no: string;
-      month: string;
+      shipped_at: string;
       customer: string;
       customerId: number | null;
       wineNo: string;
@@ -187,7 +197,7 @@ export function mountReports(api: Api) {
     for (const l of lines) {
       const [key, label] =
         q.by === 'month'
-          ? [l.month, l.month]
+          ? [monthOf(l.shipped_at), monthOf(l.shipped_at)]
           : q.by === 'customer'
             ? [String(l.customerId ?? ''), l.customer]
             : [l.wineNo, l.wine];
