@@ -21,7 +21,7 @@ add_env() { # file key value — only when the key is not set yet
   touch "$1"
   grep -qE "^$2=." "$1" || { sed -i '' "/^$2=\$/d" "$1" 2>/dev/null || true; echo "$2=$3" >> "$1"; }
 }
-cur() { grep -E "^$2=." "$1" 2>/dev/null | head -1 | cut -d= -f2-; }
+cur() { grep -E "^$2=." "$1" 2>/dev/null | head -1 | cut -d= -f2- || true; }
 SVC=$(cur apps/ai-gateway/.env AI_SERVICE_TOKEN); SVC=${SVC:-$(openssl rand -hex 24)}
 ADM=$(cur apps/ai-gateway/.env AI_ADMIN_TOKEN); ADM=${ADM:-$(openssl rand -hex 24)}
 add_env apps/ai-gateway/.env AI_SERVICE_TOKEN "$SVC"
@@ -31,7 +31,7 @@ add_env apps/hq/.env AI_ADMIN_TOKEN "$ADM"
 add_env apps/hq/.env AI_URL "http://localhost:3600"
 
 # Stop early with a clear message if another program already uses our ports.
-API_PORT=$(grep -E '^PORT=' "$ENV_FILE" 2>/dev/null | cut -d= -f2); API_PORT=${API_PORT:-3500}
+API_PORT=$(grep -E '^PORT=' "$ENV_FILE" 2>/dev/null | cut -d= -f2 || true); API_PORT=${API_PORT:-3500}
 for P in "$API_PORT" 5500 5543 3600 3700 3900 4400; do
   if lsof -nP -iTCP:"$P" -sTCP:LISTEN >/dev/null 2>&1; then
     echo "Port $P is already in use by:"; lsof -nP -iTCP:"$P" -sTCP:LISTEN | tail -n +2 | awk '{print "  " $1 " (pid " $2 ")"}'
