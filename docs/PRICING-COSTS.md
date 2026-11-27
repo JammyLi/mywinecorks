@@ -69,3 +69,23 @@ month**. AI costs the same for local and cloud clients, because all AI goes thro
   tier (e.g. up to 2,000) for the Collector plan.
 - Local (own server) costs us only HQ, updates, AI and support, so its price can sit below cloud by
   roughly the hosting share and our backup responsibility.
+
+## 6. Draft price list (27 Nov 2026 — structure agreed, numbers to be finalised by Jammy)
+
+NT$ per month, billed yearly. Base price includes running on the client's own PC, updates and email support.
+
+| Bottles | Collector | Merchant | Merchant + Portal |
+|-|-|-|-|
+| up to 2,000 | 390 | 1,290 | 1,990 |
+| 2,000–5,000 | 590 | 1,790 | 2,690 |
+| 5,000–10,000 | 890 | 2,490 | 3,490 |
+| 10,000–25,000 | 1,290 | 3,490 | 4,690 |
+| 25,000–50,000 | 1,890 | 4,690 | 5,990 |
+| over 50,000 | quote | quote | quote |
+
+Add-ons: cloud +300 (≤10K bottles) / +600 (above); AI with our key +390 (≈200 label reads a month) or
++990 (heavy use); AI with the client's own Claude key free (assumed, not yet confirmed); monthly billing
++20 %; optional one-time setup and import NT$3,000 (collector) / NT$8,000 (merchant, on-site).
+Limits: users 2 / 5 / 10; orders none / 200 / 500 a month.
+Competitor anchors on 27 Nov 2026: CellarTracker US$160 (≤1,000 bottles) to US$500 (>2,500) a year;
+InVintory Prestige US$99.99 a year; Digiwin A1 cloud inventory NT$800 a month.
