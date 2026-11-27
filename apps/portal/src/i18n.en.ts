@@ -132,4 +132,8 @@ export const en = {
   'err.aiUnreachable': 'The assistant is not reachable right now.',
   'err.aiError': 'The assistant could not answer. Please try again later.',
   'err.aiBusy': 'The assistant is busy. Please try again later.',
+  'p.help': 'Help',
+  'p.helpContents': 'Contents',
+  'p.helpPrev': 'Previous',
+  'p.helpNext': 'Next',
 };

@@ -292,4 +292,8 @@ export const en = {
   'err.tooMany': "Too many requests. Please try again later.",
   'err.linkInvalid': "This link has expired or was already used.",
   'err.leadConverted': "A client was already created from this request.",
+  'hq.nav.help': 'Manual',
+  'hq.help.contents': 'Contents',
+  'hq.help.prev': 'Previous',
+  'hq.help.next': 'Next',
 };

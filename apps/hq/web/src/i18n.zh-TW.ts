@@ -288,4 +288,8 @@ export const zhTW: Record<keyof typeof import('./i18n.en.ts').en, string> = {
   'err.tooMany': "請求次數太多，請稍後再試。",
   'err.linkInvalid': "此連結已過期或已使用。",
   'err.leadConverted': "此申請已建立客戶。",
+  'hq.nav.help': '使用手冊',
+  'hq.help.contents': '目錄',
+  'hq.help.prev': '上一章',
+  'hq.help.next': '下一章',
 };

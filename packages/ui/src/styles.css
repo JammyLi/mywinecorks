@@ -1328,3 +1328,22 @@ dl.kv dd {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 12.5px;
 }
+
+/* Built-in manuals (HQ, customer portal) */
+.manual { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 28px; align-items: start; }
+.manual-toc { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 2px; }
+.manual-toc a { padding: 6px 10px; border-radius: 6px; color: inherit; text-decoration: none; font-size: 14px; }
+.manual-toc a.active { background: rgba(94, 26, 36, 0.08); color: #5e1a24; font-weight: 600; }
+.manual-nav { display: flex; justify-content: space-between; gap: 12px; margin-top: 32px; padding-top: 16px; border-top: 1px solid rgba(32, 31, 29, 0.12); }
+.md { max-width: 760px; line-height: 1.7; }
+.md h1 { font-family: 'Cormorant Garamond', 'Noto Serif TC', serif; font-size: 32px; margin: 0 0 12px; }
+.md h2 { font-size: 20px; margin: 28px 0 8px; }
+.md h3 { font-size: 16px; margin: 20px 0 6px; }
+.md p, .md ul, .md ol { margin: 0 0 12px; }
+.md li { margin: 3px 0; }
+.md code { background: rgba(32, 31, 29, 0.06); padding: 1px 5px; border-radius: 4px; font-size: 0.92em; }
+.md .md-note { border-left: 3px solid #b68235; background: rgba(182, 130, 53, 0.08); padding: 10px 14px; margin: 0 0 14px; border-radius: 0 6px 6px 0; }
+@media (max-width: 760px) {
+  .manual { grid-template-columns: 1fr; gap: 12px; }
+  .manual-toc { position: static; flex-direction: row; flex-wrap: wrap; }
+}

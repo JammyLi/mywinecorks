@@ -28,7 +28,9 @@ import {
 } from 'react-router-dom';
 import {
   BottleMark,
+  chaptersFrom,
   Field,
+  ManualView,
   I18nProvider,
   PasswordInput,
   Seg,
@@ -259,6 +261,9 @@ function Login() {
         <p className="small muted" style={{ textAlign: 'center' }}>
           {t('p.private')} <Link to={`${base}/request-access`}>{t('p.requestAccess')}</Link>
         </p>
+        <p className="small muted" style={{ textAlign: 'center' }}>
+          <Link to={`${base}/help`}>{t('p.help')}</Link>
+        </p>
       </form>
     </AuthFrame>
   );
@@ -464,6 +469,7 @@ function Shell() {
           </NavLink>
           <NavLink to={`${base}/requests`}>{t('p.myRequests')}</NavLink>
           <NavLink to={`${base}/profile`}>{t('p.profile')}</NavLink>
+          <NavLink to={`${base}/help`}>{t('p.help')}</NavLink>
         </nav>
         <span className="sp" />
         <LangSwitch />
@@ -1236,6 +1242,52 @@ function Home() {
   );
 }
 
+// ---------------------------------------------------------------- customer guide (open to everyone)
+const helpFiles = {
+  en: import.meta.glob('./help/en/*.md', { query: '?raw', import: 'default', eager: true }) as Record<
+    string,
+    string
+  >,
+  'zh-TW': import.meta.glob('./help/zh/*.md', { query: '?raw', import: 'default', eager: true }) as Record<
+    string,
+    string
+  >,
+};
+export const PORTAL_GUIDE = { en: chaptersFrom(helpFiles.en), 'zh-TW': chaptersFrom(helpFiles['zh-TW']) };
+
+function HelpPage() {
+  const { t } = usePT();
+  const { lang } = useI18n();
+  const { me, info, base } = usePortal();
+  const { slug } = useParams();
+  const nav = useNavigate();
+  return (
+    <div className="p-shell">
+      <header className="p-top">
+        <Link to={base} className="p-brand">
+          <BottleMark size={28} />
+          <span>{shopName(info!, lang)}</span>
+        </Link>
+        <nav className="p-nav" aria-label="Main">
+          <NavLink to={me ? base : `${base}/login`} end>
+            ← {me ? t('p.wines') : t('p.signIn')}
+          </NavLink>
+        </nav>
+        <span className="sp" />
+        <LangSwitch />
+      </header>
+      <main className="p-main">
+        <ManualView
+          chapters={PORTAL_GUIDE[lang]}
+          current={slug}
+          onOpen={(s) => nav(`${base}/help/${s}`)}
+          labels={{ contents: t('p.helpContents'), prev: t('p.helpPrev'), next: t('p.helpNext') }}
+        />
+      </main>
+    </div>
+  );
+}
+
 /** Subdomain mode (<handle>.mywinecorks.com): the handle comes from the host name. */
 const hostHandle = (() => {
   const m = /^([a-z0-9-]+)\.(?:mywinecorks\.com|localhost)$/.exec(location.hostname);
@@ -1258,6 +1310,8 @@ function Root() {
         <Route path="login" element={<Login />} />
         <Route path="invite" element={<Invite />} />
         <Route path="request-access" element={<RequestAccess />} />
+        <Route path="help" element={<HelpPage />} />
+        <Route path="help/:slug" element={<HelpPage />} />
         <Route element={<Shell />}>
           <Route index element={<Wines />} />
           <Route path="favorites" element={<Wines only="favorites" />} />

@@ -129,4 +129,8 @@ export const zhTW: Record<keyof typeof import('./i18n.en.ts').en, string> = {
   'err.aiUnreachable': '目前無法連線到小幫手。',
   'err.aiError': '小幫手暫時無法回答，請稍後再試。',
   'err.aiBusy': '小幫手忙碌中，請稍後再試。',
+  'p.help': '使用說明',
+  'p.helpContents': '目錄',
+  'p.helpPrev': '上一章',
+  'p.helpNext': '下一章',
 };

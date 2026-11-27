@@ -7,6 +7,7 @@ import { api } from './api.ts';
 import { useHqT } from './i18n.ts';
 import { HqSession, useHq } from './session.tsx';
 import { Login, Setup, Totp } from './pages/Auth.tsx';
+import { Help } from './pages/Help.tsx';
 import {
   Audit,
   ClientPage,
@@ -43,6 +44,7 @@ function Shell() {
     { to: '/releases', key: 'hq.nav.releases' },
     can('staff.manage') && { to: '/staff', key: 'hq.nav.staff' },
     can('audit.view') && { to: '/audit', key: 'hq.nav.audit' },
+    { to: '/help', key: 'hq.nav.help' },
   ].filter(Boolean) as { to: string; key: string; end?: boolean }[];
   const out = async () => {
     await api('/auth/logout', { body: {} }).catch(() => {});
@@ -120,6 +122,8 @@ createRoot(document.getElementById('root')!).render(
                 <Route path="releases" element={<Releases />} />
                 <Route path="staff" element={<Staff />} />
                 <Route path="audit" element={<Audit />} />
+                <Route path="help" element={<Help />} />
+                <Route path="help/:slug" element={<Help />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Route>
             </Routes>
