@@ -21,6 +21,17 @@ if (fs.existsSync(path.join(dist, 'index.html'))) {
     server: { middlewareMode: true, hmr: { port: 24701 } },
     appType: 'spa',
   });
+  // Development only: Vite needs an inline script and a live-reload socket, which the
+  // production security policy blocks (built pages keep the strict policy).
+  app.use((_req, res, next) => {
+    const csp = res.getHeader('Content-Security-Policy');
+    if (typeof csp === 'string')
+      res.setHeader(
+        'Content-Security-Policy',
+        csp.replace("script-src 'self'", "script-src 'self' 'unsafe-inline'").replace("connect-src 'self'", "connect-src 'self' ws: wss:"),
+      );
+    next();
+  });
   app.use(vite.middlewares);
 }
 app.listen(cfg.port, () => console.log(`MyWineCorks portal service on ${cfg.publicUrl}`));
