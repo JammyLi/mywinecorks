@@ -5,14 +5,8 @@ purchase, a decision, a test on real hardware). Tick items off here when done.
 
 ## Soon
 
-- [ ] **Activate the license on your Mac copy** (from M5). Your copy started a 14-day trial when it
-      first ran 0.5.0 on 26 Nov — activate by about **10 Dec 2026** or it locks:
-      open http://localhost:3700/setup?t=… (link in `apps/hq/data/setup-link.txt`) → set the HQ
-      password and 2-step code → add a client → subscription → "Issue license key" → paste it in the
-      app under Settings › License.
+- [x] ~~Activate the license on your Mac copy~~ — done 27 Nov (HQ set up, key issued and activated).
 - [ ] **Delete `apps/hq/.q.mjs`** on your Mac (a leftover file from my check; not part of the code).
-- [ ] **Pull the latest code** on your Mac: stop the app (Ctrl+C), `git pull`, `pnpm install`,
-      `./scripts/start.sh`.
 - [ ] **Field test the phone app (M3)** in a real cellar with no signal: scan, move, stock-out,
       stocktake offline, then sync back at the office.
 
@@ -24,8 +18,13 @@ purchase, a decision, a test on real hardware). Tick items off here when done.
       the repo>` → put `license-signing.pem` in the HQ secret store (`LICENSE_SIGNING_KEY`), delete the
       file, commit `installer/keys/hq-license-public.pem`. Release builds accept no license until this
       is done.
-- [ ] **Try the customer portal on your own phone** (invite yourself as a customer): sign in,
-      browse, send a request, see it arrive as a draft order.
+- [ ] **Finish the customer portal test** (started 27 Nov: portal on, customer J6212 invited, catalog
+      made). Next: on your phone, sign in as the customer, browse, send a request, and check it arrives
+      as a draft order in Orders.
+- [ ] **Read the three manuals** and tell me what is unclear: HQ › 使用手冊, the website `/manual/`,
+      and the portal's 使用說明 (`/my-cellar/help`).
+- [ ] **Backup to a file / folder and restore from it:** development item B1 in `docs/BACKLOG.md`.
+      Meanwhile on your Mac, set the second copy folder in Settings › Updates & backups (none set yet).
 - [ ] **Try "Update now" once on a real Windows PC** (CI tested install / upgrade / uninstall, not the
       in-app update on Windows).
 
@@ -52,8 +51,11 @@ purchase, a decision, a test on real hardware). Tick items off here when done.
 ## Beta with the first client (M10) — see `docs/BETA.md`
 
 - [ ] **Decide own server or cloud** for the first client.
-- [ ] **Send me their Excel inventory** (attach it here) — I rehearse the import into a test
-      workspace, fix what the import flags, and list anything I cannot tell from the file (`docs/BETA.md` § 2).
+- [x] ~~Send me their Excel inventory~~ — done 27 Nov; rehearsal matched (129 wines, 1,026 bottles).
+- [ ] **Answer the 5 Excel questions** from the rehearsal: merchant name spellings (安迪酒藏/安迪,
+      吉興/吉星, 歐選/歐地; is 永興 a merchant; 17 rows without one), what "V01" means in 酒窖 (12 rows),
+      location 右下 (row 103), vintages for rows 70 and 97, the missing market price on row 127; and
+      whether to strip the producer from wine names on import.
 - [ ] **Training and cut-over day** on site (≈ 2 hours + the evening of the move).
 - [ ] On their server: **set the second backup copy** (Settings › Updates & backups) to a NAS or USB
       drive — and check now and then that "last copied" is recent.
