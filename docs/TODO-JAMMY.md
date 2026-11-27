@@ -68,6 +68,9 @@ purchase, a decision, a test on real hardware). Tick items off here when done.
 
 - [ ] **Decide the price list** (plans × bottle tiers, cloud and AI add-ons) — cost model in
       `docs/PRICING-COSTS.md`; then I update the pricing page and HQ plan names.
+- [ ] **Support videos** (backlog B3): record short screen videos per function; I write the scripts first.
+- [ ] **AI pricing decision** (backlog B4): AI add-on price, and whether "bring your own Claude key"
+      costs anything.
 - [ ] **Read the website copy** (both languages) and tell me what to change — especially the
       claims on the home, features, pricing and about pages, and the plan names (Collector /
       Merchant / Merchant + Portal).

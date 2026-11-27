@@ -36,3 +36,30 @@ Wine photos are stored exactly as the phone takes them (often 3–5 MB, up to 15
 browser before upload to about 1600 px on the long side, JPEG ≈ 80 % (≈ 200–400 KB), and keep a small
 thumbnail (≈ 400 px) for lists and the portal. About 90 % less disk and backup space, and faster pages
 on phones and in the portal. A one-time tool shrinks photos already stored (with a backup first).
+
+## B3 — Support centre with video lessons (asked 27 Nov 2026)
+
+A support page on MyWineCorks.com behind the client sign-in (the existing Client account, one-time email
+link). It has short screen-recorded videos for every function, in zh-TW and en (or zh with subtitles):
+first sign-in, storage and labels, stock-in, finding wine, moving and stocktake, the phone app, orders,
+customer portal and catalogs, AI, users and roles, import, backups and restore, updates.
+- Each video sits next to its manual chapter and has a search box; it is grouped by plan, so a Collector
+  does not see merchant topics.
+- Hosting: private videos (e.g. Cloudflare Stream or Vimeo with domain lock), or files served only to
+  signed-in clients. Not public on YouTube.
+- Also on the page: "Contact support" (goes to HQ › Website requests as a support ticket), release
+  notes, and the status of their license.
+- Jammy records the videos (or Claude writes the scripts and shot list first, then Jammy records).
+
+## B4 — AI: our add-on, or the client's own Claude API key (asked 27 Nov 2026)
+
+Two ways to switch on AI, chosen per license in HQ:
+1. **MyWineCorks AI (add-on):** as now, through our gateway, with a monthly allowance, billed by us.
+2. **Bring your own key:** the client pastes their own Claude API key (Owner only, Settings › AI). They pay
+   Anthropic directly; there is no allowance from us and no AI add-on price.
+- The key is stored encrypted, is never shown again after it is saved, and is never sent to phones, the
+  portal or exports. A "Test key" button checks it. It is written to the change log as "AI key changed",
+  without the key itself.
+- The requests still go through the gateway, so the prompts, label rules and usage display stay the same.
+  The gateway uses the client's key for that license and does not count it against our cap.
+- Decision for Jammy: does bring-your-own-key need the AI module in the plan (a small fee), or is it free?
