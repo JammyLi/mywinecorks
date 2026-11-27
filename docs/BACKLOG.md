@@ -25,9 +25,13 @@ Work for Claude that is agreed but not yet built. Items move to `CHANGELOG.md` w
    Write it to the change log.
 4. **Restore onto a new computer.** On a fresh install, the first-run screen offers "Restore from a
    backup" next to "Create company", so a lost PC can be replaced without copying files by hand.
-5. **Optional: encryption.** A password on the backup file, so a lost USB drive does not expose prices
+5. **Space limits.** Today each kind is capped (daily 7, manual 5, before-update 5, before-restore 5), the
+   copy folder holds the same set, and photos are mirrored once rather than in every backup. Add: the
+   number to keep per kind as a setting, a total size shown on the page, and removal of photos from the
+   mirror 30 days after they are deleted in the app (today they stay there).
+6. **Optional: encryption.** A password on the backup file, so a lost USB drive does not expose prices
    and customers. Without the password the file cannot be restored, so it must be kept safe.
-6. Permissions: Owner only (decision 17). Tests for each restore check. Manual chapter "Running your own
+7. Permissions: Owner only (decision 17). Tests for each restore check. Manual chapter "Running your own
    server" updated in both languages.
 
 ## B2 — Shrink photos on upload (found 27 Nov 2026 while costing the cloud)
