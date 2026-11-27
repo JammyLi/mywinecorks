@@ -33,7 +33,7 @@ purchase, a decision, a test on real hardware). Tick items off here when done.
 - [ ] **Choose the cloud provider and regions** (BUILD-PLAN decision 2; default AWS Tokyo + US-West).
 - [ ] **Create an S3-compatible bucket** for Litestream backups and its access key
       (`installer/cloud/.env.example`).
-- [ ] **Domain, DNS and email sending** (BUILD-PLAN decision 3; default Cloudflare DNS + Postmark or
+- [ ] **DNS and email sending** (domain MyWineCorks.com: bought ✓) (BUILD-PLAN decision 3; default Cloudflare DNS + Postmark or
       SES): `hq.mywinecorks.com`, `app.mywinecorks.com`, and an SMTP account (`SMTP_URL`) so license,
       reminder and welcome emails are actually sent.
 - [ ] **Deploy HQ** with a real PostgreSQL database (`DATABASE_URL`) and the production signing key.
@@ -66,6 +66,8 @@ purchase, a decision, a test on real hardware). Tick items off here when done.
 
 ## Website (M9)
 
+- [ ] **Decide the price list** (plans × bottle tiers, cloud and AI add-ons) — cost model in
+      `docs/PRICING-COSTS.md`; then I update the pricing page and HQ plan names.
 - [ ] **Read the website copy** (both languages) and tell me what to change — especially the
       claims on the home, features, pricing and about pages, and the plan names (Collector /
       Merchant / Merchant + Portal).

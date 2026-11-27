@@ -29,3 +29,10 @@ Work for Claude that is agreed but not yet built. Items move to `CHANGELOG.md` w
    and customers. Without the password the file cannot be restored, so it must be kept safe.
 6. Permissions: Owner only (decision 17). Tests for each restore check. Manual chapter "Running your own
    server" updated in both languages.
+
+## B2 — Shrink photos on upload (found 27 Nov 2026 while costing the cloud)
+
+Wine photos are stored exactly as the phone takes them (often 3–5 MB, up to 15 MB). Resize in the
+browser before upload to about 1600 px on the long side, JPEG ≈ 80 % (≈ 200–400 KB), and keep a small
+thumbnail (≈ 400 px) for lists and the portal. About 90 % less disk and backup space, and faster pages
+on phones and in the portal. A one-time tool shrinks photos already stored (with a backup first).
