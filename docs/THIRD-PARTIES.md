@@ -6,6 +6,15 @@ MyWineCorks is a Getfocus product. **Every account below is owned by Getfocus, n
 - 2-step sign-in on.
 - At least two admins (Jammy and one backup).
 
+## Owners (decided 28 Nov 2026)
+
+- Account owner and sign-in: **jammy.li@getfocus.com** (Getfocus Google Workspace, getfocus.com).
+- Recovery / backup: **jammy6212@gmail.com**. Add a second Getfocus person as admin when there is one.
+- AWS: no Getfocus account yet. Create the Getfocus management account first, then the "MyWineCorks"
+  member account inside the organization (step 7).
+- Email at mywinecorks.com: add mywinecorks.com to the getfocus.com Workspace as a secondary domain if it
+  is not there yet (hello@ / support@).
+
 ## Always running
 
 | Service | Use | Cost (list price, 27 Nov 2026) | Owner set-up |
