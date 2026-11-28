@@ -67,3 +67,19 @@ Two ways to switch on AI, chosen per license in HQ:
 - The requests still go through the gateway, so the prompts, label rules and usage display stay the same.
   The gateway uses the client's key for that license and does not count it against our cap.
 - Decision for Jammy: does bring-your-own-key need the AI module in the plan (a small fee), or is it free?
+
+## B5 — Remote access for staff of self-hosted clients (asked 28 Nov 2026)
+
+Today, on a self-hosted server: the customer portal already works anywhere (it runs in our cloud; the server
+syncs outbound only). Staff phones and browsers only reach the server on the office network; away from it
+they use the phone's offline copy, or a VPN the client sets up themselves.
+
+Build: an outbound-only tunnel (Cloudflare Tunnel) from the client's server to
+`https://<workspace>.remote.mywinecorks.com`.
+- No router changes, no open ports; real TLS certificate, so phones need no office certificate.
+- Off by default. The Owner turns it on in Settings, with an optional list of roles allowed remote access.
+- Same sign-in, 2-step verification, permissions and data-visibility rules as on site.
+- Every remote sign-in is written to the change log; HQ shows which installations use it.
+- Provisioned from HQ (tunnel token per license); stops when the license is locked or revoked.
+- Spec decision log entry needed (extends decision 18; keeps "self-hosted servers only make outbound
+  connections").
